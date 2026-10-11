@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Plain HTTP is needed for two things only: the audio streams on the server's
+  HTTP port (Cast devices and speakers can't use its self-signed HTTPS), and
+  the in-app loopback server that hosts the web UI. Android can't limit
+  cleartext to private IP ranges, so it is allowed app-wide; the API itself
+  is only ever called over pinned HTTPS (see PinnedTls).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

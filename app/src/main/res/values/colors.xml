@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- From the web UI's styles.css; no new colours (UI_STYLE.md). -->
+    <color name="background">#1A1A2E</color>
+    <color name="bar">#0F172A</color>
+</resources>
