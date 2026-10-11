@@ -40,6 +40,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import app.sonorium.CrashLog
 import app.sonorium.data.ServerRecord
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
@@ -51,11 +58,16 @@ fun StartScreen(model: LinkViewModel) {
     val servers by model.servers.collectAsState()
     val state by model.state.collectAsState()
     var typing by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+    var crash by remember { mutableStateOf(CrashLog.read(context)) }
 
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 Text("Sonorium", fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = Palette.text)
+                crash?.let { report ->
+                    Card { CrashReport(report) { CrashLog.clear(context); crash = null } }
+                }
                 when (val s = state) {
                     is LinkState.Working -> Card { Working(s.message) }
                     is LinkState.Failed -> Card {
@@ -108,8 +120,13 @@ private fun LinkButtons(model: LinkViewModel, onType: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         PrimaryButton("Scan Link App code", Modifier.fillMaxWidth()) {
             val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
-            GmsBarcodeScanning.getClient(context, options).startScan()
-                .addOnSuccessListener { code -> code.rawValue?.let(model::linkWithCode) }
+            try {
+                GmsBarcodeScanning.getClient(context, options).startScan()
+                    .addOnSuccessListener { code -> code.rawValue?.let(model::linkWithCode) }
+                    .addOnFailureListener { model.scanFailed(it) }
+            } catch (e: Exception) {
+                model.scanFailed(e)
+            }
         }
         SecondaryButton("Enter address", Modifier.fillMaxWidth(), onType)
     }
@@ -161,6 +178,27 @@ private fun ConfirmWords(s: LinkState.ConfirmWords, model: LinkViewModel) {
     Footer {
         PrimaryButton("Sign in") { model.signIn(s, username, password) }
         SecondaryButton("Cancel") { model.reset() }
+    }
+}
+
+/** The last crash, to copy and send to the developer by hand. */
+@Composable
+private fun CrashReport(report: String, onDismiss: () -> Unit) {
+    val clipboard = LocalClipboardManager.current
+    Text("Sonorium closed unexpectedly last time", color = Palette.warning, fontWeight = FontWeight.Medium)
+    Spacer(Modifier.height(8.dp))
+    Text(
+        report,
+        color = Palette.textSecondary,
+        fontSize = 11.sp,
+        fontFamily = FontFamily.Monospace,
+        maxLines = 12,
+        modifier = Modifier.heightIn(max = 200.dp).verticalScroll(rememberScrollState()),
+    )
+    Spacer(Modifier.height(16.dp))
+    Footer {
+        PrimaryButton("Copy") { clipboard.setText(AnnotatedString(report)) }
+        SecondaryButton("Dismiss", onClick = onDismiss)
     }
 }
 

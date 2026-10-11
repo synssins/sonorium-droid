@@ -60,6 +60,12 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun scanFailed(error: Exception) {
+        // The user backing out of the scanner is not an error.
+        if (error.message?.contains("cancel", ignoreCase = true) == true) return
+        _state.value = LinkState.Failed("The code scanner didn't start: ${error.message ?: error.javaClass.simpleName}")
+    }
+
     /** First contact with a typed address (APP_API.md 1.3, 2.3). */
     fun connectToAddress(input: String) {
         val (host, port) = splitHostPort(input.trim()) ?: run {

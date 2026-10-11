@@ -14,6 +14,11 @@ class SonoriumApp : Application() {
     val servers: ServerStore by lazy { ServerStore(this) }
     val linker: Linker by lazy { Linker(baseClient, deviceInfo()) }
 
+    override fun onCreate() {
+        super.onCreate()
+        CrashLog.install(this)
+    }
+
     private fun deviceInfo(): Linker.DeviceInfo {
         val name = runCatching { Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME) }
             .getOrNull()?.takeIf { it.isNotBlank() } ?: Build.MODEL
