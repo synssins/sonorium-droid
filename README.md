@@ -18,8 +18,9 @@ The server API it uses: `docs/APP_API.md` in the server repo (branch `fixes`).
 ./gradlew testDebugUnitTest assembleDebug     # app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Every push runs the tests, lint and a debug build on GitHub Actions; the debug
-APK is attached to the run as an artifact.
+Every push runs the tests, lint and a debug build on GitHub Actions. APKs
+for devices come from releases (below), which don't use Actions artifact
+storage.
 
 ## Releases
 
