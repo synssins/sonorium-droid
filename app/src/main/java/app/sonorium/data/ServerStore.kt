@@ -23,6 +23,8 @@ class ServerStore(private val context: Context, private val cipher: TokenCipher 
 
     val currentId: Flow<String?> = context.serverData.data.map { it[CURRENT] }
 
+    suspend fun find(id: String): ServerRecord? = servers.first().firstOrNull { it.id == id }
+
     suspend fun save(record: ServerRecord, token: String) {
         context.serverData.edit { prefs ->
             val list = decode(prefs[SERVERS]).filter { it.id != record.id } + record
