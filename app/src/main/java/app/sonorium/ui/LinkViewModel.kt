@@ -3,6 +3,7 @@ package app.sonorium.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.sonorium.BuildConfig
 import app.sonorium.SonoriumApp
 import app.sonorium.data.ServerRecord
 import app.sonorium.link.LinkOutcome
@@ -31,7 +32,8 @@ sealed class LinkState {
         val hasUsers: Boolean,
     ) : LinkState()
     data class Done(val record: ServerRecord) : LinkState()
-    data class Failed(val message: String) : LinkState()
+    /** [details] is a stack trace the user can copy and send, for unexpected errors. */
+    data class Failed(val message: String, val details: String? = null) : LinkState()
 }
 
 class LinkViewModel(application: Application) : AndroidViewModel(application) {
@@ -63,7 +65,11 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
     fun scanFailed(error: Exception) {
         // The user backing out of the scanner is not an error.
         if (error.message?.contains("cancel", ignoreCase = true) == true) return
-        _state.value = LinkState.Failed("The code scanner didn't start: ${error.message ?: error.javaClass.simpleName}")
+        _state.value = LinkState.Failed(
+            "The code scanner didn't start: ${error.message ?: error.javaClass.simpleName}",
+            details = "Sonorium ${BuildConfig.VERSION_NAME}, Android ${android.os.Build.VERSION.RELEASE}, " +
+                "${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}\n\n" + error.stackTraceToString(),
+        )
     }
 
     /** First contact with a typed address (APP_API.md 1.3, 2.3). */

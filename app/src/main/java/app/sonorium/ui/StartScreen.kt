@@ -73,7 +73,13 @@ fun StartScreen(model: LinkViewModel) {
                     is LinkState.Failed -> Card {
                         Text(s.message, color = Palette.text)
                         Spacer(Modifier.height(16.dp))
-                        SecondaryButton("OK") { model.reset() }
+                        val clipboard = LocalClipboardManager.current
+                        Footer {
+                            s.details?.let { details ->
+                                SecondaryButton("Copy details") { clipboard.setText(AnnotatedString(details)) }
+                            }
+                            SecondaryButton("OK") { model.reset() }
+                        }
                     }
                     is LinkState.Done -> Card {
                         Text("Linked to ${s.record.label}", color = Palette.text)
