@@ -158,8 +158,29 @@ class ServerActivity : ComponentActivity() {
         }
         val view = webView ?: createWebView().also { webView = it }
         installHost(view, started.origin, streamBase.toString().trimEnd('/'))
-        view.loadUrl("${started.origin}/")
         screen = Screen.Ready
+        // Load only once the view is on screen with its real size: WebView fixes the
+        // page's viewport units (100vh) at load time, and a 0-height view gives a
+        // 0-height menu and sidebar.
+        view.doOnLayoutWithSize { view.loadUrl("${started.origin}/") }
+    }
+
+    /** Runs [action] once the view is attached and has a non-zero size. */
+    private fun WebView.doOnLayoutWithSize(action: () -> Unit) {
+        if (isAttachedToWindow && width > 0 && height > 0) {
+            action()
+            return
+        }
+        addOnLayoutChangeListener(object : android.view.View.OnLayoutChangeListener {
+            override fun onLayoutChange(
+                v: android.view.View, l: Int, t: Int, r: Int, b: Int, ol: Int, ot: Int, or: Int, ob: Int,
+            ) {
+                if (r - l > 0 && b - t > 0) {
+                    v.removeOnLayoutChangeListener(this)
+                    v.post { action() }
+                }
+            }
+        })
     }
 
     @SuppressLint("SetJavaScriptEnabled")

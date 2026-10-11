@@ -187,7 +187,7 @@ jobs:
             git push origin "refs/tags/$TAG"
           fi
           gh release create "$TAG" sonorium-*.apk --verify-tag \
-            --title "Sonorium $TAG" --generate-notes \
+            --title "Sonorium $TAG" --notes-file .github/release-notes.md \
             $([[ "$TAG" == *-* ]] && echo --prerelease) || {
               echo "::group::What this token may do"
               gh api "repos/$GITHUB_REPOSITORY" --jq '{visibility, permissions}' || true

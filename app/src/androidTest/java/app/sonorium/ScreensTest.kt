@@ -30,9 +30,11 @@ class ScreensTest {
         // A fresh start opens the server used last.
         ActivityScenario.launch(MainActivity::class.java).use {
             waitForPage()
+            menu("portrait")
             capture("portrait")
             device.setOrientationLandscape()
             Thread.sleep(2_500)
+            menu("landscape")
             capture("landscape")
             device.setOrientationNatural()
             Thread.sleep(1_500)
@@ -48,6 +50,39 @@ class ScreensTest {
             device.takeScreenshot(File(shots, "$orientation-${i + 1}-$view.png"))
         }
         runCatching { onWebView().perform(Atoms.script("showView('sessions'); return true;")) }
+    }
+
+    /**
+     * The menu: opened on phone layouts (hamburger), always there on wide ones.
+     * Also records the page's viewport and the menu's size, which showed the
+     * 0-height menu bug.
+     */
+    private fun menu(orientation: String) {
+        val info = runCatching {
+            onWebView().perform(
+                Atoms.script(
+                    """
+                    var btn = document.getElementById('mobile-nav-btn');
+                    if (btn && getComputedStyle(btn).display !== 'none' && btn.offsetParent !== null) toggleSidebar();
+                    var probe = document.createElement('div');
+                    probe.style.cssText = 'position:fixed;height:100vh;width:1px;visibility:hidden';
+                    document.body.appendChild(probe);
+                    var r = document.getElementById('sidebar').getBoundingClientRect();
+                    var out = 'inner=' + innerWidth + 'x' + innerHeight + ' 100vh=' + probe.offsetHeight +
+                        ' sidebar=' + Math.round(r.width) + 'x' + Math.round(r.height);
+                    probe.remove();
+                    return out;
+                    """.trimIndent(),
+                ),
+            ).get().value?.toString()
+        }.getOrElse { "error: ${it.message}" }
+        File(shots, "$orientation-0-menu.txt").writeText(info + "\n")
+        Thread.sleep(1_500)
+        device.takeScreenshot(File(shots, "$orientation-0-menu.png"))
+        runCatching {
+            onWebView().perform(Atoms.script("if (document.body.classList.contains('sidebar-open')) closeSidebar(); return true;"))
+        }
+        Thread.sleep(500)
     }
 
     private fun waitForPage() {
