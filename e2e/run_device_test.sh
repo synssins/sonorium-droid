@@ -1,24 +1,75 @@
 #!/usr/bin/env bash
 # Runs inside the emulator (reactivecircus/android-emulator-runner): installs
 # the debug app and its tests, runs EndToEndTest against the Docker server,
-# and collects screenshots and the log into e2e-out/.
+# then ScreensTest once per screen profile, and collects screenshots and the
+# log into e2e-out/.
 set -u
 mkdir -p e2e-out
 adb logcat -c || true
 adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 
+RUNNER=app.sonorium.debug.test/androidx.test.runner.AndroidJUnitRunner
+
 set +e
 adb shell am instrument -w -r \
   -e linkUri "$LINK_URI_B64" \
   -e channelName "'$CHANNEL_NAME'" \
   -e class app.sonorium.EndToEndTest \
-  app.sonorium.debug.test/androidx.test.runner.AndroidJUnitRunner | tee e2e-out/instrumentation.txt
+  "$RUNNER" | tee e2e-out/instrumentation.txt
+grep -q "^OK (" e2e-out/instrumentation.txt
+e2e=$?
+
+# Screen profiles: name, size (portrait, px), density (dpi), font scale.
+# Sizes for Samsung devices are their default display settings, approximately.
+profiles=(
+  "pixel-6         1080x2400 420 1.0"
+  "galaxy-s25-ultra 1080x2340 450 1.0"
+  "galaxy-tab-s10-ultra 1848x2960 340 1.0"
+  "phone-large-font 1080x2400 420 1.3"
+)
+if [ "$e2e" -eq 0 ]; then
+  for p in "${profiles[@]}"; do
+    read -r name size density font <<<"$p"
+    echo "== screens: $name ($size @ ${density}dpi, font x$font)"
+    adb shell wm size "$size"
+    adb shell wm density "$density"
+    adb shell settings put system font_scale "$font"
+    sleep 3
+    adb shell am instrument -w -r -e profile "$name" -e class app.sonorium.ScreensTest "$RUNNER" \
+      | tee -a e2e-out/screens-instrumentation.txt | tail -3
+  done
+  adb shell wm size reset
+  adb shell wm density reset
+  adb shell settings put system font_scale 1.0
+fi
 set -e
 
 adb pull /sdcard/Android/data/app.sonorium.debug/files/e2e e2e-out/screens || true
 adb logcat -d > e2e-out/logcat.txt || true
-grep -E "AndroidRuntime|chromium|Sonorium|WebView|okhttp|EndToEnd" e2e-out/logcat.txt | tail -300 > e2e-out/logcat-filtered.txt || true
+grep -E "AndroidRuntime|chromium|Sonorium|WebView|okhttp|EndToEnd|ScreensTest" e2e-out/logcat.txt | tail -400 > e2e-out/logcat-filtered.txt || true
 
-# am instrument exits 0 even on failure; the result line decides.
-grep -q "^OK (" e2e-out/instrumentation.txt
+# A gallery page per profile, viewable on GitHub.
+if [ -d e2e-out/screens ]; then
+  {
+    echo "# Screenshots"
+    echo
+    echo "| Profile | Size | Density | Font |"
+    echo "|---|---|---|---|"
+    for p in "${profiles[@]}"; do read -r name size density font <<<"$p"; echo "| [$name](#$name) | $size | $density | $font |"; done
+    for dir in e2e-out/screens/*/; do
+      name=$(basename "$dir")
+      echo
+      echo "## $name"
+      for f in "$dir"*.png; do
+        [ -e "$f" ] || continue
+        echo
+        echo "**$(basename "$f" .png)**"
+        echo
+        echo "<img src=\"$name/$(basename "$f")\" width=\"420\">"
+      done
+    done
+  } > e2e-out/screens/README.md
+fi
+
+exit "$e2e"
