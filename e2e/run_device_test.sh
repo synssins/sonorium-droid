@@ -22,11 +22,15 @@ e2e=$?
 
 # Screen profiles: name, size (portrait, px), density (dpi), font scale.
 # Sizes for Samsung devices are their default display settings, approximately.
+# Smallest to largest, so layouts can be compared across the range.
 profiles=(
-  "pixel-6         1080x2400 420 1.0"
+  "small-phone 720x1280 320 1.0"
+  "pixel-6 1080x2400 420 1.0"
   "galaxy-s25-ultra 1080x2340 450 1.0"
-  "galaxy-tab-s10-ultra 1848x2960 340 1.0"
   "phone-large-font 1080x2400 420 1.3"
+  "foldable-inner 1812x2176 420 1.0"
+  "tablet-11in 1600x2560 320 1.0"
+  "galaxy-tab-s10-ultra 1848x2960 340 1.0"
 )
 if [ "$e2e" -eq 0 ]; then
   for p in "${profiles[@]}"; do
@@ -54,11 +58,17 @@ if [ -d e2e-out/screens ]; then
   {
     echo "# Screenshots"
     echo
-    echo "| Profile | Size | Density | Font |"
-    echo "|---|---|---|---|"
-    for p in "${profiles[@]}"; do read -r name size density font <<<"$p"; echo "| [$name](#$name) | $size | $density | $font |"; done
-    for dir in e2e-out/screens/*/; do
-      name=$(basename "$dir")
+    echo "| Profile | Pixels | Density | CSS viewport (portrait) | Font |"
+    echo "|---|---|---|---|---|"
+    for p in "${profiles[@]}"; do
+      read -r name size density font <<<"$p"
+      w=${size%x*}; h=${size#*x}
+      echo "| [$name](#$name) | $size | $density | $((w * 160 / density))x$((h * 160 / density)) | $font |"
+    done
+    for p in "${profiles[@]}"; do
+      read -r name _ <<<"$p"
+      dir="e2e-out/screens/$name/"
+      [ -d "$dir" ] || continue
       echo
       echo "## $name"
       for f in "$dir"*.png; do
