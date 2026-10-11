@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-${{ github.ref }}-${{ inputs.release || 'ci' }}
+  cancel-in-progress: ${{ !inputs.release && !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,17 +37,31 @@ jobs:
         run: ./gradlew --stacktrace testDebugUnitTest lintDebug assembleDebug
 
   device:
-    # The app on an Android emulator against a real Sonorium server (Docker),
+    # The app on Android emulators against a real Sonorium server (Docker),
     # end to end: link with a Link App code, load the web UI, find the channel.
     # Results (screenshots, log) go to the e2e-results branch.
     if: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.release }}
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     permissions:
       contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Current Android: the end-to-end test, then screenshots on every screen profile.
+          - api: 35
+            screens: 1
+            results: e2e-results
+          # The oldest Android the app supports (8.0), with its old built-in WebView:
+          # the end-to-end test only. Old phones make good remotes.
+          - api: 26
+            screens: 0
+            results: e2e-results-android8
     env:
       SERVER_IMAGE: ghcr.io/synssins/sonorium:dev
+      SCREENS: ${{ matrix.screens }}
     steps:
       - uses: actions/checkout@v5
 
@@ -72,7 +90,7 @@ jobs:
         id: device
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           profile: pixel_6
@@ -85,7 +103,7 @@ jobs:
         run: |
           mkdir -p e2e-out
           {
-            echo "## Device test: ${{ steps.device.outcome }}"
+            echo "## Device test, Android API ${{ matrix.api }}: ${{ steps.device.outcome }}"
             echo
             echo "Server: $(curl -sk https://127.0.0.1:8808/api/info | python3 -c "import json,sys;print(json.load(sys.stdin)['version'])")"
             echo
@@ -110,7 +128,8 @@ jobs:
           echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (commit ${GITHUB_SHA::7})" > RUN.txt
           git add -A
           git commit -qm "Device test results for ${GITHUB_SHA::7}"
-          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" e2e-results
+          git branch -m "${{ matrix.results }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" "${{ matrix.results }}"
 
   release:
     # A tag such as v0.1.0, or a manual run with "release" set, builds a signed

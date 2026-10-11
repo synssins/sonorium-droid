@@ -32,7 +32,7 @@ profiles=(
   "tablet-11in 1600x2560 320 1.0"
   "galaxy-tab-s10-ultra 1848x2960 340 1.0"
 )
-if [ "$e2e" -eq 0 ]; then
+if [ "$e2e" -eq 0 ] && [ "${SCREENS:-1}" = "1" ]; then
   for p in "${profiles[@]}"; do
     read -r name size density font <<<"$p"
     echo "== screens: $name ($size @ ${density}dpi, font x$font)"
