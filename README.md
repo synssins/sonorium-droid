@@ -60,7 +60,9 @@ other and the `sonorium.app/link` App Link stays verified.
    keytool -list -v -keystore sonorium-release.jks -alias sonorium | grep SHA256
    ```
 
-   The release job also prints it in its log.
+   The release job also prints it in its log. The current key's fingerprint
+   is in [`docs/assetlinks.json`](docs/assetlinks.json), the file to publish
+   at `https://sonorium.app/.well-known/assetlinks.json`.
 
 For local signed builds, put the same four values in an untracked
 `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`).

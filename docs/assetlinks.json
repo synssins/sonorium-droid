@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.sonorium",
+      "sha256_cert_fingerprints": [
+        "A0:A6:C3:B2:07:58:58:CE:E1:B1:B5:EF:16:69:E7:49:FD:3E:02:9B:9E:D2:80:5E:D5:10:6C:2D:D8:1C:1C:0C"
+      ]
+    }
+  }
+]
