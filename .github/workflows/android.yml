@@ -32,6 +32,86 @@ jobs:
       - name: Unit tests, lint and debug build
         run: ./gradlew --stacktrace testDebugUnitTest lintDebug assembleDebug
 
+  device:
+    # The app on an Android emulator against a real Sonorium server (Docker),
+    # end to end: link with a Link App code, load the web UI, find the channel.
+    # Results (screenshots, log) go to the e2e-results branch.
+    if: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.release }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    env:
+      SERVER_IMAGE: ghcr.io/synssins/sonorium:dev
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Start a Sonorium server
+        run: |
+          docker run -d --name sonorium -p 8008:8008 -p 8808:8808 "$SERVER_IMAGE"
+          python3 e2e/server_setup.py https://127.0.0.1:8808 10.0.2.2 >> "$GITHUB_ENV"
+
+      - name: Build the app and its device tests
+        run: ./gradlew assembleDebug assembleDebugAndroidTest
+
+      - name: Run on the emulator
+        id: device
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: ./e2e/run_device_test.sh
+
+      - name: What the server saw
+        if: always()
+        run: |
+          mkdir -p e2e-out
+          {
+            echo "## Device test: ${{ steps.device.outcome }}"
+            echo
+            echo "Server: $(curl -sk https://127.0.0.1:8808/api/info | python3 -c "import json,sys;print(json.load(sys.stdin)['version'])")"
+            echo
+            python3 e2e/server_check.py https://127.0.0.1:8808 "$CI_ADMIN" "$CI_PASSWORD" || echo "No phone linked."
+            echo
+            echo '### Instrumentation'
+            echo '```'
+            tail -40 e2e-out/instrumentation.txt 2>/dev/null
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY" > e2e-out/summary.md
+          docker logs sonorium > e2e-out/server.log 2>&1 || true
+
+      - name: Publish results to the e2e-results branch
+        if: always()
+        run: |
+          dir=$(mktemp -d)
+          cp -r e2e-out/. "$dir/"
+          cd "$dir"
+          git init -q -b e2e-results
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} (commit ${GITHUB_SHA::7})" > RUN.txt
+          git add -A
+          git commit -qm "Device test results for ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" e2e-results
+
   release:
     # A tag such as v0.1.0, or a manual run with "release" set, builds a signed
     # APK and publishes it as a GitHub release (creating the tag if needed).

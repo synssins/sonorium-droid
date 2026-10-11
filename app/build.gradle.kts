@@ -31,6 +31,7 @@ android {
         targetSdk = 36
         versionCode = (System.getenv("SONORIUM_VERSION_CODE") ?: "1").toInt()
         versionName = System.getenv("SONORIUM_VERSION_NAME") ?: "0.1.0-dev"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -101,4 +102,11 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.okhttp.tls)
+
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.espresso.core)
+    androidTestImplementation(libs.espresso.web)
+    androidTestImplementation(libs.uiautomator)
 }
