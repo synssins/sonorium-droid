@@ -119,7 +119,7 @@ fun ServerScreen(
             // Tablets in landscape keep the menu open as a sidebar; everything else slides it in
             val permanent = maxWidth >= 1000.dp && maxHeight >= 600.dp
             val panelWidth = minOf(320.dp, maxWidth * 0.85f)
-            val menu: @Composable () -> Unit = { Menu(state, page, permanent, ::open, onServers) }
+            val menu: @Composable () -> Unit = { Menu(state, page, permanent, ::open, onServers, onPluginPage = { v -> scope.launch { drawer.close() }; onWebPage(v) }) }
             val content: @Composable () -> Unit = {
                 Column(Modifier.fillMaxSize()) {
                     TopBar(
@@ -267,7 +267,7 @@ private fun TopBar(
 }
 
 @Composable
-private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: (Page) -> Unit, onServers: () -> Unit) {
+private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: (Page) -> Unit, onServers: () -> Unit, onPluginPage: (String) -> Unit) {
     val perms = state.me?.perms.orEmpty().toSet()
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxHeight().semantics { testTagsAsResourceId = true }.verticalScroll(rememberScrollState()).padding(vertical = 12.dp)) {
@@ -289,6 +289,10 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
         if (settingsOpen) {
             settings.forEach { MenuItem(it, current, onOpen, indent = true) }
             MenuRow(SIcons.Server, "Servers", selected = false, indent = true, onClick = onServers)
+        }
+        if (state.pluginPages.isNotEmpty()) {
+            Section("Plugins")
+            state.pluginPages.forEach { p -> MenuRow(SIcons.Layers, p.title, selected = false) { onPluginPage(p.view) } }
         }
         Section("System")
         MenuItem(Page.Status, current, onOpen)

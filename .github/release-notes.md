@@ -1,5 +1,6 @@
 ## What's new in this build
 
+- **Plugin pages** (from plugins that add their own pages) are listed in the ☰ menu under **Plugins** and open in the web view.
 - **Since alpha10:** Settings pages update when settings or plugins change elsewhere (and after a restart); the Theme Editor's Merry-go-round Crossfade follows the server's allowed range; on Android 8 the Theme Editor no longer pops the keyboard up by itself.
 
 - **The Theme Editor is native** (Themes › **Edit**, and right after Create theme):

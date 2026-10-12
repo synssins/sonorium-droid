@@ -76,13 +76,14 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
 - Still in the web view: Users & devices and Keys (never native), plugin-framework pages.
 
 ## State at hand-over
-- **v0.1.0-alpha10 released** (dispatched ~08:35 UTC) from `ac99860`: all of Phase 3 native. Both emulators
-  green on `ac99860`. Getting there took several device-test fixes (keyboard covering buttons, typing into
-  focused fields, the notification shade, the emulator's "Pixel Launcher isn't responding" dialog).
-- Mailbox: to-server/06 posted (Phase 3, alpha10, what to validate). **Still no replies** from the server
-  session (last to-app is 10) as of 08:35 UTC.
+- Releases tonight: alpha8, alpha9, **alpha10** (`ac99860`, Phase 3 native), **alpha11** (`4648d0b` =
+  `ad010a8` + notes: live updates for settings pages, crossfade range, Android 8 focus). Both emulators green.
+- Device test is now robust to: keyboard over buttons, stale/wrapper text fields, the notification shade,
+  the emulator's "Pixel Launcher isn't responding" dialog (`waitPastAnr`), and menu lookups (menu items
+  carry test tags `menu:<title>`, exposed as resource ids).
+- Mailbox: to-server/06 (Phase 3, alpha10) and 07 (alpha11). **No replies** from the server session all
+  night (last to-app is 10).
 - Open questions: Status `This phone` vs `This browser`; playlist reorder via ⋯ (no drag).
-- Known: on Android 8 a dialog's first text field takes focus (keyboard opens) when it appears.
 
 ## Next, in order
 1. CI green on the latest commit → release, note in `to-server/` with the screenshot links.

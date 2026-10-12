@@ -42,6 +42,9 @@ import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
 
+/** A plugin-framework page: its web view id and menu title. */
+data class PluginPage(val view: String, val title: String)
+
 /** Everything the native screens show for one server (shared/native-api.md, Phase 1). */
 data class ServerState(
     val record: ServerRecord? = null,
@@ -74,6 +77,8 @@ data class ServerState(
     val categories: List<String> = emptyList(),
     /** Settings › Connection is listed: GET /connection answered or a plugin declares a connection. */
     val connectionPage: Boolean = false,
+    /** Plugin-framework pages (`GET /extensions` pages), opened in the web view. */
+    val pluginPages: List<PluginPage> = emptyList(),
 ) {
     val personalChannel: Boolean get() = info?.personalChannel == true
     val playingCount: Int get() = sessions.count { it.isPlaying }
@@ -766,8 +771,17 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     suspend fun refreshConnectionPage() {
         val api = api ?: return
         val core = runCatching { api.json("GET", "connection") }.isSuccess
-        val plugins = !core && runCatching { (api.json("GET", "extensions")["connections"] as? kotlinx.serialization.json.JsonArray)?.isNotEmpty() == true }.getOrDefault(false)
-        _state.update { it.copy(connectionPage = core || plugins) }
+        val ext = runCatching { api.json("GET", "extensions") }.getOrNull()
+        val plugins = (ext?.get("connections") as? kotlinx.serialization.json.JsonArray)?.isNotEmpty() == true
+        // Plugin-framework pages: menu items under "Plugins", shown in the web view (`ext-<plugin>-<page>`)
+        val pages = (ext?.get("pages") as? kotlinx.serialization.json.JsonArray).orEmpty().mapNotNull { e ->
+            val o = e as? JsonObject ?: return@mapNotNull null
+            fun s(k: String) = (o[k] as? JsonPrimitive)?.content.orEmpty()
+            val plugin = s("plugin_id")
+            val id = s("id")
+            if (plugin.isEmpty() || id.isEmpty()) null else PluginPage("ext-$plugin-$id", s("title").ifEmpty { id })
+        }
+        _state.update { it.copy(connectionPage = core || plugins, pluginPages = pages) }
     }
 
 

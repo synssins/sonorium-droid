@@ -251,7 +251,7 @@ class ServerActivity : ComponentActivity() {
     /** The page the native menu asked for: wait for the page's showView(), then call it once. */
     private fun openRequestedView(view: WebView, attempt: Int = 0) {
         val target = intent.getStringExtra(EXTRA_VIEW) ?: return
-        if (viewOpened || attempt > 40 || !target.matches(Regex("[a-z-]+"))) return
+        if (viewOpened || attempt > 40 || !target.matches(Regex("[A-Za-z0-9_-]+"))) return
         view.evaluateJavascript(
             "(function(){if(typeof showView==='function'&&typeof sessions!=='undefined'){showView('$target');return true}return false})()",
         ) { result ->
