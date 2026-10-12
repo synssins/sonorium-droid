@@ -42,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.sonorium.net.SpaceArea
@@ -61,7 +62,7 @@ import kotlinx.serialization.json.put
 fun SpacesPage(state: ServerState, model: ServerViewModel) {
     var adding by remember { mutableStateOf<String?>(null) } // "floor" / "area"
     var renaming by remember { mutableStateOf<SpaceFloor?>(null) }
-    var confirm by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    var confirm by remember { mutableStateOf<SpaceConfirm?>(null) }
 
     LaunchedEffect(Unit) { model.refreshSpaces() }
 
@@ -75,7 +76,7 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
                 PageHeader("Floors & Areas", null, help = "settings-spaces") {
                     if (editable) {
                         OutlinedButton(onClick = { adding = "floor" }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
-                            Icon(SIcons.Plus, null, tint = Palette.text, modifier = Modifier.size(14.dp))
+                            Icon(SIcons.Plus, null, tint = Palette.text, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Add floor", color = Palette.text)
                         }
@@ -84,7 +85,7 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
                             onClick = { adding = "area" }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                         ) {
-                            Icon(SIcons.Plus, null, modifier = Modifier.size(14.dp))
+                            Icon(SIcons.Plus, null, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Add area")
                         }
@@ -98,19 +99,22 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
             }
             if (spaces != null) {
                 if (spaces.floors.isEmpty() && spaces.unassignedAreas.isEmpty()) {
-                    item { EmptyState(if (editable) "No floors or areas yet." else "Home Assistant has no floors or areas.", null) }
+                    item { EmptyState(
+                        if (editable) "No floors or areas yet" else "Home Assistant has no floors or areas",
+                        if (editable) "Add a floor or an area to group speakers" else "Add them in Home Assistant",
+                    ) }
                 }
                 items(spaces.floors, key = { "f-${it.id}" }) { f ->
                     FloorBlock(f, f.name, f.areas, f.id, spaces, editable, model,
                         onRename = { renaming = f },
-                        onDelete = { confirm = "Delete floor \"${f.name}\"? Its areas stay, without a floor." to { model.changeSpaces { it.deleteFloor(f.localId!!) } } },
-                        onDeleteArea = { a -> confirm = "Delete area \"${a.name}\"? Its speakers move to No area." to { model.changeSpaces { it.deleteArea(a.localId!!) } } },
+                        onDelete = { confirm = SpaceConfirm("Delete floor “${f.name}”?", "Its areas stay, without a floor.") { model.changeSpaces { it.deleteFloor(f.localId!!) } } },
+                        onDeleteArea = { a -> confirm = SpaceConfirm("Delete area “${a.name}”?", "Its speakers move to No area.") { model.changeSpaces { it.deleteArea(a.localId!!) } } },
                     )
                 }
                 if (spaces.unassignedAreas.isNotEmpty()) {
                     item(key = "nofloor") {
                         FloorBlock(null, "No floor", spaces.unassignedAreas, "", spaces, editable, model, {}, {},
-                            onDeleteArea = { a -> confirm = "Delete area \"${a.name}\"? Its speakers move to No area." to { model.changeSpaces { it.deleteArea(a.localId!!) } } },
+                            onDeleteArea = { a -> confirm = SpaceConfirm("Delete area “${a.name}”?", "Its speakers move to No area.") { model.changeSpaces { it.deleteArea(a.localId!!) } } },
                         )
                     }
                 }
@@ -132,16 +136,13 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
             if (name.isNotBlank() && name != f.name) model.changeSpaces { it.updateFloor(f.localId!!, buildJsonObject { put("name", name) }) }
         }, onDismiss = { renaming = null })
     }
-    confirm?.let { (text, action) ->
-        AlertDialog(
-            onDismissRequest = { confirm = null },
-            containerColor = Palette.card,
-            text = { Text(text, color = Palette.text, fontSize = 16.sp) },
-            confirmButton = { TextButton(onClick = { confirm = null; action() }) { Text("OK", color = Palette.accent) } },
-            dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel", color = Palette.textSecondary) } },
-        )
+    confirm?.let { c ->
+        ConfirmDialog(c.title, c.sub, "Delete", onConfirm = c.action, onDismiss = { confirm = null })
     }
 }
+
+/** A delete confirmation: what is deleted, and what happens to what it held. */
+private class SpaceConfirm(val title: String, val sub: String, val action: () -> Unit)
 
 @Composable
 private fun SourceBadges(source: List<String>) {
@@ -162,12 +163,12 @@ private fun FloorBlock(
     onDelete: () -> Unit,
     onDeleteArea: (SpaceArea) -> Unit,
 ) {
-    Surface(color = Palette.card, shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+    Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
         Column(Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                 Icon(SIcons.Layers, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
+                Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 floor?.let { SourceBadges(it.source) }
                 Spacer(Modifier.weight(1f))
                 if (editable && floor != null) {
@@ -209,7 +210,7 @@ private fun AreaRow(area: SpaceArea, floorId: String, spaces: Spaces, editable: 
                     },
                 )
             } else {
-                Text(area.name, color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f, fill = false))
+                Text(area.name, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 SourceBadges(area.source)
                 Spacer(Modifier.weight(1f))
             }
@@ -272,8 +273,10 @@ private fun AddSpaceDialog(kind: String, spaces: Spaces?, onAdd: (String, String
             }
         },
         confirmButton = {
-            Button(onClick = { go() }, modifier = Modifier.semantics { contentDescription = "Save $kind" }, colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), shape = RoundedCornerShape(8.dp)) { Text(title) }
+            Button(onClick = { go() }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Save $kind" }, colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), shape = RoundedCornerShape(8.dp)) { Text(title) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = Palette.textSecondary) } },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.textSecondary) }
+        },
     )
 }

@@ -124,7 +124,7 @@ fun LogsPage(model: ServerViewModel) {
                     border = BorderStroke(1.dp, if (logs.paused) Palette.accent else Palette.border),
                     modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics { contentDescription = "${if (logs.paused) "Resume" else "Pause"}. Stop the list moving; new lines wait until Resume" },
                 ) {
-                    Icon(if (logs.paused) SIcons.Play else SIcons.Pause, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
+                    Icon(if (logs.paused) SIcons.Play else SIcons.Pause, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                     if (!narrow) Text(if (logs.paused) " Resume" else " Pause", color = Palette.text, fontSize = 13.sp)
                 }
                 Spacer(Modifier.width(6.dp))

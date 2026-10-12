@@ -140,16 +140,16 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
         val narrow = maxWidth < 600.dp
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
             item { PageHeader("Connection", null, help = "settings-connection") }
-            if (loaded && rows.isEmpty()) item { EmptyState("No connections", null) }
+            if (loaded && rows.isEmpty()) item { EmptyState("No connections", "Home Assistant, MQTT and plugin connections show here") }
             items(rows, key = { rowKey(it) }) { r ->
                 val (word, tone) = ConnectionRules.statusWord(r.state)
                 Column(
-                    Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp)).padding(12.dp),
+                    Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(12.dp)).border(1.dp, Palette.border, RoundedCornerShape(12.dp)).padding(12.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(if (r.kind == "ha") SIcons.Server else if (r.kind == "mqtt") SIcons.Activity else SIcons.Layers, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text(r.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                        Icon(if (r.kind == "ha") SIcons.Server else if (r.kind == "mqtt") SIcons.Activity else SIcons.Layers, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH.dp))
+                        Spacer(Modifier.width(12.dp))
+                        Text(r.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                         if (r.kind == "plugin") {
                             Spacer(Modifier.width(6.dp))
                             Text("Plugin", color = Palette.textSecondary, fontSize = 11.sp, modifier = Modifier.border(1.dp, Palette.border, RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
@@ -167,7 +167,7 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
                     }
                     Text(
                         r.pointsAt.ifEmpty { "Not set up" }, color = if (r.pointsAt.isEmpty()) Palette.textMuted else Palette.textSecondary, fontSize = 13.sp,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 28.dp, top = 4.dp),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 32.dp, top = 4.dp),
                     )
                     Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalAlignment = Alignment.CenterVertically) {
                         if (r.test) {
@@ -180,7 +180,7 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
                             onClick = { editing = r }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                         ) { Text("Edit", color = Palette.text) }
                         MoreMenu("More for ${r.title}", listOf(MenuAction("Remove…", SIcons.Trash, danger = true, enabled = r.configured) {
-                            ask = Ask("Remove ${r.title}?", null, "Remove") { remove(r) }
+                            ask = Ask("Remove “${r.title}”?", "Its saved settings are cleared.", "Remove") { remove(r) }
                         }))
                     }
                 }
@@ -201,7 +201,7 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
                                     saveCards.launch("sonorium-cards.js")
                                 }.onFailure { model.toast(model.messageOf(it, "Download failed"), error = true) }
                             }
-                        }) { Text("Download", color = Palette.accent) }
+                        }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Download", color = Palette.accent) }
                     }
                 }
             }
@@ -282,7 +282,7 @@ private fun ConnectionDialog(r: ConnRow, model: ServerViewModel, onClose: () -> 
     AlertDialog(
         onDismissRequest = onClose,
         containerColor = Palette.card,
-        title = { Text(r.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text(r.title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 r.fields.forEach { f ->
@@ -296,8 +296,8 @@ private fun ConnectionDialog(r: ConnRow, model: ServerViewModel, onClose: () -> 
                 r.pluginName?.let { Text("From the plugin $it", color = Palette.textSecondary, fontSize = 12.sp) }
                 if (r.test) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                        OutlinedButton(onClick = ::test, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border)) { Text("Test", color = Palette.text) }
-                        Spacer(Modifier.width(10.dp))
+                        OutlinedButton(onClick = ::test, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Test", color = Palette.text) }
+                        Spacer(Modifier.width(12.dp))
                         result?.let { (m, ok) ->
                             Text(m, color = if (m == "Testing…") Palette.textSecondary else if (ok) Palette.accent else Palette.danger, fontSize = 13.sp)
                         }
@@ -309,8 +309,9 @@ private fun ConnectionDialog(r: ConnRow, model: ServerViewModel, onClose: () -> 
             Button(
                 onClick = ::save, enabled = !busy,
                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             ) { Text("Save") }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text("Cancel", color = Palette.textSecondary) } },
+        dismissButton = { TextButton(onClick = onClose, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.textSecondary) } },
     )
 }

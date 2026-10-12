@@ -114,8 +114,8 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { save() }),
                                 modifier = Modifier.fillMaxWidth().focusRequester(nameFocus).semantics { contentDescription = "Sequence name" },
                             )
-                            Spacer(Modifier.height(10.dp))
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Spacer(Modifier.height(12.dp))
+                            FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Column(Modifier.semantics { contentDescription = "A random time in this range, drawn fresh each time. Empty uses the theme default." }) {
                                     FieldLabel("Time on each preset")
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -133,7 +133,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                                     }
                                 }
                             }
-                            Spacer(Modifier.height(10.dp))
+                            Spacer(Modifier.height(12.dp))
                             FieldLabel("At the end")
                             Segmented(END_OPTIONS.map { it.second }, END_OPTIONS.indexOfFirst { it.first == d.atEnd }.coerceAtLeast(0), { i ->
                                 editor.editSequence { it.copy(atEnd = END_OPTIONS[i].first) }
@@ -144,7 +144,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                                         val p = ui.presets.firstOrNull { it.id == id }
                                         Text(
                                             (p?.name ?: id) + marks(p), color = Palette.text, fontSize = 12.sp,
-                                            modifier = Modifier.background(Palette.card, RoundedCornerShape(10.dp)).border(1.dp, Palette.border, RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
+                                            modifier = Modifier.background(Palette.card, RoundedCornerShape(12.dp)).border(1.dp, Palette.border, RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 3.dp),
                                         )
                                         Text("→", color = Palette.textMuted, fontSize = 12.sp)
                                     }
@@ -232,7 +232,7 @@ private fun AddPresetMenu(ui: EditorUi, steps: List<String>, link: Boolean = fal
     var open by remember { mutableStateOf(false) }
     Box {
         if (link) {
-            TextButton(onClick = { open = true }) { Text("Add preset", color = Palette.accent) }
+            TextButton(onClick = { open = true }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Add preset", color = Palette.accent) }
         } else {
             OutlinedButton(onClick = { open = true }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                 Icon(SIcons.Plus, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
