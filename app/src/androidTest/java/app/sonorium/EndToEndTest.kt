@@ -250,11 +250,15 @@ class EndToEndTest {
 
     /** Types into a Compose text field: focus it first, then set the text; checks it arrived. */
     private fun typeInto(field: UiObject2, text: String) {
-        field.click()
+        runCatching { field.click() }
         Thread.sleep(400)
-        // A labelled Compose field can match a wrapper node: type into the focused EditText
-        val target = device.findObject(By.clazz("android.widget.EditText").focused(true)) ?: field
-        target.text = text
+        // A labelled Compose field can match a wrapper node: type into the focused EditText.
+        // A field that recomposes (focus arriving) goes stale: find it again.
+        for (attempt in 1..3) {
+            val target = device.findObject(By.clazz("android.widget.EditText").focused(true)) ?: field
+            if (runCatching { target.text = text }.isSuccess) break
+            Thread.sleep(500)
+        }
         Thread.sleep(400)
         if (device.findObject(By.text(text)) == null) {
             screenshot("99-typing")
