@@ -143,7 +143,7 @@ class EndToEndTest {
             Thread.sleep(3_500)
             find(By.text("Edit"), "No Edit on a theme card").click()
             need(By.text("Edit theme"), 15_000, "27-theme-editor", "The Theme Editor didn't open")
-            need(By.text("Background"), 15_000, "27-theme-sections", "No sections in the Theme Editor")
+            need(By.text("Tracks"), 15_000, "27-theme-sections", "No tracks toolbar in the Theme Editor")
             Thread.sleep(1_000)
             screenshot("27-theme-editor")
             find(By.text("New"), "No New preset button").click()
@@ -267,9 +267,12 @@ class EndToEndTest {
 
     /** Back doesn't always close the shade on newer Android; swipe it up too. */
     private fun closeNotificationShade() {
-        device.pressBack()
-        Thread.sleep(800)
-        if (device.hasObject(By.text("Manage")) || device.hasObject(By.res("com.android.systemui:id/notification_stack_scroller"))) {
+        // Back only while the shade shows: a Back that reaches the app leaves the server
+        if (device.currentPackageName == "com.android.systemui") {
+            device.pressBack()
+            Thread.sleep(800)
+        }
+        if (device.currentPackageName == "com.android.systemui" || device.hasObject(By.res("com.android.systemui:id/notification_stack_scroller"))) {
             device.swipe(device.displayWidth / 2, device.displayHeight - 50, device.displayWidth / 2, 50, 12)
             Thread.sleep(800)
         }

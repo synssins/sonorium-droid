@@ -158,6 +158,12 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
 
     Dialog(onDismissRequest = { cancel() }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         EditorSurface {
+            // Older Android focuses the first field of a new window (and opens the keyboard): not here
+            val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(150)
+                focusManager.clearFocus()
+            }
             BackHandler { if (ui.renaming != null) editor.startRename(null) else if (deleting != null) deleting = null else cancel() }
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
                 // Header
