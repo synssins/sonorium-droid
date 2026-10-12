@@ -16,6 +16,9 @@ RUNNER=app.sonorium.debug.test/androidx.test.runner.AndroidJUnitRunner
 LINK_URI_B64=$(python3 e2e/make_link.py https://127.0.0.1:8808 10.0.2.2 "$CI_ADMIN" "$CI_PASSWORD")
 
 set +e
+# QA screen tour, fresh install (no server yet): recorded, never fails the run
+adb shell am instrument -w -r -e class app.sonorium.ScreenTourTest#offline "$RUNNER" > e2e-out/tour-instrumentation.txt 2>&1
+
 adb shell am instrument -w -r \
   -e linkUri "$LINK_URI_B64" \
   -e channelName "'$CHANNEL_NAME'" \
@@ -51,6 +54,14 @@ if [ "$e2e" -eq 0 ] && [ "${SCREENS:-1}" = "1" ]; then
   adb shell wm density reset
   adb shell settings put system font_scale 1.0
 fi
+# QA screen tour with the server: linked, unreachable, then removed in the app (last: it unlinks)
+if [ "$e2e" -eq 0 ]; then
+  for m in linked unreachable removed; do
+    adb shell am instrument -w -r -e class "app.sonorium.ScreenTourTest#$m" "$RUNNER" >> e2e-out/tour-instrumentation.txt 2>&1
+  done
+  adb shell cmd connectivity airplane-mode disable || true
+  adb shell svc wifi enable || true
+fi
 set -e
 
 adb pull /sdcard/Android/data/app.sonorium.debug/files/e2e e2e-out/screens || true
@@ -84,6 +95,25 @@ if [ -d e2e-out/screens ]; then
       done
     done
   } > e2e-out/screens/README.md
+fi
+
+# The QA tour's gallery: every state, every screen
+if [ -d e2e-out/screens/tour ]; then
+  {
+    echo "# QA screen tour"
+    for d in e2e-out/screens/tour/*/; do
+      state=$(basename "$d")
+      echo
+      echo "## $state"
+      for f in "$d"*.png; do
+        [ -e "$f" ] || continue
+        echo
+        echo "**$(basename "$f" .png)**"
+        echo
+        echo "<img src=\"$state/$(basename "$f")\" width=\"360\">"
+      done
+    done
+  } > e2e-out/screens/tour/README.md
 fi
 
 exit "$e2e"
