@@ -26,7 +26,7 @@ object PhoneEngine {
 
     /** Opens the engine on a prepared theme (closing any other); returns its presets. */
     fun open(context: Context, prepared: ThemePrep.Prepared, presetId: String?, volume: Float, sequenceId: String? = null): List<Preset> = synchronized(lock) {
-        player?.callAttr("close")
+        player?.let { old -> player = null; runCatching { old.callAttr("close") } }
         val p = python(context).getModule("phone").callAttr("Player", prepared.themeDir.path, prepared.pcmDir.path, presetId, volume.toDouble(), System.nanoTime() and 0x7fffffff, sequenceId)
         player = p
         presetsOf(p)
@@ -54,6 +54,27 @@ object PhoneEngine {
 
     /** The sequence's next step now; "sequence", "playlist", "end" or "". */
     fun next(): String = synchronized(lock) { player?.callAttr("next")?.toString().orEmpty() }
+
+    /**
+     * The sequence part of the engine's status: [running] false once a sequence that doesn't repeat has
+     * finished (or none is set); [presetId] is the preset playing now.
+     */
+    data class SequenceStatus(val running: Boolean, val step: Step?, val presetId: String?)
+
+    /** The engine's sequence status, or null when nothing is open. */
+    fun sequenceStatus(): SequenceStatus? = synchronized(lock) {
+        val p = player ?: return null
+        val status = runCatching { org.json.JSONObject(p.callAttr("status").toString()) }.getOrNull() ?: return null
+        val preset = status.optString("preset_id").takeIf { it.isNotEmpty() && !status.isNull("preset_id") }
+        val seq = status.optJSONObject("sequence") ?: return SequenceStatus(false, null, preset)
+        if (!seq.optBoolean("running", true)) return SequenceStatus(false, null, preset)
+        val step = Step(
+            seq.optString("current_preset_name").ifBlank { seq.optString("current_preset_id") },
+            seq.optInt("step"), seq.optInt("steps"),
+            if (seq.isNull("seconds_left")) null else seq.optDouble("seconds_left").toInt(),
+        )
+        SequenceStatus(true, step, preset)
+    }
 
     /** The running sequence's step, or null. */
     fun step(): Step? = synchronized(lock) {
@@ -108,8 +129,10 @@ object PhoneEngine {
     fun setVolume(volume: Float) = synchronized(lock) { player?.callAttr("set_volume", volume.toDouble()) }
 
     fun close() = synchronized(lock) {
-        player?.callAttr("close")
+        val p = player
         player = null
+        runCatching { p?.callAttr("close") }.onFailure { android.util.Log.w("PhoneEngine", "close failed", it) }
+        Unit
     }
 
     /** Bytes of PCM one "file" holds: about 6.7 hours; the player starts a new one when it ends. */

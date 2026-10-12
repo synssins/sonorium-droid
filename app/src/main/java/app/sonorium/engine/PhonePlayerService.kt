@@ -1,6 +1,5 @@
 package app.sonorium.engine
 
-import android.app.PendingIntent
 import android.content.Intent
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -17,11 +16,15 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import app.sonorium.MainActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 
 /**
  * A theme played on this phone: the engine's output ([EngineDataSource]) in ExoPlayer, in the
- * background, with the lock screen and notification controls of a media session. Pause stops it.
+ * background, with the lock screen and notification controls of a media session. Pause (lock screen,
+ * headset) pauses; Stop, and Play in the app, start the stream again.
  */
 @OptIn(UnstableApi::class)
 class PhonePlayerService : MediaSessionService() {
@@ -29,6 +32,7 @@ class PhonePlayerService : MediaSessionService() {
     private var session: MediaSession? = null
     private var title = ""
     private var wanted = false
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
         super.onCreate()
@@ -59,20 +63,21 @@ class PhonePlayerService : MediaSessionService() {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                PhonePlayer.onError("Playback stopped: ${error.message ?: error.errorCodeName}")
+                android.util.Log.e("PhonePlayer", "Playback error ${error.errorCodeName}", error)
+                PhonePlayer.onError("Playback stopped unexpectedly. Press Play to start again.")
                 end()
             }
         })
         val player = object : ForwardingPlayer(exo) {
             override fun play() = if (wanted) exo.play() else PhonePlayer.resume(this@PhonePlayerService)
-            override fun pause() = end()
+            // Pause keeps the stream (Play resumes it); Stop ends it
+            override fun pause() = if (wanted) exo.pause() else end()
             override fun stop() = end()
-            override fun setPlayWhenReady(playWhenReady: Boolean) = if (playWhenReady) play() else end()
+            override fun setPlayWhenReady(playWhenReady: Boolean) = if (playWhenReady) play() else pause()
         }
-        val open = PendingIntent.getActivity(
-            this, 1, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
+        // Tapping the notification: back to the main screen already open (not a second one)
+        val open = OpenApp.pendingIntent(this, OPEN_REQUEST)
+        OpenApp.addLastServer(this, OPEN_REQUEST, scope)
         session = MediaSession.Builder(this, player).setId("phone").setSessionActivity(open).build().also { addSession(it) }
     }
 
@@ -116,11 +121,13 @@ class PhonePlayerService : MediaSessionService() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        if (!wanted) stopSelf()
+        // Swiped away while stopped or paused: nothing to keep going
+        if (!wanted || !exo.playWhenReady) end()
     }
 
     override fun onDestroy() {
         if (running === this) running = null
+        scope.cancel()
         session?.release()
         session = null
         exo.release()
@@ -133,7 +140,12 @@ class PhonePlayerService : MediaSessionService() {
         const val ACTION_STOP = "app.sonorium.engine.STOP"
         const val EXTRA_TITLE = "title"
 
+        private const val OPEN_REQUEST = 1
+
         @Volatile private var running: PhonePlayerService? = null
+
+        /** The service exists (playing, paused, or stopping). */
+        val isRunning: Boolean get() = running != null
 
         /** Renames what's playing (main thread), when the service is running. */
         fun retitle(title: String) {
