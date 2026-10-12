@@ -78,7 +78,10 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
 ## Offline playback (in progress; plan and requirements in the handoff repo: to-app/29, 30, 33; to-server/12)
 Keep its commercial details out of this public repo. Steps: 1 app opens without a server (`e129100`),
 2 themes on this phone + Import (`16c54b7`), 3 the engine in the app + the On this phone view (`a7e15b0`),
-4 download from the server's theme packages, 5 the entitlement screen (local "yes" in test builds).
+4 download from the server's theme packages (`97cd3b3`: server Themes › ⋯ › Save to phone / Update on
+phone; `local/ThemeDownloader.kt`, `PackageRules.kt` (content hash, tested against the server's Tavern
+hash), `.sonorium-package.json` marker with the server's playback values, read by `phone.py`; device test
+`PackageDownloadTest`), 5 the entitlement screen (local "yes" in test builds).
 Code: `local/ThemeStore.kt` (SAF folder), `local/ProEntitlement.kt`, `engine/` (ThemePrep, PhoneEngine,
 EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.kt`, `PhoneView.kt`,
 `app/src/main/python/phone.py` (+ Engine Lab's engine files via Chaquopy `srcDir`). First-run wizard:
