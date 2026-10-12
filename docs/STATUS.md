@@ -75,6 +75,15 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
   `messageOf`, `waitForRestart` for Phase 3 pages. Settings menu in the web UI's order.
 - Still in the web view: Users & devices and Keys (never native), plugin-framework pages.
 
+## Offline playback (in progress; plan and requirements in the handoff repo: to-app/29, 30, 33; to-server/12)
+Keep its commercial details out of this public repo. Steps: 1 app opens without a server (`e129100`),
+2 themes on this phone + Import (`16c54b7`), 3 the engine in the app + the On this phone view (`a7e15b0`),
+4 download from the server's theme packages, 5 the entitlement screen (local "yes" in test builds).
+Code: `local/ThemeStore.kt` (SAF folder), `local/ProEntitlement.kt`, `engine/` (ThemePrep, PhoneEngine,
+EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.kt`, `PhoneView.kt`,
+`app/src/main/python/phone.py` (+ Engine Lab's engine files via Chaquopy `srcDir`). First-run wizard:
+`ui/wizard/FirstRunWizard.kt`, off (`FirstRun.ENABLED`).
+
 ## State at hand-over
 - **alpha13** (~13:40 UTC, `557a8f9` = green `2d057a3` + notes): 48 dp standard, R4, R9, R10, `accounts`.
   to-server/11 asks the server session to validate R4, R9, R10 and the 48 sizes.
@@ -97,7 +106,7 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
    text 15/17 → 16, 20 → 18. **Still to do:** card/dialog radius 12 (cards use 8), spacing (row padding
    6×12, card padding 12/16, gaps 8), list rows min 48 everywhere, text buttons 44, captions 11.
    Also to do: a fixed debug keystore in CI so test installs upgrade in place (to-app/26); Engine Lab notes
-   to-app/27 (share the log from the phone), 28 (first S25 run); to-app/29 Pro mode (boards first).
+   to-app/27 (share the log from the phone), 28 (first S25 run).
 1. If `1ea7f5d` is green: release **v0.1.0-alpha12**, note in to-server/ (R1-R3, R5-R8 fixed; R4, R9 open).
    If red: fix (see e2e-results summary.md and screens/99-*.png).
 1. Read the server session's validation of alpha13 in to-app/ (and to-app/30 theme-packages, unread).
