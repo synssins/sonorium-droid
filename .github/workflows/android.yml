@@ -22,6 +22,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
@@ -35,6 +37,28 @@ jobs:
 
       - name: Unit tests, lint and debug build
         run: ./gradlew --stacktrace testDebugUnitTest lintDebug assembleDebug
+
+      # The newest push's debug APK, for testers on other machines: a pre-release
+      # named ci-latest (Actions artifact storage isn't available on this account).
+      - name: Publish the debug APK as ci-latest
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          short=${GITHUB_SHA::7}
+          cp app/build/outputs/apk/debug/app-debug.apk "sonorium-debug-$short.apk"
+          git tag -f ci-latest "$GITHUB_SHA"
+          git push -f origin refs/tags/ci-latest
+          notes="Debug build (app.sonorium.debug) of ${GITHUB_REF_NAME} at $short: ${{ github.server_url }}/${{ github.repository }}/commit/$GITHUB_SHA"
+          if gh release view ci-latest >/dev/null 2>&1; then
+            gh release edit ci-latest --notes "$notes" --prerelease
+            for asset in $(gh release view ci-latest --json assets -q '.assets[].name'); do
+              gh release delete-asset ci-latest "$asset" -y
+            done
+          else
+            gh release create ci-latest --verify-tag --prerelease --title "CI build (newest push)" --notes "$notes"
+          fi
+          gh release upload ci-latest "sonorium-debug-$short.apk" --clobber
 
   device:
     # The app on Android emulators against a real Sonorium server (Docker),
