@@ -17,10 +17,12 @@ data class ServerInfo(
     @SerialName("login_required") val loginRequired: Boolean = false,
     val fingerprint: String? = null,
     val plugins: List<String> = emptyList(),
+    /** User accounts are loaded (username + password sign-in works); newer servers send it (to-app/21). */
+    val accounts: Boolean? = null,
     @SerialName("personal_channel") val personalChannel: Boolean = false,
     @SerialName("boot_id") val bootId: String? = null,
 ) {
-    val hasUsers: Boolean get() = "users" in plugins
+    val hasUsers: Boolean get() = accounts ?: ("users" in plugins)
 
     @Serializable
     data class Ports(val http: Int, val https: Int? = null)
