@@ -25,7 +25,7 @@ class CastStreamTest {
                 phase += 2 * Math.PI * 440 / 44_100
             }
             buf.size
-        }, bind = InetAddress.getLoopbackAddress())
+        }, bind = InetAddress.getByName("127.0.0.1"))
         server.use {
             val conn = URL("http://127.0.0.1:${server.port}${StreamServer.PATH}").openConnection() as HttpURLConnection
             assertEquals(200, conn.responseCode)
