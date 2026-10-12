@@ -14,6 +14,7 @@ import com.chaquo.python.android.AndroidPlatform
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,6 +32,14 @@ class PhoneEngineTest {
         if (!Python.isStarted()) Python.start(AndroidPlatform(context))
         val root = File(context.cacheDir, "engine-test").apply { deleteRecursively(); mkdirs() }
         val theme = File(Python.getInstance().getModule("lab").callAttr("make_test_theme", root.path).toString())
+        // A sequence over the test theme's two presets (presets.json, as the server stores it)
+        File(theme, "presets.json").let { f ->
+            val doc = org.json.JSONObject(f.readText())
+            doc.put("sequences", org.json.JSONObject().put("walk", org.json.JSONObject().put("name", "Walk")
+                .put("presets", org.json.JSONArray().put("calm").put("busy")).put("at_end", "restart").put("hold_min", 5).put("hold_max", 5).put("ramp", 2)))
+            f.writeText(doc.toString())
+            assertTrue("presets.json sequences not read", PhoneEngine.sequencesFromJson(f.readText()).any { it.id == "walk" })
+        }
         // Decode every audio file the way ThemePrep does (mirror layout, .wav)
         val pcm = File(root, "pcm")
         theme.walkTopDown().filter { it.isFile && it.extension.lowercase() == "wav" }.forEach { f ->
@@ -45,6 +54,16 @@ class PhoneEngineTest {
         while (samples.hasRemaining()) peak = maxOf(peak, kotlin.math.abs(samples.get().toInt()))
         assertTrue("The engine rendered silence (peak $peak)", peak > 500)
         assertTrue("presets: $presets", presets.size >= 0)
+
+        // The sequence runs: its step shows, Next moves on
+        assertTrue("No sequences from the engine", PhoneEngine.sequences().any { it.id == "walk" })
+        PhoneEngine.startSequence("walk")
+        PhoneEngine.render(ByteArray(44_100 * 2), 0, 44_100 * 2)
+        val first = PhoneEngine.step()
+        assertTrue("No sequence step: $first", first != null && first.step == 1 && first.steps == 2)
+        assertEquals("sequence", PhoneEngine.next())
+        PhoneEngine.render(ByteArray(8_820), 0, 8_820)
+        assertEquals(2, PhoneEngine.step()?.step)
 
         // Another theme while it plays: the engine crossfades to it (Chris's bug: the theme didn't switch)
         val other = File(Python.getInstance().getModule("lab").callAttr("make_test_theme", File(root, "other").apply { mkdirs() }.path).toString())

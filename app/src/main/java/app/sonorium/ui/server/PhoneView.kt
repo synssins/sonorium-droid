@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,12 +61,30 @@ fun PhoneView(themes: List<LocalTheme>) {
             FieldLabel("Preset")
             PickerField(
                 label = "Preset",
-                options = listOf(PickOption("", "Default settings")) + s.presets.map { PickOption(it.id, it.name, isDefault = it.isDefault) },
-                current = s.presetId ?: "",
-                onPick = { PhonePlayer.setPreset(it.value.ifEmpty { null }) },
+                options = listOf(PickOption("", "Default settings")) + s.presets.map { PickOption(it.id, it.name, isDefault = it.isDefault) } +
+                    s.sequences.mapIndexed { i, q -> PickOption("seq:${q.id}", q.name, sequence = true, separatorBefore = i == 0) },
+                current = s.sequenceId?.let { "seq:$it" } ?: s.presetId ?: "",
+                onPick = { o ->
+                    if (o.value.startsWith("seq:")) PhonePlayer.startSequence(o.value.removePrefix("seq:"))
+                    else PhonePlayer.setPreset(o.value.ifEmpty { null })
+                },
                 placeholder = "Default settings",
                 enabled = s.presets.isNotEmpty() && !busy,
             )
+            // A running sequence: its step and countdown, with Next (as on a server channel)
+            if (s.sequenceId != null && s.playing) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        s.step?.let { st -> "Step ${st.step} of ${st.steps}: ${st.name}" + (st.secondsLeft?.let { " · next in ${countdown(it)}" } ?: "") } ?: "Starting…",
+                        color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = PhonePlayer::nextStep, modifier = Modifier.heightIn(min = UiSize.SMALL.dp)) {
+                        Icon(SIcons.Next, null, tint = Palette.accent, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Next", color = Palette.accent)
+                    }
+                }
+            }
             FieldLabel("Volume")
             PercentSlider(s.volume, "Volume on this phone", onRelease = PhonePlayer::setVolume)
             s.preparing?.let { (done, total) ->
@@ -97,4 +116,12 @@ fun PhoneView(themes: List<LocalTheme>) {
             }
         }
     }
+}
+
+/** "4:05" / "1:02:03". */
+private fun countdown(seconds: Int): String {
+    val h = seconds / 3600
+    val m = seconds % 3600 / 60
+    val sec = seconds % 60
+    return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }

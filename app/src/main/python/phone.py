@@ -31,12 +31,13 @@ class Player:
     set_theme() crossfades to another prepared theme while playing.
     """
 
-    def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0):
+    def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0, sequence_id=None):
         self._mirrors = [mirror_lookup(theme_dir, cache_dir)]
         self._roots = [os.path.realpath(theme_dir)]
         self.engine = Engine(
             theme_dir,
             preset_id=preset_id or None,
+            sequence_id=sequence_id or None,
             playback_values=package_values(theme_dir),
             seed=int(seed),
             decoder=PcmFileDecoder(lookup=self._lookup),
@@ -50,13 +51,30 @@ class Player:
                 return mirror(path)
         return path
 
-    def set_theme(self, theme_dir, cache_dir, preset_id=None):
+    def set_theme(self, theme_dir, cache_dir, preset_id=None, sequence_id=None):
         """Crossfades to another prepared theme (its default preset when preset_id is None)."""
         root = os.path.realpath(theme_dir)
         if root not in self._roots:
             self._roots.insert(0, root)
             self._mirrors.insert(0, mirror_lookup(theme_dir, cache_dir))
-        self.engine.set_theme(theme_dir, preset_id=preset_id)
+        self.engine.set_theme(theme_dir, preset_id=preset_id, sequence_id=sequence_id or None)
+
+    def sequences(self):
+        """[{"id", "name"}] as JSON."""
+        return json.dumps([{"id": sid, "name": name or sid} for sid, name in (self.engine.sequences or {}).items()])
+
+    def start_sequence(self, sequence_id):
+        self.engine.start_sequence(sequence_id)
+
+    def stop_sequence(self):
+        self.engine.stop_sequence()
+
+    def next(self):
+        return self.engine.next() or ""
+
+    def status(self):
+        """engine.status() as JSON (the running sequence's step and seconds left)."""
+        return json.dumps(self.engine.status(), default=str)
 
     def render(self, n):
         return self.engine.render(int(n)).tobytes()

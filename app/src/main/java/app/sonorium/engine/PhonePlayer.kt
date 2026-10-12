@@ -21,6 +21,10 @@ object PhonePlayer {
         val theme: LocalTheme? = null,
         val presets: List<PhoneEngine.Preset> = emptyList(),
         val presetId: String? = null,
+        val sequences: List<PhoneEngine.Sequence> = emptyList(),
+        /** A sequence runs (picked where the preset is picked); its step below. */
+        val sequenceId: String? = null,
+        val step: PhoneEngine.Step? = null,
         val volume: Int = 80,
         val playing: Boolean = false,
         /** Getting the theme ready: files done of total (null when not preparing). */
@@ -43,11 +47,13 @@ object PhonePlayer {
         if (_state.value.theme?.docId == theme.docId) return
         val app = context.applicationContext as SonoriumApp
         val switching = _state.value.playing
-        _state.update { it.copy(theme = theme, presets = emptyList(), presetId = null, error = null) }
+        _state.update { it.copy(theme = theme, presets = emptyList(), presetId = null, sequences = emptyList(), sequenceId = null, step = null, error = null) }
         scope.launch {
-            val presets = PhoneEngine.presetsFromJson(app.themeStore.readFile(theme, "presets.json").orEmpty())
+            val text = app.themeStore.readFile(theme, "presets.json").orEmpty()
+            val presets = PhoneEngine.presetsFromJson(text)
+            val sequences = PhoneEngine.sequencesFromJson(text)
             if (_state.value.theme?.docId == theme.docId && _state.value.presets.isEmpty()) {
-                _state.update { it.copy(presets = presets, presetId = it.presetId ?: presets.firstOrNull { p -> p.isDefault }?.id) }
+                _state.update { it.copy(presets = presets, sequences = sequences, presetId = it.presetId ?: presets.firstOrNull { p -> p.isDefault }?.id) }
             }
         }
         if (switching) play(context)
@@ -66,11 +72,12 @@ object PhonePlayer {
                     val s = _state.value
                     val presets = withContext(Dispatchers.IO) {
                         // Already playing another theme: crossfade to this one; else open the engine on it
-                        if (PhoneEngine.isOpen && openFor != null) PhoneEngine.setTheme(prepared, s.presetId).also { PhoneEngine.setVolume(s.volume / 100f) }
-                        else PhoneEngine.open(app, prepared, s.presetId, s.volume / 100f)
+                        if (PhoneEngine.isOpen && openFor != null) PhoneEngine.setTheme(prepared, s.presetId, s.sequenceId).also { PhoneEngine.setVolume(s.volume / 100f) }
+                        else PhoneEngine.open(app, prepared, s.presetId, s.volume / 100f, s.sequenceId)
                     }
+                    val sequences = withContext(Dispatchers.IO) { PhoneEngine.sequences() }
                     openFor = theme.docId
-                    _state.update { st -> st.copy(presets = presets, presetId = st.presetId ?: presets.firstOrNull { it.isDefault }?.id, preparing = null) }
+                    _state.update { st -> st.copy(presets = presets, sequences = sequences, presetId = st.presetId ?: presets.firstOrNull { it.isDefault }?.id, preparing = null) }
                 }
                 if (!_state.value.playing) {
                     app.startService(Intent(app, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, theme.name))
@@ -94,8 +101,41 @@ object PhonePlayer {
         context?.applicationContext?.let { it.startService(Intent(it, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_STOP)) }
     }
 
+    /** Runs one of the theme's sequences (from its first preset); a preset pick stops it. */
+    fun startSequence(sequenceId: String) {
+        _state.update { it.copy(sequenceId = sequenceId) }
+        if (openFor != null) scope.launch(Dispatchers.IO) {
+            runCatching { PhoneEngine.startSequence(sequenceId) }.onFailure { e -> _state.update { it.copy(sequenceId = null, error = e.message) } }
+            refreshStep()
+        }
+    }
+
+    /** The running sequence's next step now. */
+    fun nextStep() {
+        if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.next() }; refreshStep() }
+    }
+
+    private fun refreshStep() {
+        val step = runCatching { PhoneEngine.step() }.getOrNull()
+        _state.update { it.copy(step = if (it.sequenceId == null) null else step) }
+    }
+
+    private var stepPoll: Job? = null
+
+    /** While playing a sequence: its step and countdown, once a second. */
+    private fun pollSteps(on: Boolean) {
+        stepPoll?.cancel()
+        if (!on) return
+        stepPoll = scope.launch(Dispatchers.IO) {
+            while (true) {
+                if (_state.value.sequenceId != null) refreshStep()
+                kotlinx.coroutines.delay(1_000)
+            }
+        }
+    }
+
     fun setPreset(presetId: String?) {
-        _state.update { it.copy(presetId = presetId) }
+        _state.update { it.copy(presetId = presetId, sequenceId = null, step = null) }
         if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.setPreset(presetId) } }
     }
 
@@ -104,7 +144,11 @@ object PhonePlayer {
         if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.setVolume(volume / 100f) } }
     }
 
-    internal fun onPlaying(playing: Boolean) = _state.update { it.copy(playing = playing) }
+    internal fun onPlaying(playing: Boolean) {
+        val was = _state.value.playing
+        _state.update { it.copy(playing = playing) }
+        if (playing != was) pollSteps(playing)
+    }
 
     internal fun onError(text: String) = _state.update { it.copy(error = text, playing = false) }
 }
