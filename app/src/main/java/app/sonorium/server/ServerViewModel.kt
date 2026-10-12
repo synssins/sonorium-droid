@@ -680,6 +680,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         try {
             api.refreshThemes()
             refreshThemeList()
+            // The phone's copies too (Save to phone / Update on phone)
+            refreshPackages()
+            refreshLocalThemes()
             toast("Themes refreshed", error = false)
         } catch (e: Exception) {
             failOr(e, "Failed to refresh themes")

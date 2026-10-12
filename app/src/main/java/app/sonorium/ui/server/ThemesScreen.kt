@@ -203,7 +203,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                         onEdit = { onEdit(t) },
                         onExport = { model.exportTheme(t) { name, bytes -> pendingExport = bytes; saveZip.launch(name) } },
                         onDelete = { deleting = t },
-                        phoneAction = app.sonorium.local.PackageRules.action(packages?.get(t.id), localThemes),
+                        phoneAction = app.sonorium.local.PackageRules.action(packages?.get(t.id), localThemes)?.let { a -> packages?.get(t.id)?.sizeBytes?.takeIf { it > 0 }?.let { "$a (${bytesText(it)})" } ?: a },
                         onPhone = app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) != app.sonorium.local.PackageRules.OnPhone.NONE,
                         downloading = downloads[t.id],
                         onSaveToPhone = { saveToPhone(t.id) },
