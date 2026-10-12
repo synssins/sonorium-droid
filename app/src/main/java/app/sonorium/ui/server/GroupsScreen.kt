@@ -146,7 +146,7 @@ private fun GroupRow(
             IconBox(
                 if (expanded) SIcons.ChevronDown else SIcons.ChevronRight,
                 if (expanded) "Hide speakers in ${group.name}" else "Show speakers in ${group.name}",
-                onToggle, size = 40, background = Palette.background, border = Palette.background,
+                onToggle, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background,
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
@@ -168,7 +168,7 @@ private fun GroupRow(
                     if (chips.size > max) Text("+${chips.size - max}", color = Palette.textSecondary, fontSize = 12.sp)
                 }
             }
-            OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 40.dp)) {
+            OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                 Text("Edit", color = Palette.text)
             }
             Spacer(Modifier.width(6.dp))
@@ -284,7 +284,7 @@ private fun GroupEditor(
             Column(Modifier.safeDrawingPadding().imePadding().fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(if (edit == null) "Add group" else "Edit group", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    IconBox(SIcons.Close, "Close", onClose, size = 44)
+                    IconBox(SIcons.Close, "Close", onClose, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
                     item {
@@ -406,7 +406,7 @@ private fun TreeRow(
     excluded: Boolean = false,
     onToggle: () -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = (indent * 24).dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).padding(start = (indent * 24).dp), verticalAlignment = Alignment.CenterVertically) {
         Checkbox(
             checked = checked, onCheckedChange = { onToggle() }, enabled = enabled,
             colors = CheckboxDefaults.colors(checkedColor = Palette.accent, checkmarkColor = Palette.bar, disabledCheckedColor = Palette.accent.copy(alpha = 0.45f)),
@@ -429,7 +429,7 @@ private fun TreeRow(
 
 @Composable
 private fun SpeakerTreeRow(indent: Int, s: Speaker, checked: Boolean, impliedBy: String?, excluded: Boolean, onToggle: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = (indent * 24).dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).padding(start = (indent * 24).dp), verticalAlignment = Alignment.CenterVertically) {
         Checkbox(
             checked = checked || impliedBy != null, onCheckedChange = { onToggle() }, enabled = impliedBy == null,
             colors = CheckboxDefaults.colors(checkedColor = Palette.accent, checkmarkColor = Palette.bar, disabledCheckedColor = Palette.accent.copy(alpha = 0.45f)),

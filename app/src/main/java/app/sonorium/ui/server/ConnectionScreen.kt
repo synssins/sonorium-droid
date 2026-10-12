@@ -173,11 +173,11 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
                         if (r.test) {
                             OutlinedButton(
                                 onClick = { test(r) }, enabled = r.configured && rowKey(r) !in testing,
-                                shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 40.dp),
+                                shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                             ) { Text("Test", color = if (r.configured) Palette.text else Palette.textMuted) }
                         }
                         OutlinedButton(
-                            onClick = { editing = r }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 40.dp),
+                            onClick = { editing = r }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                         ) { Text("Edit", color = Palette.text) }
                         MoreMenu("More for ${r.title}", listOf(MenuAction("Remove…", SIcons.Trash, danger = true, enabled = r.configured) {
                             ask = Ask("Remove ${r.title}?", null, "Remove") { remove(r) }

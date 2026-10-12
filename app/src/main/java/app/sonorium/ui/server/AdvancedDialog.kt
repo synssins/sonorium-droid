@@ -140,7 +140,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         Text(title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(sub, color = Palette.textSecondary, fontSize = 12.sp)
                     }
-                    IconBox(SIcons.Help, "Advanced transitions help", { help = true }, size = 44)
+                    IconBox(SIcons.Help, "Advanced transitions help", { help = true }, size = app.sonorium.ui.UiSize.STANDARD)
                     Spacer(Modifier.width(6.dp))
                     MoreMenu("More transition actions", listOf(MenuAction("Reset to Smooth…", SIcons.Refresh) {
                         ask = Ask("Reset every track in “$name” to Smooth?", null, "Reset") {
@@ -150,7 +150,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         }
                     }))
                     Spacer(Modifier.width(6.dp))
-                    IconBox(SIcons.Close, "Cancel", onClose, size = 44)
+                    IconBox(SIcons.Close, "Cancel", onClose, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 // Tabs with counts
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -163,7 +163,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         Row(
                             Modifier
                                 .weight(1f)
-                                .heightIn(min = 44.dp)
+                                .heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)
                                 .background(if (on) Palette.card else Palette.backgroundSecondary, RoundedCornerShape(8.dp))
                                 .border(1.dp, if (on) Palette.accent else Palette.border, RoundedCornerShape(8.dp))
                                 .clickable { tab = k }
@@ -223,7 +223,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                 }
                 Row(Modifier.fillMaxWidth().background(Palette.bar).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(summary, color = Palette.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = onClose, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 44.dp)) {
+                    OutlinedButton(onClick = onClose, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
                         Text("Cancel", color = Palette.text)
                     }
                     Button(
@@ -237,7 +237,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         enabled = !loading,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                        modifier = Modifier.heightIn(min = 44.dp),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                     ) { Text("Save", fontWeight = FontWeight.SemiBold) }
                 }
             }
@@ -306,7 +306,7 @@ private fun WhileTrack(key: String, section: Section, group: String?, w: While, 
             }
             IconBox(
                 if (muted) SIcons.Muted else SIcons.Volume, if (muted) "Unmute" else "Mute", { set("muted" to JsonPrimitive(!muted)) },
-                size = 40, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
+                size = app.sonorium.ui.UiSize.SMALL, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
             )
             Spacer(Modifier.width(4.dp))
             WhileTrackMenu(key, section, group, w, onChange, editor)
@@ -345,7 +345,7 @@ private fun WhileTrackMenu(key: String, section: Section, group: String?, w: Whi
     val short = key.substringAfterLast('/')
     Box {
         Box {
-            IconBox(SIcons.More, "More for $short", { open = true }, size = 40)
+            IconBox(SIcons.More, "More for $short", { open = true }, size = app.sonorium.ui.UiSize.SMALL)
             if (dot) Box(Modifier.align(Alignment.TopEnd).padding(3.dp)) { Dot(Palette.accent, 6) }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 260.dp)) {
@@ -359,7 +359,7 @@ private fun WhileTrackMenu(key: String, section: Section, group: String?, w: Whi
                 }
                 HorizontalDivider(color = Palette.border)
                 val groupPause = group?.let { bool(w.groups[it]?.get("pause_between")) } == true
-                Row(Modifier.padding(horizontal = 16.dp).heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.padding(horizontal = 16.dp).heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Pause between plays" + if (groupPause) "  set by group" else "", color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
                     Switch(
                         checked = groupPause || bool(v["pause_between"]), enabled = !groupPause,
@@ -416,7 +416,7 @@ private fun WhileGroup(
         Modifier.fillMaxWidth().padding(top = 8.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp)).padding(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBox(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand $name" else "Collapse $name", onFold, size = 40)
+            IconBox(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand $name" else "Collapse $name", onFold, size = app.sonorium.ui.UiSize.SMALL)
             Spacer(Modifier.width(6.dp))
             Text(name, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
             Spacer(Modifier.width(6.dp))
@@ -424,15 +424,15 @@ private fun WhileGroup(
             Spacer(Modifier.weight(1f))
             IconBox(
                 if (muted) SIcons.Muted else SIcons.Volume, if (muted) "Unmute group" else "Mute group", { set("muted" to JsonPrimitive(!muted)) },
-                size = 40, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
+                size = app.sonorium.ui.UiSize.SMALL, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
             )
             Spacer(Modifier.width(4.dp))
             Box {
-                IconBox(SIcons.More, "More for group $name", { open = true }, size = 40)
+                IconBox(SIcons.More, "More for group $name", { open = true }, size = app.sonorium.ui.UiSize.SMALL)
                 DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 240.dp)) {
                     if (section == Section.EbbFlow) {
                         val rise = v["rise"]?.takeIf { it !is JsonNull }
-                        Row(Modifier.padding(horizontal = 16.dp).heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.padding(horizontal = 16.dp).heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text("Same Rise for every file", color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
                             Switch(
                                 checked = presetRise || rise != null, enabled = !presetRise,

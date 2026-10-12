@@ -82,7 +82,9 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
   (Back with the menu open left the server). R4, R9, R10 fixed in the commit after alpha12 (R4: a channel
   that left stays in `channels` and is in `left` too; R9: PickerField `openNow`; R10: a BackHandler for the
   open drawer). Needs CI, then alpha13 and a note asking to re-validate R4, R9, R10.
-- UI standard: `shared/ui-standards.md` (to-app/20); see Next 0. Chris to decide touch minimum 44 or 48.
+- UI standard: `shared/ui-standards.md` (to-app/20). **Touch minimum 48, decided by Chris (to-app/23)**:
+  `UiSize` Standard 48 / Small 44, top bar controls 48, collapsed channel row 56 (48 controls + 4).
+  Read **every** new to-app note before acting: I missed 23 once.
 - to-app/18 (Keys/Announcements core features, not merged on the server yet), to-app/21 (users-core:
   not read yet), windows notes: ignore.
 
@@ -92,7 +94,8 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
    row 48, glyphs 20/16, disabled 0.5); IconBox radius 6, glyph by size; every 32/36 dp icon button → 40;
    text 15/17 → 16, 20 → 18. **Still to do:** card/dialog radius 12 (cards use 8), spacing (row padding
    6×12, card padding 12/16, gaps 8), list rows min 48 everywhere, text buttons 44, captions 11.
-   **Waiting on Chris:** touch minimum 44 or 48 (doc uses 44; 48 → Standard 48, Small 44).
+   Also to do: a fixed debug keystore in CI so test installs upgrade in place (to-app/26); Engine Lab notes
+   to-app/27 (share the log from the phone), 28 (first S25 run); to-app/29 Pro mode (boards first).
 1. If `1ea7f5d` is green: release **v0.1.0-alpha12**, note in to-server/ (R1-R3, R5-R8 fixed; R4, R9 open).
    If red: fix (see e2e-results summary.md and screens/99-*.png).
 1. CI for the R4/R9/R10 commit → release alpha13 → to-server note (re-validate R4, R9, R10).

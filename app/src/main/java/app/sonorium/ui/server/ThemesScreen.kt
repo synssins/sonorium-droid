@@ -127,7 +127,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                     Column {
                         PageHeader("Themes", themes.size, help = "themes") {
                             Button(
-                                onClick = { creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 44.dp),
+                                onClick = { creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                             ) {
                                 Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
@@ -139,13 +139,13 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                                 MenuAction("Import theme…", SIcons.Upload) { pickZip.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
                                 MenuAction("Manage categories…", SIcons.Tag) { managing = true },
                                 MenuAction("Refresh", SIcons.Refresh, separatorBefore = true) { model.refreshThemesNow() },
-                            ), size = 44)
+                            ), size = app.sonorium.ui.UiSize.STANDARD)
                         }
                         OutlinedTextField(
                             value = query, onValueChange = { query = it }, singleLine = true,
                             placeholder = { Text("Search themes", color = Palette.textMuted) },
                             leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
-                            trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = 40, background = Palette.background, border = Palette.background) }) else null,
+                            trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background) }) else null,
                             modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search themes" },
                         )
                         Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -271,7 +271,7 @@ private fun ThemeCard(
                     if (t.isFavorite) SIcons.StarFilled else SIcons.Star,
                     if (t.isFavorite) "Remove from favorites" else "Add to favorites",
                     onFavorite, tint = if (t.isFavorite) Palette.warning else Palette.textSecondary,
-                    background = Palette.card, border = Palette.card, size = 40,
+                    background = Palette.card, border = Palette.card, size = app.sonorium.ui.UiSize.SMALL,
                 )
             }
             if (t.description.isNotBlank()) {
@@ -298,7 +298,7 @@ private fun ThemeCard(
                     color = if (previewing) Palette.accentSecondary else Palette.backgroundSecondary,
                     shape = CircleShape,
                     border = BorderStroke(1.dp, Palette.border),
-                    modifier = Modifier.size(44.dp).alpha(if (can) 1f else 0.4f)
+                    modifier = Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).alpha(if (can) 1f else app.sonorium.ui.UiSize.DISABLED_ALPHA)
                         .semantics { contentDescription = if (!can) "No tracks" else if (previewing) "Stop preview" else "Preview here" }
                         .clickable(enabled = can, onClick = onPreview),
                 ) {
@@ -307,7 +307,7 @@ private fun ThemeCard(
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 40.dp)) {
+                OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                     Text("Edit", color = Palette.text)
                 }
                 Spacer(Modifier.width(6.dp))
@@ -330,9 +330,9 @@ private fun PreviewBar(p: ServerViewModel.Preview, model: ServerViewModel) {
                 Text("Local Preview:", color = Palette.textSecondary, fontSize = 13.sp)
                 Spacer(Modifier.width(6.dp))
                 Text(p.name, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                IconBox(if (p.paused) SIcons.Play else SIcons.Pause, if (p.paused) "Play" else "Pause", { model.pausePreview() }, size = 40)
+                IconBox(if (p.paused) SIcons.Play else SIcons.Pause, if (p.paused) "Play" else "Pause", { model.pausePreview() }, size = app.sonorium.ui.UiSize.SMALL)
                 Spacer(Modifier.width(6.dp))
-                IconBox(SIcons.Close, "Close preview", { model.closePreview() }, size = 40)
+                IconBox(SIcons.Close, "Close preview", { model.closePreview() }, size = app.sonorium.ui.UiSize.SMALL)
             }
             PercentSlider(p.volume, "Preview volume", onRelease = { model.setPreviewVolume(it) }, onChange = { model.setPreviewVolume(it) })
         }
@@ -394,7 +394,7 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Categories", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                IconBox(SIcons.Close, "Close", onDismiss, size = 40, background = Palette.card, border = Palette.card)
+                IconBox(SIcons.Close, "Close", onDismiss, size = app.sonorium.ui.UiSize.SMALL, background = Palette.card, border = Palette.card)
             }
         },
         text = {
@@ -415,11 +415,11 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
                             }
                         }
                     } else {
-                        Row(Modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp), verticalAlignment = Alignment.CenterVertically) {
                             Text(c, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                             Badge(label)
                             Spacer(Modifier.width(6.dp))
-                            IconBox(SIcons.Trash, "Delete $c", { confirming = c }, size = 40)
+                            IconBox(SIcons.Trash, "Delete $c", { confirming = c }, size = app.sonorium.ui.UiSize.SMALL)
                         }
                     }
                 }

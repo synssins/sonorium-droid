@@ -67,13 +67,13 @@ fun PageHeader(title: String, count: Int?, modifier: Modifier = Modifier, help: 
 @Composable
 fun AddButton(label: String, narrow: Boolean, onClick: () -> Unit) {
     if (narrow) {
-        IconBox(SIcons.Plus, label, onClick, tint = Palette.bar, background = Palette.accent, border = Palette.accent, size = 44)
+        IconBox(SIcons.Plus, label, onClick, tint = Palette.bar, background = Palette.accent, border = Palette.accent, size = app.sonorium.ui.UiSize.STANDARD)
     } else {
         Button(
             onClick = onClick,
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-            modifier = Modifier.heightIn(min = 44.dp).semantics { contentDescription = label },
+            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = label },
         ) {
             Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
@@ -178,7 +178,7 @@ fun PromptDialog(message: String, initial: String, onOk: (String) -> Unit, onDis
 /** A labelled switch row (`.sw`). */
 @Composable
 fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth().heightIn(min = 44.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
         Switch(
             checked = checked,
@@ -224,6 +224,6 @@ fun EmptyState(title: String, sub: String?) {
 fun PageHelpButton(view: String) {
     val (title, lines) = HelpTexts.PAGES[view] ?: return
     var open by remember { mutableStateOf(false) }
-    IconBox(SIcons.Help, "Help: $title", { open = true }, size = 44)
+    IconBox(SIcons.Help, "Help: $title", { open = true }, size = app.sonorium.ui.UiSize.STANDARD)
     if (open) HelpPanel(title, lines) { open = false }
 }

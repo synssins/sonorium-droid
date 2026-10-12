@@ -139,7 +139,7 @@ fun PluginsPage(model: ServerViewModel) {
                         enabled = !uploading,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                        modifier = Modifier.heightIn(min = 44.dp).semantics { contentDescription = "Upload plugin. Plugin .zip" },
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Upload plugin. Plugin .zip" },
                     ) { Text(if (narrow) "Upload" else "Upload plugin") }
                     Spacer(Modifier.width(6.dp))
                     MoreMenu("More", listOf(MenuAction("Plugin requirements…") { requirements = true }))
@@ -236,7 +236,7 @@ private fun PluginRow(p: Plugin, model: ServerViewModel, onToggle: (Boolean) -> 
             IconBox(
                 if (open) SIcons.ChevronDown else SIcons.ChevronRight,
                 if (!p.hasOptions) "No options" else if (!p.enabled) "Enable to use" else if (open) "Hide ${p.name}" else "Show ${p.name}",
-                { model.pluginOpen[p.id] = !open }, size = 40, enabled = p.enabled && p.hasOptions,
+                { model.pluginOpen[p.id] = !open }, size = app.sonorium.ui.UiSize.SMALL, enabled = p.enabled && p.hasOptions,
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f).alpha(if (p.enabled) 1f else 0.55f)) {
@@ -255,7 +255,7 @@ private fun PluginRow(p: Plugin, model: ServerViewModel, onToggle: (Boolean) -> 
                 colors = SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
                 modifier = Modifier.semantics { contentDescription = if (p.enabled) "Enabled: ${p.name}" else "Disabled: ${p.name}" },
             )
-            MoreMenu("More for ${p.name}", listOf(MenuAction("Uninstall…", SIcons.Trash, danger = true) { onUninstall() }), size = 40)
+            MoreMenu("More for ${p.name}", listOf(MenuAction("Uninstall…", SIcons.Trash, danger = true) { onUninstall() }), size = app.sonorium.ui.UiSize.SMALL)
         }
         if (p.description.isNotEmpty()) Text(p.description, color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.padding(start = 44.dp, top = 4.dp).alpha(if (p.enabled) 1f else 0.55f))
         if (open) PluginForm(p, model, onChanged)

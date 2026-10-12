@@ -183,7 +183,7 @@ private fun PlaylistRow(
             IconBox(
                 if (expanded) SIcons.ChevronDown else SIcons.ChevronRight,
                 if (expanded) "Hide entries of ${playlist.name}" else "Show entries of ${playlist.name}",
-                onToggle, size = 40, background = Palette.background, border = Palette.background,
+                onToggle, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background,
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
@@ -219,7 +219,7 @@ private fun PlaylistRow(
                     else Text("–", color = Palette.textMuted, fontSize = 14.sp, modifier = Modifier.semantics { contentDescription = "Stops after the last entry" })
                 }
             }
-            OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 40.dp)) {
+            OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                 Text("Edit", color = Palette.text)
             }
             Spacer(Modifier.width(6.dp))
@@ -359,7 +359,7 @@ private fun PlaylistEditor(
                         )
                         Spacer(Modifier.width(6.dp))
                     }
-                    IconBox(SIcons.Close, "Close", onClose, size = 44)
+                    IconBox(SIcons.Close, "Close", onClose, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 LazyColumn(state = list, modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp), horizontalAlignment = Alignment.Start) {
                     item {

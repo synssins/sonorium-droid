@@ -75,14 +75,14 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
             item {
                 PageHeader("Floors & Areas", null, help = "settings-spaces") {
                     if (editable) {
-                        OutlinedButton(onClick = { adding = "floor" }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 44.dp)) {
+                        OutlinedButton(onClick = { adding = "floor" }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
                             Icon(SIcons.Plus, null, tint = Palette.text, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Add floor", color = Palette.text)
                         }
                         Spacer(Modifier.width(8.dp))
                         Button(
-                            onClick = { adding = "area" }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 44.dp),
+                            onClick = { adding = "area" }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                         ) {
                             Icon(SIcons.Plus, null, modifier = Modifier.size(14.dp))
@@ -165,17 +165,17 @@ private fun FloorBlock(
 ) {
     Surface(color = Palette.card, shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
         Column(Modifier.padding(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 40.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                 Icon(SIcons.Layers, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
                 floor?.let { SourceBadges(it.source) }
                 Spacer(Modifier.weight(1f))
                 if (editable && floor != null) {
-                    if (floor.localId != null && "ha" !in floor.source) IconBox(SIcons.Edit, "Rename floor", onRename, size = 40)
+                    if (floor.localId != null && "ha" !in floor.source) IconBox(SIcons.Edit, "Rename floor", onRename, size = app.sonorium.ui.UiSize.SMALL)
                     if (floor.localId != null) {
                         Spacer(Modifier.width(6.dp))
-                        IconBox(SIcons.Trash, "Delete floor", onDelete, size = 40)
+                        IconBox(SIcons.Trash, "Delete floor", onDelete, size = app.sonorium.ui.UiSize.SMALL)
                     }
                 }
             }
@@ -216,7 +216,7 @@ private fun AreaRow(area: SpaceArea, floorId: String, spaces: Spaces, editable: 
             }
             if (editable && area.localId != null) {
                 Spacer(Modifier.width(6.dp))
-                IconBox(SIcons.Trash, "Delete area", onDelete, size = 40)
+                IconBox(SIcons.Trash, "Delete area", onDelete, size = app.sonorium.ui.UiSize.SMALL)
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {

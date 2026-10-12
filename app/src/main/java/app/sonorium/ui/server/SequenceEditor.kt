@@ -103,7 +103,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                         )
                         Spacer(Modifier.width(6.dp))
                     }
-                    IconBox(SIcons.Close, "Close", editor::closeSequence, size = 44)
+                    IconBox(SIcons.Close, "Close", editor::closeSequence, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)) {
                     item(key = "fields") {
@@ -185,7 +185,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                                         MenuAction(if (advanced) "Advanced… (On)" else "Advanced…", SIcons.Settings, separatorBefore = true) { onAdvanced(i) },
                                         MenuAction("Remove", SIcons.Trash, danger = true, separatorBefore = true) { editor.editSequence { it.copy(steps = it.steps - id) } },
                                     ),
-                                    size = 40,
+                                    size = app.sonorium.ui.UiSize.SMALL,
                                 )
                                 if (advanced) Box(Modifier.align(Alignment.TopEnd).padding(3.dp).semantics { contentDescription = "Advanced set" }) { Dot(Palette.accent, 6) }
                             }
@@ -199,14 +199,14 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                     Modifier.fillMaxWidth().background(Palette.bar).padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 ) {
-                    OutlinedButton(onClick = editor::closeSequence, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 44.dp)) {
+                    OutlinedButton(onClick = editor::closeSequence, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
                         Text("Cancel", color = Palette.text)
                     }
                     Button(
                         onClick = { save() },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                        modifier = Modifier.heightIn(min = 44.dp),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                     ) { Text("Save", fontWeight = FontWeight.SemiBold) }
                 }
             }
@@ -235,7 +235,7 @@ private fun AddPresetMenu(ui: EditorUi, steps: List<String>, link: Boolean = fal
         if (link) {
             TextButton(onClick = { open = true }) { Text("Add preset", color = Palette.accent) }
         } else {
-            OutlinedButton(onClick = { open = true }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 40.dp)) {
+            OutlinedButton(onClick = { open = true }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
                 Icon(SIcons.Plus, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(6.dp))
                 Text("Add preset", color = Palette.text, fontSize = 13.sp)

@@ -85,8 +85,8 @@ enum class Page(val title: String, val icon: ImageVector, val webView: String?, 
     Status("Status", SIcons.Activity, null),
 }
 
-/** Every control in the top bar is this tall (dp): the web UI's 44 px touch size, so they line up. */
-private const val TOP_BAR_CONTROL = 44
+/** Every control in the top bar is this tall (dp): Standard, so they line up (ui-standards: top bar 56, controls 48). */
+private const val TOP_BAR_CONTROL = app.sonorium.ui.UiSize.STANDARD
 
 // The web UI's order (slots.js): Connection, Audio Settings, Floors & Areas, Speakers, Speaker Groups, Plugins, Logs, Advanced
 private val SETTINGS = listOf(Page.Connection, Page.Audio, Page.Spaces, Page.Speakers, Page.Groups, Page.Plugins, Page.Logs, Page.Advanced)
@@ -420,14 +420,14 @@ private fun ChannelsPage(
                     Spacer(Modifier.weight(1f))
                     if (state.zones?.admin == true && narrow) {
                         // Phones: icon only, so the header fits next to New Channel
-                        IconBox(SIcons.Link, "Link channels", { onLink(null) }, tint = Palette.text, size = 44)
+                        IconBox(SIcons.Link, "Link channels", { onLink(null) }, tint = Palette.text, size = app.sonorium.ui.UiSize.STANDARD)
                         Spacer(Modifier.width(8.dp))
                     } else if (state.zones?.admin == true) {
                         androidx.compose.material3.OutlinedButton(
                             onClick = { onLink(null) },
                             shape = RoundedCornerShape(8.dp),
                             border = BorderStroke(1.dp, Palette.border),
-                            modifier = Modifier.heightIn(min = 44.dp),
+                            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                         ) {
                             Icon(SIcons.Link, null, tint = Palette.text, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
@@ -439,7 +439,7 @@ private fun ChannelsPage(
                         onClick = onNew,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                        modifier = Modifier.heightIn(min = 44.dp),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                     ) {
                         Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))

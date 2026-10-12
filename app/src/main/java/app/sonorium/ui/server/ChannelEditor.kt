@@ -453,7 +453,7 @@ private fun TreeRow(name: String, ids: List<String>, selected: Set<String>, dept
         ids.size -> ToggleableState.On
         else -> ToggleableState.Indeterminate
     }
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = (depth * 20).dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).padding(start = (depth * 20).dp), verticalAlignment = Alignment.CenterVertically) {
         TriStateCheckbox(
             state = tri, onClick = { onToggle(tri != ToggleableState.On) },
             colors = CheckboxDefaults.colors(checkedColor = Palette.accent, checkmarkColor = Palette.bar),
@@ -472,7 +472,7 @@ private val SOURCE_LABELS = mapOf("ha" to "HA", "discovered" to "Discovered", "m
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SpeakerRow(speaker: Speaker, on: Boolean, onToggle: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = 40.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).padding(start = 40.dp), verticalAlignment = Alignment.CenterVertically) {
         androidx.compose.material3.Checkbox(
             checked = on, onCheckedChange = onToggle,
             colors = CheckboxDefaults.colors(checkedColor = Palette.accent, checkmarkColor = Palette.bar),

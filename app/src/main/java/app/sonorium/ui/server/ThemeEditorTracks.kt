@@ -121,7 +121,7 @@ private fun SectionHeader(section: Section, count: Int, ui: EditorUi, hooks: Lis
                     onClick = { hooks.editor.newGroup(section) },
                     shape = RoundedCornerShape(8.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
-                    modifier = Modifier.heightIn(min = 40.dp).semantics { contentDescription = section.newGroupTip },
+                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics { contentDescription = section.newGroupTip },
                 ) {
                     Icon(SIcons.Folder, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
@@ -156,7 +156,7 @@ private fun TrackRow(t: EditorTrack, section: Section, group: TrackGroup?, ui: E
                 if (previewing) SIcons.Stop else SIcons.Play,
                 if (t.missing) "File missing" else if (previewing) "Stop preview" else "Preview",
                 { editor.toggleFilePreview(t.name) },
-                enabled = enabled, size = 40,
+                enabled = enabled, size = app.sonorium.ui.UiSize.SMALL,
                 tint = if (previewing) Palette.accent else Palette.textSecondary,
             )
             Spacer(Modifier.width(8.dp))
@@ -181,7 +181,7 @@ private fun TrackRow(t: EditorTrack, section: Section, group: TrackGroup?, ui: E
             if (section != Section.Unassigned) {
                 IconBox(
                     if (t.muted) SIcons.Muted else SIcons.Volume, if (t.muted) "Unmute" else "Mute", { editor.toggleMute(t) },
-                    enabled = enabled, size = 40, tint = if (t.muted) Palette.danger else Palette.textSecondary,
+                    enabled = enabled, size = app.sonorium.ui.UiSize.SMALL, tint = if (t.muted) Palette.danger else Palette.textSecondary,
                 )
                 Spacer(Modifier.width(4.dp))
             }
@@ -333,7 +333,7 @@ private fun TrackMenu(t: EditorTrack, section: Section, group: TrackGroup?, ui: 
     val dot = ThemeEditorRules.advancedDot(t, section, group != null)
     Box {
         Box {
-            IconBox(SIcons.More, "More for ${t.shortName}", { open = true }, size = 40)
+            IconBox(SIcons.More, "More for ${t.shortName}", { open = true }, size = app.sonorium.ui.UiSize.SMALL)
             if (dot) Box(Modifier.align(Alignment.TopEnd).padding(3.dp)) { Dot(Palette.accent, 6) }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 260.dp)) {
@@ -473,7 +473,7 @@ fun NumberBox(initial: String, placeholder: String, enabled: Boolean, descriptio
 @Composable
 private fun MenuSwitch(label: String, checked: Boolean, tip: String, enabled: Boolean, note: String? = null, onToggle: () -> Unit) {
     Row(
-        Modifier.padding(horizontal = 16.dp).heightIn(min = 44.dp).semantics { contentDescription = tip },
+        Modifier.padding(horizontal = 16.dp).heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = tip },
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -526,7 +526,7 @@ private fun GroupBlock(g: TrackGroup, section: Section, members: List<EditorTrac
             return@Column
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBox(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand ${g.name}" else "Collapse ${g.name}", { editor.toggleCollapsed(g.name) }, size = 40)
+            IconBox(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand ${g.name}" else "Collapse ${g.name}", { editor.toggleCollapsed(g.name) }, size = app.sonorium.ui.UiSize.SMALL)
             Spacer(Modifier.width(6.dp))
             Icon(SIcons.Folder, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
@@ -548,7 +548,7 @@ private fun GroupBlock(g: TrackGroup, section: Section, members: List<EditorTrac
             IconBox(
                 if (muted) SIcons.Muted else SIcons.Volume, if (muted) "Unmute group" else "Mute group",
                 { editor.setGroup(g.name, ThemeEditorRules.obj("muted" to JsonPrimitive(!muted))) },
-                size = 40, tint = if (muted) Palette.danger else Palette.textSecondary,
+                size = app.sonorium.ui.UiSize.SMALL, tint = if (muted) Palette.danger else Palette.textSecondary,
             )
             Spacer(Modifier.width(4.dp))
             GroupMenu(g, section, hooks)
@@ -614,7 +614,7 @@ private fun GroupMenu(g: TrackGroup, section: Section, hooks: ListHooks) {
     val editor = hooks.editor
     var open by remember { mutableStateOf(false) }
     Box {
-        IconBox(SIcons.More, "More for group ${g.name}", { open = true }, size = 40)
+        IconBox(SIcons.More, "More for group ${g.name}", { open = true }, size = app.sonorium.ui.UiSize.SMALL)
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 240.dp)) {
             if (section == Section.EbbFlow) {
                 val rise = ThemeEditorRules.num(g.settings, "rise")
@@ -674,7 +674,7 @@ private fun RenameField(initial: String, onDone: (String) -> Unit, onCancel: () 
                 .border(1.dp, Palette.accent, RoundedCornerShape(6.dp))
                 .padding(8.dp),
         )
-        IconBox(SIcons.Close, "Cancel rename", { finished = true; onCancel() }, size = 40)
+        IconBox(SIcons.Close, "Cancel rename", { finished = true; onCancel() }, size = app.sonorium.ui.UiSize.SMALL)
     }
     LaunchedEffect(Unit) { focus.requestFocus() }
 }

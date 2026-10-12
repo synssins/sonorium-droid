@@ -150,7 +150,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                         value = query, onValueChange = { query = it }, singleLine = true,
                         placeholder = { Text("Search speakers", color = Palette.textMuted) },
                         leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
-                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = 40, background = Palette.background, border = Palette.background) }) else null,
+                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background) }) else null,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search speakers" },
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -186,7 +186,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                         OutlinedButton(
                             onClick = { scanning = true; model.rescanSpeakers { scanning = false } },
                             enabled = !scanning,
-                            border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 40.dp),
+                            border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                         ) {
                             Icon(SIcons.Refresh, null, tint = Palette.text, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(6.dp))
@@ -220,7 +220,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                     item(key = "sec-${sec.key}") {
                         val on = sec.speakers.count { it.entityId in state.enabledSpeakers }
                         Row(
-                            Modifier.fillMaxWidth().heightIn(min = 44.dp).clickable {
+                            Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).clickable {
                                 closed = if (isClosed) closed - sec.key else closed + sec.key
                                 prefs.edit().putStringSet("spkClosed", closed).apply()
                             }.padding(top = 8.dp),
@@ -346,7 +346,7 @@ private fun SpeakerRow(
             )
             Spacer(Modifier.width(6.dp))
             val busy = busyUntil > System.currentTimeMillis()
-            IconBox(SIcons.Volume, if (busy) "Playing…" else "Test ${s.name}", onTest, enabled = !busy, size = 44)
+            IconBox(SIcons.Volume, if (busy) "Playing…" else "Test ${s.name}", onTest, enabled = !busy, size = app.sonorium.ui.UiSize.STANDARD)
         }
     }
     HorizontalDivider(color = Palette.border.copy(alpha = 0.5f))
@@ -379,7 +379,7 @@ private fun RenameField(s: Speaker, onDone: (String?) -> Unit, modifier: Modifie
         placeholder = { Text(s.originalName.orEmpty(), color = Palette.textMuted) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { finish(value.text) }),
-        trailingIcon = { IconBox(SIcons.Close, "Cancel rename", { finish(null) }, size = 40, background = Palette.background, border = Palette.background) },
+        trailingIcon = { IconBox(SIcons.Close, "Cancel rename", { finish(null) }, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background) },
         modifier = modifier.focusRequester(focus).semantics { contentDescription = "Name for ${s.name}" }.onFocusChanged {
             if (focused && !it.isFocused) finish(value.text)
             focused = it.isFocused
@@ -393,7 +393,7 @@ private fun SpeakerMenu(s: Speaker, model: ServerViewModel, onRename: () -> Unit
     var open by remember { mutableStateOf(false) }
     Box {
         Box {
-            IconBox(SIcons.More, "More for ${s.name}", { open = true }, size = 40)
+            IconBox(SIcons.More, "More for ${s.name}", { open = true }, size = app.sonorium.ui.UiSize.SMALL)
             if (SpeakerRules.menuDot(s)) Box(Modifier.align(Alignment.TopEnd).padding(5.dp).size(6.dp)) { Dot(Palette.accent, 6) }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card) {

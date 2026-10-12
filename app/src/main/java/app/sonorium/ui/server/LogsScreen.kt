@@ -123,7 +123,7 @@ fun LogsPage(model: ServerViewModel) {
                     },
                     shape = RoundedCornerShape(8.dp),
                     border = BorderStroke(1.dp, if (logs.paused) Palette.accent else Palette.border),
-                    modifier = Modifier.heightIn(min = 40.dp).semantics { contentDescription = "${if (logs.paused) "Resume" else "Pause"}. Stop the list moving; new lines wait until Resume" },
+                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics { contentDescription = "${if (logs.paused) "Resume" else "Pause"}. Stop the list moving; new lines wait until Resume" },
                 ) {
                     Icon(if (logs.paused) SIcons.Play else SIcons.Pause, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
                     if (!narrow) Text(if (logs.paused) " Resume" else " Pause", color = Palette.text, fontSize = 13.sp)
@@ -135,7 +135,7 @@ fun LogsPage(model: ServerViewModel) {
                             .fold({ "Copied" }, { "Copy failed" })
                         scope.launch { delay(1_500); copyText = "Copy" }
                     },
-                    shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 40.dp),
+                    shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                 ) { Text(copyText, color = Palette.text, fontSize = 13.sp) }
                 Spacer(Modifier.width(6.dp))
                 Button(
@@ -149,7 +149,7 @@ fun LogsPage(model: ServerViewModel) {
                     },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                    modifier = Modifier.heightIn(min = 40.dp),
+                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                 ) { Text("Download", fontSize = 13.sp) }
             }
             OutlinedTextField(

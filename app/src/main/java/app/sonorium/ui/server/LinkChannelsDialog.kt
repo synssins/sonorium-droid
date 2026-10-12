@@ -80,7 +80,7 @@ fun LinkChannelsDialog(
             Column(Modifier.safeDrawingPadding().imePadding().fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Link channels", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    IconBox(SIcons.Close, "Close", onClose, size = 44)
+                    IconBox(SIcons.Close, "Close", onClose, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 Column(
                     Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).widthIn(max = 720.dp),

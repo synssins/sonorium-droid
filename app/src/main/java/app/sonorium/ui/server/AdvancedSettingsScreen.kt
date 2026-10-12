@@ -120,7 +120,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                         },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                        modifier = Modifier.heightIn(min = 44.dp),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                     ) { Text("Restart now") }
                 }
             }
@@ -171,7 +171,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                                         .onSuccess { zonesOn = false; model.afterPluginsChanged() }
                                         .onFailure { model.toast(model.messageOf(it, "Not saved"), error = true) }
                                 }
-                            }, size = 40, enabled = on)
+                            }, size = app.sonorium.ui.UiSize.SMALL, enabled = on)
                             Spacer(Modifier.width(6.dp))
                             Switch(
                                 checked = on,
@@ -200,7 +200,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                             Block(changed) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(r.name, color = if (changed) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                                    IconBox(SIcons.Refresh, "${r.name}: back to the default", { saveValues(AdvancedPageRules.reset(r)) }, size = 40, enabled = changed)
+                                    IconBox(SIcons.Refresh, "${r.name}: back to the default", { saveValues(AdvancedPageRules.reset(r)) }, size = app.sonorium.ui.UiSize.SMALL, enabled = changed)
                                 }
                                 Text(r.description, color = Palette.textSecondary, fontSize = 13.sp)
                                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
@@ -252,7 +252,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                     Block(saved.isNotEmpty()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Stream URL", color = if (saved.isNotEmpty()) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
-                            IconBox(SIcons.Refresh, "Stream URL: back to the default", { apply("") }, size = 40, enabled = saved.isNotEmpty())
+                            IconBox(SIcons.Refresh, "Stream URL: back to the default", { apply("") }, size = app.sonorium.ui.UiSize.SMALL, enabled = saved.isNotEmpty())
                         }
                         Text("The address speakers are given to reach Sonorium.", color = Palette.textSecondary, fontSize = 13.sp)
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {

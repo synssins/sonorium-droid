@@ -46,8 +46,9 @@ fun SonoriumTheme(content: @Composable () -> Unit) {
  * Standard: header and top-bar controls, buttons, fields. Small: controls inside rows, cards, toolbars.
  */
 object UiSize {
-    const val STANDARD = 44
-    const val SMALL = 40
+    // Touch minimum 48 (Chris, 2026-10-12; to-app/23)
+    const val STANDARD = 48
+    const val SMALL = 44
     /** List rows and the collapsed channel row, minimum. */
     const val ROW = 48
     /** Glyph in an icon-only Standard control / in Small icon buttons and text buttons. */

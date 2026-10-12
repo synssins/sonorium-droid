@@ -313,7 +313,7 @@ fun PrimaryButton(label: String, modifier: Modifier = Modifier, onClick: () -> U
         onClick = onClick,
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-        modifier = modifier.heightIn(min = 44.dp),
+        modifier = modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
     ) { Text(label, fontWeight = FontWeight.Medium) }
 }
 
@@ -324,6 +324,6 @@ fun SecondaryButton(label: String, modifier: Modifier = Modifier, onClick: () ->
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, Palette.border),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = Palette.card, contentColor = Palette.text),
-        modifier = modifier.heightIn(min = 44.dp),
+        modifier = modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
     ) { Text(label, fontWeight = FontWeight.Medium) }
 }

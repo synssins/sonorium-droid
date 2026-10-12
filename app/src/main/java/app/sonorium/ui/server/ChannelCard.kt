@@ -141,12 +141,12 @@ fun ChannelCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 onCollapse?.let {
                     Box(
-                        Modifier.size(44.dp).semantics { contentDescription = "Collapse ${session.name}" }.clickable(onClick = it),
+                        Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Collapse ${session.name}" }.clickable(onClick = it),
                         contentAlignment = Alignment.Center,
                     ) { Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp)) }
                 }
                 Box(
-                    Modifier.size(40.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
+                    Modifier.size(app.sonorium.ui.UiSize.SMALL.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center,
                 ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 20.sp) }
                 Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
@@ -159,10 +159,10 @@ fun ChannelCard(
                 }
                 StateChip(playing)
                 Spacer(Modifier.width(8.dp))
-                IconBox(SIcons.Edit, "Edit", { actions.edit(session) }, size = 40)
+                IconBox(SIcons.Edit, "Edit", { actions.edit(session) }, size = app.sonorium.ui.UiSize.SMALL)
                 Spacer(Modifier.width(6.dp))
                 Box {
-                    IconBox(SIcons.More, "More for ${session.name}", { menuOpen = true }, size = 40)
+                    IconBox(SIcons.More, "More for ${session.name}", { menuOpen = true }, size = app.sonorium.ui.UiSize.SMALL)
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Palette.card) {
                         DropdownMenuItem(
                             text = { Text("Delete…", color = Palette.danger) },
@@ -219,7 +219,7 @@ fun ChannelCard(
                     { actions.toggleMuted(session) },
                     tint = when { muted -> Palette.danger; playing -> Palette.accent; else -> Palette.textSecondary },
                     border = if (muted) Palette.danger else Palette.border,
-                    size = 40,
+                    size = app.sonorium.ui.UiSize.SMALL,
                 )
                 PercentSlider(session.volume, "Volume: ${session.name}", { actions.setVolume(session, it) }, Modifier.weight(1f).padding(start = 8.dp))
             }
@@ -231,7 +231,7 @@ fun ChannelCard(
                     tint = if (listening) Palette.bar else Palette.textSecondary,
                     background = if (listening) Palette.accent else Palette.backgroundSecondary,
                     border = if (listening) Palette.accent else Palette.border,
-                    size = 40,
+                    size = app.sonorium.ui.UiSize.SMALL,
                 )
                 PercentSlider(listenVolume, "Volume on this device: ${session.name}", actions.setListenVolume, Modifier.weight(1f).padding(start = 8.dp), onChange = actions.setListenVolume)
             }
@@ -246,7 +246,7 @@ fun ChannelCard(
                     contentColor = if (playing) Palette.danger else Palette.bar,
                 ),
                 border = if (playing) BorderStroke(1.dp, Palette.danger.copy(alpha = 0.5f)) else null,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             ) {
                 Icon(if (playing) SIcons.Stop else SIcons.Play, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
@@ -309,13 +309,14 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
         border = BorderStroke(1.dp, when { linked -> Palette.accentSecondary; playing -> Palette.accent; else -> Palette.border }),
         modifier = modifier.clickable(onClick = onExpand),
     ) {
-        Row(Modifier.padding(start = 4.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        // 56 tall: 48 controls + 4 above and below (ui-standards, touch minimum 48)
+        Row(Modifier.heightIn(min = 56.dp).padding(start = 4.dp, end = 4.dp, top = 4.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(44.dp).semantics { contentDescription = "Open ${session.name}" }.clickable(onClick = onExpand),
+                Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Open ${session.name}" }.clickable(onClick = onExpand),
                 contentAlignment = Alignment.Center,
             ) { Icon(SIcons.ChevronRight, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp)) }
             Box(
-                Modifier.size(44.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
+                Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center,
             ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 22.sp) }
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
@@ -337,7 +338,7 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
                 color = if (playing) Palette.danger.copy(alpha = 0.22f) else Palette.accent,
                 shape = RoundedCornerShape(8.dp),
                 border = if (playing) BorderStroke(1.dp, Palette.danger.copy(alpha = 0.5f)) else null,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp)
                     .semantics { contentDescription = if (playing) "Stop ${session.name}" else "Play ${session.name}" }
                     .clickable(onClick = onTogglePlay),
             ) {
@@ -365,7 +366,7 @@ private fun ModeButton(icon: androidx.compose.ui.graphics.vector.ImageVector, de
         tint = if (on) Palette.accent else Palette.textSecondary,
         background = if (on) Palette.accent.copy(alpha = 0.12f) else Palette.backgroundSecondary,
         border = if (on) Palette.accent.copy(alpha = 0.6f) else Palette.border,
-        size = 44,
+        size = app.sonorium.ui.UiSize.STANDARD,
     )
 }
 
@@ -429,7 +430,7 @@ private fun PlaylistFields(session: Session, state: ServerState, actions: CardAc
         color = Palette.backgroundSecondary.copy(alpha = 0.5f),
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, Palette.border),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
+        modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
             Text(

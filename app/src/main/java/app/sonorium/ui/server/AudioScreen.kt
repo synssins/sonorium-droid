@@ -93,7 +93,7 @@ fun AudioPage(model: ServerViewModel) {
                 }
                 OutlinedButton(
                     onClick = { model.audioDraft = saved }, enabled = dirty,
-                    shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 44.dp),
+                    shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                 ) { Text("Cancel", color = if (dirty) Palette.text else Palette.textMuted) }
                 Button(
                     onClick = {
@@ -112,7 +112,7 @@ fun AudioPage(model: ServerViewModel) {
                     enabled = dirty,
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                    modifier = Modifier.heightIn(min = 44.dp),
+                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                 ) { Text("Save settings", fontWeight = FontWeight.SemiBold) }
             }
             if (draft != null && saved != null) {

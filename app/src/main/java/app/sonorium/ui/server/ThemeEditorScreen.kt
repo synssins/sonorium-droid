@@ -177,7 +177,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                         Text("Edit theme", color = Palette.textSecondary, fontSize = 12.sp)
                         Text(ui.title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    IconBox(SIcons.Help, "How a theme plays", { help = true }, size = 44)
+                    IconBox(SIcons.Help, "How a theme plays", { help = true }, size = app.sonorium.ui.UiSize.STANDARD)
                     Spacer(Modifier.width(6.dp))
                     MoreMenu("More theme options", listOf(MenuAction("Export theme", SIcons.Download) {
                         model.toast("Preparing export...", error = false)
@@ -187,7 +187,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                         }
                     }))
                     Spacer(Modifier.width(6.dp))
-                    IconBox(SIcons.Close, "Cancel", { cancel() }, size = 44)
+                    IconBox(SIcons.Close, "Cancel", { cancel() }, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 val hooks = ListHooks(editor, { ask = it }, ::upload, live, deleting) { deleting = it }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)) {
@@ -354,7 +354,7 @@ private fun CategoriesField(ui: EditorUi, editor: ThemeEditor, onPending: (Strin
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 40.dp)
+                        .heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
                         .background(if (i == 0) Palette.card else Palette.backgroundSecondary, RoundedCornerShape(6.dp))
                         .clickable { add(o.name) }
                         .padding(horizontal = 8.dp),
@@ -418,7 +418,7 @@ private fun ToolButton(label: String, icon: androidx.compose.ui.graphics.vector.
         shape = RoundedCornerShape(8.dp),
         border = BorderStroke(1.dp, if (pressed) Palette.accent else Palette.border),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = if (pressed) Palette.accent.copy(alpha = 0.12f) else Palette.backgroundSecondary),
-        modifier = Modifier.heightIn(min = 40.dp).semantics { contentDescription = description },
+        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics { contentDescription = description },
     ) {
         Icon(icon, null, tint = if (pressed) Palette.accent else Palette.textSecondary, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
@@ -538,13 +538,13 @@ private fun Footer(
                 enabled = preset != null,
                 shape = RoundedCornerShape(8.dp),
                 border = BorderStroke(1.dp, Palette.border),
-                modifier = Modifier.heightIn(min = 44.dp).semantics { contentDescription = "Save preset. Saves loaded preset" },
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Save preset. Saves loaded preset" },
             ) { Text("Save preset", color = if (preset != null) Palette.text else Palette.textMuted) }
             Button(
                 onClick = onSave,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                modifier = Modifier.heightIn(min = 44.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             ) {
                 Text("Save theme", fontWeight = FontWeight.SemiBold)
                 if (ui.unsaved) {
@@ -552,7 +552,7 @@ private fun Footer(
                     Box(Modifier.semantics { contentDescription = "Unsaved changes" }) { Dot(Palette.bar) }
                 }
             }
-            OutlinedButton(onClick = onCancel, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = 44.dp)) {
+            OutlinedButton(onClick = onCancel, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
                 Text("Cancel", color = Palette.text)
             }
         }
@@ -571,7 +571,7 @@ private fun PresetButton(ui: EditorUi, editor: ThemeEditor) {
             onClick = { open = true },
             shape = RoundedCornerShape(8.dp),
             border = BorderStroke(1.dp, Palette.border),
-            modifier = Modifier.heightIn(min = 40.dp).widthIn(max = 260.dp).semantics { contentDescription = "Preset: $label" },
+            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).widthIn(max = 260.dp).semantics { contentDescription = "Preset: $label" },
         ) {
             Text(label, color = if (preset == null && sequence == null) Palette.textSecondary else Palette.text, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
             if (preset?.isDefault == true) Text(" ★", color = Palette.warning, fontSize = 13.sp)
@@ -585,7 +585,7 @@ private fun PresetButton(ui: EditorUi, editor: ThemeEditor) {
             ui.presets.forEach { p ->
                 DropdownMenuItem(
                     text = { Text(p.name + (if (p.isDefault) " ★" else "") + (if (p.hasIntrusion) " ⚭" else ""), color = if (p.id == ui.selected) Palette.accent else Palette.text) },
-                    trailingIcon = if (!p.isDefault) ({ IconBox(SIcons.Star, "Set as default", { editor.setDefault(p) }, size = 40) }) else null,
+                    trailingIcon = if (!p.isDefault) ({ IconBox(SIcons.Star, "Set as default", { editor.setDefault(p) }, size = app.sonorium.ui.UiSize.SMALL) }) else null,
                     onClick = { open = false; editor.loadPreset(p) },
                 )
             }
@@ -728,7 +728,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                         IconBox(SIcons.ChevronRight, "Back to themes", { source = null }, modifier = Modifier.padding(end = 8.dp))
                     }
                     Text(source?.name ?: "Add from another theme", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    IconBox(SIcons.Close, "Cancel", ::close, size = 44)
+                    IconBox(SIcons.Close, "Cancel", ::close, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 Spacer(Modifier.height(8.dp))
                 val src = source
@@ -736,7 +736,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                     OutlinedTextField(
                         query, { query = it }, singleLine = true, placeholder = { Text("Search themes") },
                         leadingIcon = { Icon(SIcons.Search, null, modifier = Modifier.size(16.dp)) },
-                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear", { query = "" }, size = 40) }) else null,
+                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear", { query = "" }, size = app.sonorium.ui.UiSize.SMALL) }) else null,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search themes" },
                     )
                     val q = query.trim().lowercase()
@@ -788,7 +788,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                             val added = already(t.id)
                             val playing = ui.filePreview == "pk:${src.id}:${t.id}"
                             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-                                IconBox(if (playing) SIcons.Stop else SIcons.Play, if (playing) "Stop preview" else "Preview", { editor.toggleFilePreview("pk:${src.id}:${t.id}", t.previewUrl) }, size = 40)
+                                IconBox(if (playing) SIcons.Stop else SIcons.Play, if (playing) "Stop preview" else "Preview", { editor.toggleFilePreview("pk:${src.id}:${t.id}", t.previewUrl) }, size = app.sonorium.ui.UiSize.SMALL)
                                 Spacer(Modifier.width(8.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(t.displayName.ifEmpty { t.name }, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

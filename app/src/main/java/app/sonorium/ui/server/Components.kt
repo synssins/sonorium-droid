@@ -102,7 +102,7 @@ fun PickerField(
             border = BorderStroke(1.dp, Palette.border),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 44.dp)
+                .heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)
                 .alpha(if (enabled) 1f else 0.5f)
                 .semantics { contentDescription = label }
                 .clickable(enabled = enabled) { open = true },
@@ -284,5 +284,5 @@ fun ToastHost(toast: Toast?, modifier: Modifier = Modifier) {
 
 @Composable
 fun ButtonRow(content: @Composable RowScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth().height(44.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), content = content)
+    Row(Modifier.fillMaxWidth().height(app.sonorium.ui.UiSize.STANDARD.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), content = content)
 }
