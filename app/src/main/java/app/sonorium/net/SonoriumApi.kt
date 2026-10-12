@@ -30,6 +30,11 @@ class SonoriumApi(
 
     suspend fun me(): Me = get("auth/me")
 
+    /** Unlinks this phone on the server (G1): the token stops working at once. */
+    suspend fun unlinkSelf() {
+        execute(request("devices/self").delete().build())
+    }
+
     /** Starts (or keeps) a channel's mix for a listener; APP_API.md 9.3. */
     suspend fun listen(sessionId: String): ListenSlot =
         decode(execute(request("sessions/$sessionId/listen").post(ByteArray(0).toRequestBody(null)).build()))

@@ -40,6 +40,10 @@ class ServerStore(private val context: Context, private val cipher: TokenCipher 
         }
     }
 
+    suspend fun rename(id: String, name: String?) {
+        find(id)?.let { update(it.copy(customName = name?.trim()?.takeIf { n -> n.isNotEmpty() })) }
+    }
+
     suspend fun select(id: String) {
         context.serverData.edit { it[CURRENT] = id }
     }

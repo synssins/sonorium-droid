@@ -11,6 +11,10 @@ adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.
 
 RUNNER=app.sonorium.debug.test/androidx.test.runner.AndroidJUnitRunner
 
+# A fresh Link App code now: codes last 5 minutes, and building plus booting the
+# emulator can take longer than that.
+LINK_URI_B64=$(python3 e2e/make_link.py https://127.0.0.1:8808 10.0.2.2 "$CI_ADMIN" "$CI_PASSWORD")
+
 set +e
 adb shell am instrument -w -r \
   -e linkUri "$LINK_URI_B64" \

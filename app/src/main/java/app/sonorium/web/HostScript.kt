@@ -12,7 +12,8 @@ object HostScript {
     const val HOST_API = 1
     const val BRIDGE = "SonoriumNative"
 
-    fun build(streamBase: String): String = """
+    /** [serverName] is null when the user hasn't named the server; the page then shows [serverAddress]. */
+    fun build(streamBase: String, serverId: String, serverName: String?, serverAddress: String): String = """
         (function () {
           if (window.SONORIUM_HOST) return;
           var bridge = window.$BRIDGE;
@@ -36,6 +37,7 @@ object HostScript {
             mode: 'server',
             baseUrl: '',
             streamBase: ${JsonPrimitive(streamBase)},
+            server: { id: ${JsonPrimitive(serverId)}, name: ${JsonPrimitive(serverName)}, address: ${JsonPrimitive(serverAddress)} },
             authHeader: function () { return null; },
             unlinked: function (body) { send('unlinked', { detail: body && body.detail }); },
             showServers: function () { send('showServers'); },

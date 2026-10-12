@@ -1,5 +1,6 @@
 ## What's new in this build
 
+- **Servers screen:** each server shows its name (or its address when unnamed) and **Connected** on the one you're using. **Rename** gives it a name on this phone; **Remove** asks first, then unlinks the phone on the server and forgets it here.
 - **Listen here plays in the background:** the channel card's 🎧 Listen button now plays through the app's own player. It keeps playing with the screen off or in another app, with controls on the lock screen and in the notification. Pause there stops listening; Play starts it again. Unplugging headphones pauses. If Wi-Fi drops, it reconnects.
 - The card's listen volume slider sets the phone's volume for that channel.
 - Android 13+ asks once to allow notifications (for the playback controls).
@@ -24,6 +25,7 @@
 5. Leave the app and come back: the page is still there and up to date.
 6. Tablet: open a server and check both orientations.
 7. ☰ › **Servers**: the server list opens; tap another server to switch.
+9. Servers screen: **Rename** a server, then open it; **Remove** one (you'll need a new code to link it again). Removed phones disappear from Settings › Users & devices on the server.
 8. Listen: tap 🎧 on a channel. Sound plays on the phone. Turn the screen off: it keeps playing. Use Pause and Play on the lock screen: the card's button follows. Change the listen slider. Walk out of Wi-Fi range and back: it reconnects.
 
 ## Not built yet

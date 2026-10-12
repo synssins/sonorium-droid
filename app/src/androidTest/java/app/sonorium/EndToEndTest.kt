@@ -83,12 +83,13 @@ class EndToEndTest {
             )
             val playing = waitFor(30_000) { ListenController.state.value?.playing == true }
             screenshot("04-listening")
+            assertTrue("The native player didn't start: ${ListenController.state.value}", playing)
             device.openNotification()
-            Thread.sleep(2_000)
+            val notification = device.wait(Until.findObject(By.textContains(channelName)), 10_000)
             screenshot("05-notification")
             device.pressBack()
             Thread.sleep(1_000)
-            assertTrue("The native player didn't start: ${ListenController.state.value}", playing)
+            assertNotNull("No playback notification for $channelName", notification)
 
             // ...and the same button stops it.
             onWebView().perform(

@@ -136,16 +136,16 @@ class ServerActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             val record = app.servers.find(id) ?: return@launch finish()
-            screen = Screen.Connecting(record.label)
+            screen = Screen.Connecting(record.displayName)
             val token = app.servers.token(id)
             if (token == null) {
-                screen = Screen.Failed("This phone isn't linked to ${record.label}. Link it again.")
+                screen = Screen.Failed("This phone isn't linked to ${record.displayName}. Link it again.")
                 return@launch
             }
             val pinned = PinnedTls.pinnedClient(app.baseClient, record.fingerprint)
             val reached = app.linker.reach(pinned, record.hosts, record.httpsPort)
             if (reached == null) {
-                screen = Screen.Failed("Can't reach ${record.label}. Check that this phone is on the same network.")
+                screen = Screen.Failed("Can't reach ${record.displayName}. Check that this phone is on the same network.")
                 return@launch
             }
             if (reached.info.id != record.id) {
@@ -182,7 +182,7 @@ class ServerActivity : ComponentActivity() {
             flush()
         }
         val view = webView ?: createWebView().also { webView = it }
-        installHost(view, started.origin, streamBase.toString().trimEnd('/'))
+        installHost(view, started.origin, streamBase.toString().trimEnd('/'), record, host)
         screen = Screen.Ready
         // Load once the view is on screen with its real size.
         view.doOnLayoutWithSize { view.loadUrl("${started.origin}/") }
@@ -242,7 +242,7 @@ class ServerActivity : ComponentActivity() {
 
     private var hostInstalledFor: String? = null
 
-    private fun installHost(view: WebView, origin: String, streamBase: String) {
+    private fun installHost(view: WebView, origin: String, streamBase: String, record: ServerRecord, host: String) {
         if (hostInstalledFor == origin) return
         val origins = setOf(origin)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
@@ -255,7 +255,7 @@ class ServerActivity : ComponentActivity() {
         // Without these features (a very old WebView) the page still works through
         // the proxy, as it would in a browser.
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
-            WebViewCompat.addDocumentStartJavaScript(view, HostScript.build(streamBase), origins)
+            WebViewCompat.addDocumentStartJavaScript(view, HostScript.build(streamBase, record.id, record.name, host), origins)
         }
         hostInstalledFor = origin
     }
@@ -335,7 +335,7 @@ class ServerActivity : ComponentActivity() {
         lifecycleScope.launch {
             app.servers.remove(record.id)
             stopProxy()
-            screen = Screen.Failed("This phone was unlinked from ${record.label}. Link it again.")
+            screen = Screen.Failed("This phone was unlinked from ${record.displayName}. Link it again.")
         }
     }
 

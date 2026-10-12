@@ -42,6 +42,9 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
     val servers: StateFlow<List<ServerRecord>> =
         app.servers.servers.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val currentId: StateFlow<String?> =
+        app.servers.currentId.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
     private val _state = MutableStateFlow<LinkState>(LinkState.Idle)
     val state: StateFlow<LinkState> = _state.asStateFlow()
 
@@ -126,8 +129,30 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { app.servers.select(record.id) }
     }
 
-    fun forget(record: ServerRecord) {
-        viewModelScope.launch { app.servers.remove(record.id) }
+    fun rename(record: ServerRecord, name: String) {
+        viewModelScope.launch { app.servers.rename(record.id, name) }
+    }
+
+    /** Unlinks the phone on the server (G1), then forgets the server here either way. */
+    fun remove(record: ServerRecord) {
+        viewModelScope.launch {
+            _state.value = LinkState.Working("Removing ${record.displayName}")
+            val token = app.servers.token(record.id)
+            val pinned = PinnedTls.pinnedClient(app.baseClient, record.fingerprint)
+            val reached = token?.let { app.linker.reach(pinned, record.hosts, record.httpsPort) }
+            val unlinked = reached != null && reached.info.id == record.id && runCatching {
+                SonoriumApi(pinned, SonoriumApi.baseUrl(reached.host, record.httpsPort), token).unlinkSelf()
+            }.fold(onSuccess = { true }, onFailure = { (it as? ApiException)?.unlinked == true })
+            app.servers.remove(record.id)
+            _state.value = if (unlinked || token == null) {
+                LinkState.Idle
+            } else {
+                LinkState.Failed(
+                    "Removed from this phone. ${record.displayName} couldn't be reached, so the phone is still listed " +
+                        "there: remove it in Settings › Users & devices.",
+                )
+            }
+        }
     }
 
     private suspend fun finish(outcome: LinkOutcome) {

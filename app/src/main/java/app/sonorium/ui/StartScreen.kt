@@ -65,7 +65,7 @@ fun StartScreen(model: LinkViewModel) {
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text("Sonorium", fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = Palette.text)
+                Text("Servers", fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = Palette.text)
                 crash?.let { report ->
                     Card { CrashReport(report) { CrashLog.clear(context); crash = null } }
                 }
@@ -83,7 +83,7 @@ fun StartScreen(model: LinkViewModel) {
                         }
                     }
                     is LinkState.Done -> Card {
-                        Text("Linked to ${s.record.label}", color = Palette.text)
+                        Text("Linked to ${s.record.displayName}", color = Palette.text)
                         s.record.username?.let { Text("As $it", color = Palette.textSecondary, fontSize = 14.sp) }
                         Spacer(Modifier.height(16.dp))
                         PrimaryButton("Open") {
@@ -108,20 +108,88 @@ fun StartScreen(model: LinkViewModel) {
 private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
     if (servers.isEmpty()) return
     val context = LocalContext.current
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 480.dp)) {
+    val currentId by model.currentId.collectAsState()
+    var renaming by remember { mutableStateOf<ServerRecord?>(null) }
+    var removing by remember { mutableStateOf<ServerRecord?>(null) }
+
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 520.dp)) {
         items(servers, key = { it.id }) { server ->
             Card(Modifier.clickable { model.select(server); context.startActivity(ServerActivity.intent(context, server.id)) }) {
-                Text(server.label, color = Palette.text, fontWeight = FontWeight.Medium)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        server.displayName,
+                        color = Palette.text,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (server.id == currentId) Chip("Connected")
+                }
                 Text(
-                    listOfNotNull(server.hosts.firstOrNull(), server.username, server.version.ifEmpty { null }).joinToString(" · "),
+                    listOfNotNull(
+                        server.hosts.firstOrNull()?.takeIf { server.name != null },
+                        server.username,
+                        server.version.ifEmpty { null },
+                    ).joinToString(" · "),
                     color = Palette.textSecondary,
                     fontSize = 12.sp,
                 )
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { model.forget(server) }) { Text("Forget", color = Palette.danger) }
+                    TextButton(onClick = { renaming = server }) { Text("Rename", color = Palette.textSecondary) }
+                    TextButton(onClick = { removing = server }) { Text("Remove", color = Palette.danger) }
                 }
             }
         }
+    }
+
+    renaming?.let { server ->
+        var name by remember(server.id) { mutableStateOf(server.customName ?: "") }
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { renaming = null },
+            containerColor = Palette.card,
+            title = { Text("Rename", color = Palette.text) },
+            text = {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(40) },
+                    singleLine = true,
+                    placeholder = { Text(server.hosts.firstOrNull() ?: "") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = { PrimaryButton("Save") { model.rename(server, name); renaming = null } },
+            dismissButton = { SecondaryButton("Cancel") { renaming = null } },
+        )
+    }
+
+    removing?.let { server ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { removing = null },
+            containerColor = Palette.card,
+            title = { Text("Remove ${server.displayName}?", color = Palette.text) },
+            text = { Text("This phone is unlinked from the server. Linking again needs a new code or the password.", color = Palette.textSecondary) },
+            confirmButton = {
+                Button(
+                    onClick = { model.remove(server); removing = null },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Palette.danger, contentColor = Palette.text),
+                ) { Text("Remove", fontWeight = FontWeight.Medium) }
+            },
+            dismissButton = { SecondaryButton("Cancel") { removing = null } },
+        )
+    }
+}
+
+/** A pill in the accent colour (UI_STYLE.md chips). */
+@Composable
+private fun Chip(label: String) {
+    Surface(
+        color = Palette.accent.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(50),
+        border = BorderStroke(1.dp, Palette.accent.copy(alpha = 0.4f)),
+    ) {
+        Text(label, color = Palette.accent, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
     }
 }
 
