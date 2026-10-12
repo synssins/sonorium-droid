@@ -30,13 +30,24 @@ object PackageRules {
 
     enum class OnPhone { NONE, SAVED, UPDATE }
 
-    /** Whether [pkg] is on this phone already ([local]: the downloaded themes), and current. */
-    fun onPhone(pkg: PackageSummary?, local: List<LocalTheme>?): OnPhone {
-        val mine = pkg?.let { p -> local?.firstOrNull { it.themeId == p.themeId } } ?: return OnPhone.NONE
-        return if (mine.contentHash == pkg.contentHash) OnPhone.SAVED else OnPhone.UPDATE
+    /**
+     * The copy of server theme [themeId] on this phone: one saved from the server (its marker), else a
+     * theme imported from the server's Export zip (its metadata.json id), so it isn't saved twice.
+     */
+    fun localCopy(themeId: String?, local: List<LocalTheme>?): LocalTheme? {
+        if (themeId.isNullOrEmpty() || local == null) return null
+        return local.firstOrNull { it.themeId == themeId } ?: local.firstOrNull { it.themeId == null && it.metaId == themeId }
     }
 
-    /** The menu entry for a server theme, or null when it can't be copied (licence) or the server has no packages. */
+    /** Whether [pkg] is on this phone already ([local]: the themes on the phone), and current. */
+    fun onPhone(pkg: PackageSummary?, local: List<LocalTheme>?): OnPhone {
+        if (pkg == null) return OnPhone.NONE
+        val mine = localCopy(pkg.themeId, local) ?: return OnPhone.NONE
+        // An imported copy has no content hash to compare: it counts as on the phone
+        return if (mine.contentHash == null || mine.contentHash == pkg.contentHash) OnPhone.SAVED else OnPhone.UPDATE
+    }
+
+    /** The menu entry for a server theme, or null when it's on the phone and current, can't be copied, or there are no packages. */
     fun action(pkg: PackageSummary?, local: List<LocalTheme>?): String? = when {
         pkg == null || pkg.redistributable == false -> null
         else -> when (onPhone(pkg, local)) {
@@ -45,6 +56,12 @@ object PackageRules {
             OnPhone.SAVED -> null
         }
     }
+
+    /** A disabled menu entry saying why a server theme can't be saved: its licence doesn't allow copies. */
+    fun blocked(pkg: PackageSummary?, local: List<LocalTheme>?): String? =
+        if (pkg?.redistributable == false && onPhone(pkg, local) == OnPhone.NONE) LICENCE_BLOCKED else null
+
+    const val LICENCE_BLOCKED = "Can't save to phone (licence)"
 
     /** A folder name for the theme that doesn't clash with [taken] (lower-case names already in the folder). */
     fun folderName(name: String, taken: Set<String>): String {
