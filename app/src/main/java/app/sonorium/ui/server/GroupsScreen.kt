@@ -89,7 +89,7 @@ fun GroupsPage(state: ServerState, model: ServerViewModel) {
             item {
                 PageHeader("Speaker Groups", state.groups.size, help = "settings-groups") { AddButton("Add group", narrow) { if (model.reachableOrSay()) adding = true } }
             }
-            if (state.groups.isEmpty()) item { EmptyState("No speaker groups", null) }
+            if (state.groups.isEmpty()) item { EmptyState("No speaker groups", "Group speakers to play to them together") }
             items(state.groups, key = { it.id }) { g ->
                 val expanded = g.id in open
                 GroupRow(
@@ -122,7 +122,7 @@ fun GroupsPage(state: ServerState, model: ServerViewModel) {
         )
     }
     deleting?.let { g ->
-        ConfirmDialog("Delete “${g.name}”?", null, "Delete", onConfirm = { model.deleteGroup(g) }, onDismiss = { deleting = null })
+        ConfirmDialog("Delete “${g.name}”?", "The speakers themselves aren’t changed.", "Delete", onConfirm = { model.deleteGroup(g) }, onDismiss = { deleting = null })
     }
 }
 
@@ -175,7 +175,7 @@ private fun GroupRow(
         }
         if (expanded) {
             Column(Modifier.fillMaxWidth().padding(start = 44.dp, bottom = 8.dp)) {
-                if (members.isEmpty()) Text("No speakers", color = Palette.textMuted, fontSize = 13.sp, modifier = Modifier.padding(vertical = 6.dp))
+                if (members.isEmpty()) Text("No speakers in this group", color = Palette.textMuted, fontSize = 13.sp, modifier = Modifier.padding(vertical = 6.dp))
                 members.forEach { m ->
                     Row(Modifier.fillMaxWidth().heightIn(min = 36.dp).alpha(if (m.excluded) 0.55f else 1f), verticalAlignment = Alignment.CenterVertically) {
                         OnlineDot(m.placed.speaker.online)
@@ -210,7 +210,7 @@ private fun IncludeChip(chip: GroupRules.Chip) {
         Modifier.background(Palette.backgroundSecondary, RoundedCornerShape(12.dp)).padding(horizontal = 8.dp, vertical = 3.dp).semantics { contentDescription = "$desc: ${chip.label}" },
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = Palette.textSecondary, modifier = Modifier.size(12.dp))
+        Icon(icon, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
         Spacer(Modifier.width(4.dp))
         Text(
             chip.label, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1,
@@ -336,11 +336,16 @@ private fun GroupEditor(
                         Text(if (parts.isEmpty()) "Nothing selected" else parts.joinToString(" · "), color = Palette.textSecondary, fontSize = 13.sp)
                         if (parts.isNotEmpty()) Text("= ${GroupRules.plural(GroupRules.count(sel, h), "speaker")}", color = Palette.accent, fontSize = 12.sp)
                     }
-                    OutlinedButton(onClick = onClose, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp)) { Text("Cancel", color = Palette.text) }
+                    OutlinedButton(
+                        onClick = onClose,
+                        border = BorderStroke(1.dp, Palette.border),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                    ) { Text("Cancel", color = Palette.text) }
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = { save() },
-                        modifier = Modifier.semantics { contentDescription = "Save group" },
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Save group" },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                     ) { Text(if (edit == null) "Add group" else "Save", fontWeight = FontWeight.Medium) }
@@ -388,7 +393,7 @@ private fun areaItems(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text.uppercase(), color = Palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 14.dp, bottom = 4.dp))
+    Text(text.uppercase(), color = Palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = Modifier.padding(top = 16.dp, bottom = 4.dp))
 }
 
 @Composable
@@ -411,10 +416,16 @@ private fun TreeRow(
             colors = CheckboxDefaults.colors(checkedColor = Palette.accent, checkmarkColor = Palette.bar, disabledCheckedColor = Palette.accent.copy(alpha = 0.45f)),
             modifier = Modifier.semantics { contentDescription = implied ?: name },
         )
-        Box(Modifier.size(32.dp).clickable(onClick = onChevron), contentAlignment = Alignment.Center) {
-            Icon(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand $name" else "Collapse $name", tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
+        Box(
+            Modifier
+                .size(app.sonorium.ui.UiSize.SMALL.dp)
+                .semantics { contentDescription = if (collapsed) "Expand $name" else "Collapse $name" }
+                .clickable(onClick = onChevron),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
         }
-        Icon(icon, null, tint = Palette.textSecondary, modifier = Modifier.size(15.dp))
+        Icon(icon, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
         Spacer(Modifier.width(8.dp))
         Text(name, color = Palette.text, fontSize = 14.sp, fontWeight = if (indent == 0) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(8.dp))

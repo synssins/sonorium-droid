@@ -55,7 +55,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -110,14 +112,14 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
         if (uri != null && bytes != null) {
             runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } }
                 .onSuccess { model.toast("Exported: ${uri.lastPathSegment?.substringAfterLast('/') ?: ""}", error = false) }
-                .onFailure { model.toast("Failed to export theme", error = true) }
+                .onFailure { model.toast("Couldn’t export the theme", error = true) }
         }
     }
     val pickZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             val name = uri.lastPathSegment?.substringAfterLast('/')?.let { if (it.endsWith(".zip")) it else "$it.zip" } ?: "theme.zip"
             runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-                ?.let { model.importTheme(name, it) } ?: model.toast("Failed to import theme", error = true)
+                ?.let { model.importTheme(name, it) } ?: model.toast("Couldn’t import the theme", error = true)
         }
     }
 
@@ -231,7 +233,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     }
     if (managing) CategoriesDialog(state, model, onClosedChip = { if (chip == it) chip = ThemeRules.ALL }, onDismiss = { managing = false })
     deleting?.let { t ->
-        ConfirmDialog("Delete “${t.name}”?", null, "Delete", onConfirm = { model.deleteTheme(t) }, onDismiss = { deleting = null })
+        ConfirmDialog("Delete “${t.name}”?", "The theme and its tracks are removed from the server.", "Delete", onConfirm = { model.deleteTheme(t) }, onDismiss = { deleting = null })
     }
 }
 
@@ -239,9 +241,9 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
 private fun SortButton(byTracks: Boolean, onPick: (Boolean) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { open = true }) {
+        TextButton(onClick = { open = true }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
             Text("Sort: ${if (byTracks) "Most tracks" else "Name"}", color = Palette.text, fontSize = 13.sp)
-            Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.padding(start = 4.dp).size(12.dp))
+            Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.padding(start = 4.dp).size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card) {
             listOf(false to "Name", true to "Most tracks").forEach { (v, label) ->
@@ -257,7 +259,11 @@ private fun ChipButton(label: String, count: Int, selected: Boolean, onClick: ()
         color = if (selected) Palette.accent.copy(alpha = 0.15f) else Palette.backgroundSecondary,
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, if (selected) Palette.accent else Palette.border),
-        modifier = Modifier.heightIn(min = 36.dp).alpha(if (count == 0 && !selected) 0.5f else 1f).clickable(onClick = onClick),
+        modifier = Modifier
+            .heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
+            .alpha(if (count == 0 && !selected) app.sonorium.ui.UiSize.DISABLED_ALPHA else 1f)
+            .semantics { this.selected = selected }
+            .clickable(role = Role.Tab, onClick = onClick),
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(label, color = if (selected) Palette.accent else Palette.text, fontSize = 13.sp)
@@ -368,17 +374,17 @@ private fun ThemeCard(
     }
 }
 
-/** The preview bar: `Local Preview:`, the theme, play/pause, volume, close. */
+/** The preview bar: `Previewing on this phone:`, the theme, play/pause, volume, close. */
 @Composable
 private fun PreviewBar(p: ServerViewModel.Preview, model: ServerViewModel) {
     Surface(color = Palette.bar, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             HorizontalDivider(color = Palette.border)
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-                Text("Local Preview:", color = Palette.textSecondary, fontSize = 13.sp)
+                Text("Previewing on this phone:", color = Palette.textSecondary, fontSize = 13.sp)
                 Spacer(Modifier.width(6.dp))
                 Text(p.name, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                IconBox(if (p.paused) SIcons.Play else SIcons.Pause, if (p.paused) "Play" else "Pause", { model.pausePreview() }, size = app.sonorium.ui.UiSize.SMALL)
+                IconBox(if (p.paused) SIcons.Play else SIcons.Pause, if (p.paused) "Resume preview" else "Pause preview", { model.pausePreview() }, size = app.sonorium.ui.UiSize.SMALL)
                 Spacer(Modifier.width(6.dp))
                 IconBox(SIcons.Close, "Close preview", { model.closePreview() }, size = app.sonorium.ui.UiSize.SMALL)
             }
@@ -413,9 +419,10 @@ private fun CreateThemeDialog(onCreate: (String, () -> Unit) -> Unit, onDismiss:
             Button(
                 onClick = { go() }, enabled = name.trim().isNotEmpty() && !busy, shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-            ) { Text("OK") }
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) { Text("Create") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = Palette.textSecondary) } },
+        dismissButton = { TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.textSecondary) } },
     )
     LaunchedEffect(Unit) {
         delay(50)
@@ -447,18 +454,20 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
         },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                if (state.categories.isEmpty()) Text("—", color = Palette.textMuted)
+                if (state.categories.isEmpty()) Text("No categories", color = Palette.textMuted, modifier = Modifier.padding(vertical = 8.dp))
                 state.categories.forEach { c ->
                     val n = state.themes.count { c in it.categories }
                     val label = "$n theme${if (n == 1) "" else "s"}"
                     if (confirming == c) {
                         Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-                            Text("Delete “$c”? ($label)", color = Palette.text, fontSize = 14.sp)
-                            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                                TextButton(onClick = { confirming = null }) { Text("Cancel", color = Palette.textSecondary) }
+                            Text("Delete category “$c”?", color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text(if (n == 0) "No themes use it." else "$label lose this category; the themes stay.", color = Palette.textSecondary, fontSize = 13.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                TextButton(onClick = { confirming = null }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Cancel", color = Palette.textSecondary) }
                                 Button(
                                     onClick = { confirming = null; model.deleteCategory(c) { onClosedChip(c) } },
                                     colors = ButtonDefaults.buttonColors(containerColor = Palette.danger, contentColor = Palette.text), shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                                 ) { Text("Delete") }
                             }
                         }
@@ -471,7 +480,7 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
                         }
                     }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 12.dp)) {
                     SField(
                         value = text, onValueChange = { if (it.length <= 60) text = it }, singleLine = true,
                         placeholder = { Text("New category", color = Palette.textMuted) },
@@ -482,10 +491,11 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
                     Button(
                         onClick = { add() }, enabled = ThemeRules.canAddCategory(text, state.categories), shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                     ) { Text("Add") }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Done", color = Palette.accent) } },
+        confirmButton = { TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Done", color = Palette.accent) } },
     )
 }

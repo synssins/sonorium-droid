@@ -94,7 +94,7 @@ fun LazyListScope.editorSections(ui: EditorUi, hooks: ListHooks) {
             item(key = "group-${g.name}") { GroupBlock(g, section, members, ui, hooks) }
             if (g.name !in ui.collapsed) {
                 if (members.isEmpty()) item(key = "group-empty-${g.name}") {
-                    Text("Drag files here", color = Palette.textMuted, fontSize = 13.sp, modifier = Modifier.padding(start = 28.dp, top = 6.dp, bottom = 10.dp))
+                    Text("No tracks in this group", color = Palette.textMuted, fontSize = 13.sp, modifier = Modifier.padding(start = 28.dp, top = 6.dp, bottom = 12.dp))
                 }
                 members.forEach { t -> item(key = "track-${t.name}") { TrackRow(t, section, g, ui, hooks, inGroup = true) } }
             }
@@ -102,7 +102,7 @@ fun LazyListScope.editorSections(ui: EditorUi, hooks: ListHooks) {
         val loose = tracks.filter { t -> ui.listedGroupOf(t) == null }
         loose.forEach { t -> item(key = "track-${t.name}") { TrackRow(t, section, null, ui, hooks, inGroup = false) } }
         if (tracks.isEmpty() && groups.isEmpty()) item(key = "empty-${section.mode}") {
-            Text(section.empty, color = Palette.textMuted, fontSize = 13.sp, modifier = Modifier.padding(vertical = 10.dp))
+            Text(section.empty, color = Palette.textMuted, fontSize = 13.sp, modifier = Modifier.padding(vertical = 12.dp))
         }
     }
 }
@@ -111,7 +111,7 @@ fun LazyListScope.editorSections(ui: EditorUi, hooks: ListHooks) {
 private fun SectionHeader(section: Section, count: Int, ui: EditorUi, hooks: ListHooks) {
     Column(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 6.dp)) {
         HorizontalDivider(color = Palette.border)
-        Row(Modifier.fillMaxWidth().padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(section.label, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.width(8.dp))
             CountBadge(count)
@@ -167,7 +167,7 @@ private fun TrackRow(t: EditorTrack, section: Section, group: TrackGroup?, ui: E
                         Text("Missing", color = Palette.warning, fontSize = 12.sp)
                     } else {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.semantics { contentDescription = "Linked from ${l.themeName}" }) {
-                            Icon(SIcons.Link, null, tint = Palette.textMuted, modifier = Modifier.size(12.dp))
+                            Icon(SIcons.Link, null, tint = Palette.textMuted, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(4.dp))
                             Text("from ${l.themeName}", color = Palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
@@ -222,9 +222,9 @@ private fun ModeCell(t: EditorTrack, section: Section, group: TrackGroup?, enabl
     }
     var open by remember { mutableStateOf(false) }
     Box {
-        TextButton(onClick = { open = true }, enabled = enabled, modifier = Modifier.heightIn(min = 36.dp).semantics { contentDescription = "Mode: ${section.label}. Moves the track to that section" }) {
+        TextButton(onClick = { open = true }, enabled = enabled, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics { contentDescription = "Mode: ${section.label}. Moves the track to that section" }) {
             Text(section.label, color = Palette.text, fontSize = 12.sp, maxLines = 1)
-            Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
+            Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card) {
             Section.entries.forEach { s ->
@@ -521,10 +521,10 @@ private fun GroupBlock(g: TrackGroup, section: Section, members: List<EditorTrac
             .padding(8.dp),
     ) {
         if (hooks.deleting == g.name) {
-            Text("Delete ${g.name}? Tracks move to the theme.", color = Palette.text, fontSize = 14.sp)
+            Text("Delete group “${g.name}”? Its tracks move to the theme.", color = Palette.text, fontSize = 14.sp)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
-                TextButton(onClick = { hooks.setDeleting(null) }) { Text("Cancel", color = Palette.textSecondary) }
-                TextButton(onClick = { hooks.setDeleting(null); editor.deleteGroup(g.name) }) { Text("Delete", color = Palette.danger) }
+                TextButton(onClick = { hooks.setDeleting(null) }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Cancel", color = Palette.textSecondary) }
+                TextButton(onClick = { hooks.setDeleting(null); editor.deleteGroup(g.name) }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Delete", color = Palette.danger) }
             }
             return@Column
         }

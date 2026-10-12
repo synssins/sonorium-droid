@@ -3,6 +3,10 @@ package app.sonorium.ui.server
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -251,11 +255,14 @@ fun ChannelEditor(
                             Spacer(Modifier.height(8.dp))
                         }
                     }
-                    // Footer: Primary · Cancel on the right (UI_STYLE.md)
+                    // Footer: Cancel, then the primary action, on the right (same order as every dialog)
                     Row(
                         Modifier.fillMaxWidth().background(Palette.bar).padding(horizontal = 24.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     ) {
+                        OutlinedButton(onClick = onClose, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
+                            Text("Cancel", color = Palette.text)
+                        }
                         Button(
                             onClick = {
                                 if (playlistMode && playlistId == null) {
@@ -304,10 +311,8 @@ fun ChannelEditor(
                             },
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                         ) { Text(if (edit == null) "Create Channel" else "Save Channel", fontWeight = FontWeight.Medium) }
-                        OutlinedButton(onClick = onClose, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border)) {
-                            Text("Cancel", color = Palette.text)
-                        }
                     }
                 }
             }
@@ -322,9 +327,12 @@ private fun Segmented(labels: List<String>, selected: Int, onSelect: (Int) -> Un
             val on = i == selected
             Box(
                 Modifier
+                    .heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
                     .background(if (on) Palette.accent else Palette.backgroundSecondary, RoundedCornerShape(6.dp))
-                    .clickable { onSelect(i) }
+                    .semantics { this.selected = on }
+                    .clickable(role = Role.Tab) { onSelect(i) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
             ) { Text(label, color = if (on) Palette.bar else Palette.textSecondary, fontSize = 14.sp, fontWeight = FontWeight.Medium) }
         }
     }
@@ -336,10 +344,10 @@ private fun Chip(label: String, on: Boolean, onClick: () -> Unit) {
         color = if (on) Palette.accent.copy(alpha = 0.12f) else Palette.card,
         shape = RoundedCornerShape(50),
         border = BorderStroke(1.dp, if (on) Palette.accent.copy(alpha = 0.6f) else Palette.border),
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics { selected = on }.clickable(onClick = onClick),
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(SIcons.Music, null, tint = if (on) Palette.accent else Palette.textSecondary, modifier = Modifier.size(14.dp))
+            Icon(SIcons.Music, null, tint = if (on) Palette.accent else Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
             Spacer(Modifier.width(6.dp))
             Text(label, color = if (on) Palette.accent else Palette.text, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
@@ -358,7 +366,7 @@ private fun SpeakersField(
     onSelected: (Set<String>) -> Unit,
 ) {
     val group = state.groups.firstOrNull { it.id == groupId }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         FieldLabel("Speakers · ${group?.name ?: "${selected.size} selected"}")
         if (state.groups.isNotEmpty()) {
             PickerField(
@@ -375,7 +383,7 @@ private fun SpeakersField(
         if (group != null) return@Column
         val hierarchy = state.hierarchy
         if (hierarchy == null || picker == null) {
-            Text("Loading speakers...", color = Palette.textMuted, fontSize = 13.sp)
+            Text("Loading speakers…", color = Palette.textMuted, fontSize = 13.sp)
             return@Column
         }
         var search by rememberSaveable { mutableStateOf("") }
@@ -392,9 +400,17 @@ private fun SpeakersField(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 selected.forEach { id ->
                     Surface(color = Palette.accent.copy(alpha = 0.12f), shape = RoundedCornerShape(50), border = BorderStroke(1.dp, Palette.accent.copy(alpha = 0.4f))) {
-                        Row(Modifier.padding(start = 10.dp, end = 4.dp, top = 2.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(known[id]?.name ?: id, color = Palette.text, fontSize = 12.sp)
-                            Icon(SIcons.Close, "Remove", tint = Palette.textSecondary, modifier = Modifier.size(22.dp).clickable { onSelected(selected - id) }.padding(4.dp))
+                        val name = known[id]?.name ?: id
+                        Row(Modifier.padding(start = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(name, color = Palette.text, fontSize = 12.sp)
+                            // The × is a full Small touch target (44), named for the speaker it removes
+                            Box(
+                                Modifier
+                                    .size(app.sonorium.ui.UiSize.SMALL.dp)
+                                    .semantics { contentDescription = "Remove $name" }
+                                    .clickable { onSelected(selected - id) },
+                                contentAlignment = Alignment.Center,
+                            ) { Icon(SIcons.Close, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp)) }
                         }
                     }
                 }
@@ -439,7 +455,7 @@ private fun SpeakersField(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(if (selected.size == 1) "1 speaker selected" else "${selected.size} speakers selected", color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-            TextButton(onClick = { onSelected(emptySet()) }, enabled = selected.isNotEmpty()) { Text("Clear selection", color = Palette.textSecondary) }
+            TextButton(onClick = { onSelected(emptySet()) }, enabled = selected.isNotEmpty(), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Clear selection", color = Palette.textSecondary) }
         }
     }
 }

@@ -83,7 +83,7 @@ fun LinkChannelsDialog(
                 }
                 Column(
                     Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).widthIn(max = 720.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     FieldLabel("Name")
                     SField(
@@ -151,7 +151,7 @@ fun LinkChannelsDialog(
                 }
                 HorizontalDivider(color = Palette.border)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), horizontalArrangement = Arrangement.End) {
-                    OutlinedButton(onClick = onClose, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp)) { Text("Cancel", color = Palette.text) }
+                    OutlinedButton(onClick = onClose, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.text) }
                     Spacer(Modifier.width(8.dp))
                     Button(
                         enabled = !busy,
@@ -172,6 +172,7 @@ fun LinkChannelsDialog(
                         },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                     ) { Text("Link and play", fontWeight = FontWeight.Medium) }
                 }
             }

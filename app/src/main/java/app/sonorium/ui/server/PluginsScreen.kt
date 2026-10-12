@@ -47,6 +47,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.sonorium.server.PluginRules
@@ -108,8 +109,9 @@ fun PluginsPage(model: ServerViewModel) {
             model.call { it.uploadPlugin(name, bytes) }.onSuccess { o ->
                 val warning = (o["status"] as? JsonPrimitive)?.content == "warning"
                 val pname = ((o["plugin"] as? JsonObject)?.get("name") as? JsonPrimitive)?.content ?: "Unknown"
-                if (warning) model.toast((o["message"] as? JsonPrimitive)?.content ?: "Plugin \"$pname\" installed successfully!", error = true)
-                else model.toast("Plugin \"$pname\" installed successfully!", error = false)
+                // A warning still installed the plugin: an informational toast, not an error
+                if (warning) model.toast((o["message"] as? JsonPrimitive)?.content ?: "Plugin “$pname” installed", error = false)
+                else model.toast("Plugin “$pname” installed", error = false)
                 catalog = null
                 model.pluginsCatalogTab = false
                 load()
@@ -155,7 +157,7 @@ fun PluginsPage(model: ServerViewModel) {
             }
             if (!model.pluginsCatalogTab) {
                 val list = plugins
-                if (list != null && list.isEmpty()) item { EmptyState("No plugins installed", null) }
+                if (list != null && list.isEmpty()) item { EmptyState("No plugins installed", "Install one from the Catalog, or upload a plugin .zip") }
                 items(list.orEmpty(), key = { it.id }) { p ->
                     PluginRow(p, model, onToggle = { on ->
                         if (!on && p.authProvider) {
@@ -169,7 +171,7 @@ fun PluginsPage(model: ServerViewModel) {
                         ) {
                             scope.launch {
                                 model.call { it.json("DELETE", "plugins/${p.id}") }.onSuccess {
-                                    model.toast("Plugin \"${p.name}\" uninstalled successfully", error = false)
+                                    model.toast("Plugin “${p.name}” uninstalled", error = false)
                                     catalog = null
                                     load()
                                     model.afterPluginsChanged()
@@ -185,18 +187,18 @@ fun PluginsPage(model: ServerViewModel) {
                     c.isFailure -> item {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
                             Text("Couldn’t load the catalog", color = Palette.danger, modifier = Modifier.weight(1f))
-                            TextButton(onClick = { scope.launch { loadCatalog() } }) { Text("Retry", color = Palette.accent) }
+                            TextButton(onClick = { scope.launch { loadCatalog() } }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Retry", color = Palette.accent) }
                         }
                     }
                     else -> {
                         val rows = (c.getOrNull()?.get("plugins") as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
-                        if (rows.isEmpty()) item { EmptyState("No plugins available", null) }
+                        if (rows.isEmpty()) item { EmptyState("No plugins available", "The catalog has nothing to install right now") }
                         items(rows, key = { (it["id"] as? JsonPrimitive)?.content.orEmpty() }) { r ->
                             CatalogRow(r, installing) { id, name ->
                                 installing = id
                                 scope.launch {
                                     model.call { it.json("POST", "plugins/install-from-catalog", buildJsonObject { put("plugin_id", id) }) }.onSuccess {
-                                        model.toast("${name.ifEmpty { id }} installed successfully", error = false)
+                                        model.toast("${name.ifEmpty { id }} installed", error = false)
                                         load()
                                         loadCatalog()
                                         model.afterPluginsChanged()
@@ -214,7 +216,7 @@ fun PluginsPage(model: ServerViewModel) {
     if (requirements) AlertDialog(
         onDismissRequest = { requirements = false },
         containerColor = Palette.card,
-        title = { Text("Plugin requirements", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text("Plugin requirements", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column {
                 Text(REQUIREMENTS, color = Palette.text, fontFamily = FontFamily.Monospace, fontSize = 11.sp, modifier = Modifier.background(Palette.backgroundSecondary, RoundedCornerShape(6.dp)).padding(8.dp))
@@ -222,7 +224,7 @@ fun PluginsPage(model: ServerViewModel) {
             }
         },
         confirmButton = {
-            Button(onClick = { requirements = false }, colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), shape = RoundedCornerShape(8.dp)) { Text("Done") }
+            Button(onClick = { requirements = false }, colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Done") }
         },
     )
     ask?.let { a -> ConfirmDialog(a.title, a.sub, a.action, a.danger, onConfirm = a.onOk, onDismiss = { ask = null }) }
@@ -231,7 +233,7 @@ fun PluginsPage(model: ServerViewModel) {
 @Composable
 private fun PluginRow(p: Plugin, model: ServerViewModel, onToggle: (Boolean) -> Unit, onUninstall: () -> Unit, onChanged: () -> Unit) {
     val open = p.enabled && p.hasOptions && (model.pluginOpen[p.id] ?: true)
-    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(12.dp)).border(1.dp, Palette.border, RoundedCornerShape(12.dp)).padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBox(
                 if (open) SIcons.ChevronDown else SIcons.ChevronRight,
@@ -240,7 +242,7 @@ private fun PluginRow(p: Plugin, model: ServerViewModel, onToggle: (Boolean) -> 
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f).alpha(if (p.enabled) 1f else 0.55f)) {
-                Text(p.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(p.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("v${p.version}", color = Palette.textSecondary, fontSize = 12.sp)
                     if (p.builtin) {
@@ -280,7 +282,7 @@ private fun PluginForm(p: Plugin, model: ServerViewModel, onChanged: () -> Unit)
             p.actions.forEach { a ->
                 val run = {
                     scope.launch {
-                        model.toast("Executing action...", error = false)
+                        model.toast("Running action…", error = false)
                         val data = PluginRules.actionData(p.form, values)
                         model.call { it.json("POST", "plugins/${p.id}/action", buildJsonObject { put("action", a.id); put("data", data) }) }.onSuccess { r ->
                             val ok = (r["success"] as? JsonPrimitive)?.booleanOrNull == true
@@ -292,8 +294,8 @@ private fun PluginForm(p: Plugin, model: ServerViewModel, onChanged: () -> Unit)
                     }
                     Unit
                 }
-                if (a.primary) Button(onClick = run, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar)) { Text(a.label) }
-                else OutlinedButton(onClick = run, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border)) { Text(a.label, color = Palette.text) }
+                if (a.primary) Button(onClick = run, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text(a.label) }
+                else OutlinedButton(onClick = run, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text(a.label, color = Palette.text) }
             }
         }
         if (p.settingsFields.isNotEmpty()) PluginSettings(p, model, onChanged)
@@ -345,10 +347,10 @@ private fun CatalogRow(r: JsonObject, installing: String?, onInstall: (String, S
     val id = s("id")
     val installed = b("installed")
     val update = installed && b("update_available")
-    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp)).padding(10.dp)) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(12.dp)).border(1.dp, Palette.border, RoundedCornerShape(12.dp)).padding(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(s("name").ifEmpty { id }, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text(s("name").ifEmpty { id }, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("v${s("version")}", color = Palette.textSecondary, fontSize = 12.sp)
                     if (update) Text(
@@ -360,10 +362,10 @@ private fun CatalogRow(r: JsonObject, installing: String?, onInstall: (String, S
                 }
             }
             when {
-                installing == id -> OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) { Text("Installing…") }
-                update -> Button(onClick = { onInstall(id, s("name")) }, enabled = installing == null, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar)) { Text("Update") }
-                installed -> OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp)) { Text("Installed") }
-                else -> Button(onClick = { onInstall(id, s("name")) }, enabled = installing == null, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar)) { Text("Install") }
+                installing == id -> OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Installing…") }
+                update -> Button(onClick = { onInstall(id, s("name")) }, enabled = installing == null, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Update") }
+                installed -> OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Installed") }
+                else -> Button(onClick = { onInstall(id, s("name")) }, enabled = installing == null, shape = RoundedCornerShape(8.dp), colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Install") }
             }
         }
         if (s("description").isNotEmpty()) Text(s("description"), color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))

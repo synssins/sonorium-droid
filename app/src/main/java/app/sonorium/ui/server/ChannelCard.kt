@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
@@ -122,16 +121,19 @@ fun ChannelCard(
             // Link strip (Zones): Linked · <name> + Leave, or Left the link + Rejoin (1.2)
             if (link != null) {
                 Row(
-                    Modifier.fillMaxWidth().background(Palette.accentSecondary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+                    Modifier.fillMaxWidth().background(Palette.accentSecondary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(SIcons.Link, null, tint = Palette.accentSecondary, modifier = Modifier.size(14.dp))
+                    Icon(SIcons.Link, null, tint = Palette.accentSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                     Text(
                         if (linked) "Linked · ${link.name}" else "Left the link",
                         color = Palette.text, fontSize = 12.sp, modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                     )
                     if (zones.mayLeave(session.id)) {
-                        TextButton(onClick = { if (linked) actions.leaveLink(session, link.id) else actions.rejoinLink(session, link.id) }) {
+                        TextButton(
+                            onClick = { if (linked) actions.leaveLink(session, link.id) else actions.rejoinLink(session, link.id) },
+                            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
+                        ) {
                             Text(if (linked) "Leave" else "Rejoin", color = Palette.text, fontSize = 12.sp)
                         }
                     }
@@ -143,13 +145,13 @@ fun ChannelCard(
                     Box(
                         Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Collapse ${session.name}" }.clickable(onClick = it),
                         contentAlignment = Alignment.Center,
-                    ) { Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp)) }
+                    ) { Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH.dp)) }
                 }
                 Box(
                     Modifier.size(app.sonorium.ui.UiSize.SMALL.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center,
-                ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 20.sp) }
-                Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 22.sp) }
+                Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     val zone = zones?.zones?.get(session.id)
                     val sub = speakerSummary(session) +
@@ -176,7 +178,7 @@ fun ChannelCard(
             // Cast strips: one per output (1.2)
             session.outputs.forEach { output ->
                 Row(
-                    Modifier.fillMaxWidth().background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
+                    Modifier.fillMaxWidth().background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(SIcons.Cast, null, tint = Palette.accent, modifier = Modifier.size(16.dp))
@@ -187,8 +189,12 @@ fun ChannelCard(
                         },
                         color = Palette.text, fontSize = 12.sp, modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                     )
-                    if (state.me?.perms?.contains("ch.play") != false) {
-                        TextButton(onClick = { actions.stopCasting(session, output.outputId) }) { Text("Stop casting", color = Palette.danger, fontSize = 12.sp) }
+                    // Only once the permissions are known to include ch.play (not before they load)
+                    if (state.me?.perms?.contains("ch.play") == true) {
+                        TextButton(
+                            onClick = { actions.stopCasting(session, output.outputId) },
+                            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
+                        ) { Text("Stop casting", color = Palette.danger, fontSize = 12.sp) }
                     }
                 }
             }
@@ -256,18 +262,12 @@ fun ChannelCard(
     }
 
     if (confirmDelete) {
-        AlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            containerColor = Palette.card,
-            text = { Text("Delete this channel?", color = Palette.text) },
-            confirmButton = {
-                Button(
-                    onClick = { confirmDelete = false; actions.delete(session) },
-                    colors = ButtonDefaults.buttonColors(containerColor = Palette.danger, contentColor = Palette.text),
-                    shape = RoundedCornerShape(8.dp),
-                ) { Text("OK") }
-            },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel", color = Palette.textSecondary) } },
+        ConfirmDialog(
+            title = "Delete “${session.name}”?",
+            sub = "The channel stops and is removed for everyone.",
+            action = "Delete",
+            onConfirm = { actions.delete(session) },
+            onDismiss = { confirmDelete = false },
         )
     }
 }
@@ -314,7 +314,7 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
             Box(
                 Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Open ${session.name}" }.clickable(onClick = onExpand),
                 contentAlignment = Alignment.Center,
-            ) { Icon(SIcons.ChevronRight, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp)) }
+            ) { Icon(SIcons.ChevronRight, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH.dp)) }
             Box(
                 Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
                 contentAlignment = Alignment.Center,
@@ -343,7 +343,7 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
                     .clickable(onClick = onTogglePlay),
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(if (playing) SIcons.Stop else SIcons.Play, null, tint = if (playing) Palette.danger else Palette.bar, modifier = Modifier.size(18.dp))
+                    Icon(if (playing) SIcons.Stop else SIcons.Play, null, tint = if (playing) Palette.danger else Palette.bar, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH.dp))
                 }
             }
         }
@@ -474,7 +474,7 @@ private fun NowLine(session: Session, actions: CardActions, onCountdownZero: () 
         LaunchedEffect(now) { onCountdownZero() }
     }
 
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
         if (text == null) {
             Text("No sequence or playlist", color = Palette.textMuted, fontSize = 13.sp)
             return@Row
@@ -484,9 +484,9 @@ private fun NowLine(session: Session, actions: CardActions, onCountdownZero: () 
         TextButton(
             onClick = { actions.next(session) },
             enabled = enabled,
-            modifier = Modifier.height(32.dp),
+            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
         ) {
-            Icon(SIcons.Next, null, tint = if (enabled) Palette.text else Palette.textMuted, modifier = Modifier.size(12.dp))
+            Icon(SIcons.Next, null, tint = if (enabled) Palette.text else Palette.textMuted, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
             Spacer(Modifier.width(4.dp))
             Text("Next", color = if (enabled) Palette.text else Palette.textMuted, fontSize = 12.sp)
         }
@@ -496,7 +496,7 @@ private fun NowLine(session: Session, actions: CardActions, onCountdownZero: () 
 @Composable
 private fun RecentChanges(session: Session) {
     Surface(color = Palette.backgroundSecondary, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(10.dp).heightIn(min = 64.dp)) {
+        Column(Modifier.padding(12.dp).heightIn(min = 64.dp)) {
             FieldLabel("Recent changes")
             Spacer(Modifier.height(4.dp))
             session.recent.take(5).forEach { entry ->

@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.sonorium.server.AdvancedPageRules
@@ -108,11 +109,11 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                     Text(if (restarting) "Restarting…" else "⚠ Restart Sonorium to apply.", color = Palette.warning, fontSize = 13.sp, modifier = Modifier.weight(1f))
                     if (!restarting) Button(
                         onClick = {
-                            ask = Ask("Restart Sonorium?", null, "Restart") {
+                            ask = Ask("Restart Sonorium?", "Playing channels stop for a few seconds.", "Restart") {
                                 restarting = true
                                 scope.launch {
                                     model.call { it.json("PUT", "install/features", buildJsonObject { put("restart", true) }) }.onSuccess {
-                                        model.toast("Restarting Sonorium...", error = false)
+                                        model.toast("Restarting Sonorium…", error = false)
                                         model.waitForRestart()
                                     }.onFailure { restarting = false; model.toast(model.messageOf(it, "Not saved"), error = true) }
                                 }
@@ -199,7 +200,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                             val texts = remember(values) { r.keys.map { AdvancedPageRules.shown(r, AdvancedPageRules.value(values, it)) }.toMutableList() }
                             Block(changed) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(r.name, color = if (changed) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                                    Text(r.name, color = if (changed) Palette.accent else Palette.text, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                                     IconBox(SIcons.Refresh, "${r.name}: back to the default", { saveValues(AdvancedPageRules.reset(r)) }, size = app.sonorium.ui.UiSize.SMALL, enabled = changed)
                                 }
                                 Text(r.description, color = Palette.textSecondary, fontSize = 13.sp)
@@ -243,7 +244,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                         ask = Ask("Restart Sonorium?", "Playing channels stop for a few seconds.", "Restart") {
                             scope.launch {
                                 model.call { it.json("PUT", "connection", buildJsonObject { put("stream_url", text.trim()) }) }.onSuccess {
-                                    model.toast("Restarting Sonorium...", error = false)
+                                    model.toast("Restarting Sonorium…", error = false)
                                     model.waitForRestart()
                                 }.onFailure { model.toast(model.messageOf(it, "Not saved"), error = true) }
                             }

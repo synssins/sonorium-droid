@@ -93,7 +93,7 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
             if (state.record == null) {
                 item { EmptyState("No server connected", "Playlists are kept on your Sonorium server. Connect to see and add them.") }
             } else if (state.playlists.isEmpty()) {
-                item { EmptyState("No playlists", "Themes in order or shuffled") }
+                item { EmptyState("No playlists", "Play themes one after another, in order or shuffled") }
             } else if (!narrow) {
                 item { PlaylistHeaderRow() }
             }
@@ -211,7 +211,7 @@ private fun PlaylistRow(
             if (!narrow) {
                 Text("${playlist.entries.size}", color = Palette.textSecondary, fontSize = 14.sp, modifier = Modifier.width(72.dp))
                 Row(Modifier.width(110.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(if (shuffle) SIcons.Shuffle else SIcons.InOrder, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
+                    Icon(if (shuffle) SIcons.Shuffle else SIcons.InOrder, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                     Spacer(Modifier.width(6.dp))
                     Text(if (shuffle) "Shuffle" else "In order", color = Palette.textSecondary, fontSize = 14.sp)
                 }
@@ -365,7 +365,7 @@ private fun PlaylistEditor(
                 }
                 LazyColumn(state = list, modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp), horizontalAlignment = Alignment.Start) {
                     item {
-                        Column(Modifier.widthIn(max = 720.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.widthIn(max = 720.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             FieldLabel("Name")
                             SField(
                                 value = name,
@@ -393,8 +393,8 @@ private fun PlaylistEditor(
                                 Spacer(Modifier.width(8.dp))
                                 CountBadge(entries.size)
                                 Spacer(Modifier.weight(1f))
-                                TextButton(onClick = { entries.add(PlaylistEntry()); focusRow = entries.lastIndex }) {
-                                    Icon(SIcons.Plus, null, tint = Palette.accent, modifier = Modifier.size(14.dp))
+                                TextButton(onClick = { entries.add(PlaylistEntry()); focusRow = entries.lastIndex }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
+                                    Icon(SIcons.Plus, null, tint = Palette.accent, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                                     Spacer(Modifier.width(6.dp))
                                     Text("Add entry", color = Palette.accent)
                                 }
@@ -402,7 +402,7 @@ private fun PlaylistEditor(
                             if (entries.isEmpty()) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("No entries", color = Palette.textMuted, fontSize = 14.sp)
-                                    TextButton(onClick = { entries.add(PlaylistEntry()); focusRow = 0 }) { Text("Add entry", color = Palette.accent) }
+                                    TextButton(onClick = { entries.add(PlaylistEntry()); focusRow = 0 }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Add entry", color = Palette.accent) }
                                 }
                             }
                         }
@@ -435,12 +435,12 @@ private fun PlaylistEditor(
                 HorizontalDivider(color = Palette.border)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(PlaylistRules.summary(entries.size, minVal, maxVal), color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                    OutlinedButton(onClick = onClose, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp)) { Text("Cancel", color = Palette.text) }
+                    OutlinedButton(onClick = onClose, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.text) }
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = { save() },
                         enabled = !saving,
-                        modifier = Modifier.semantics { contentDescription = "Save playlist" },
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).semantics { contentDescription = "Save playlist" },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                     ) { Text(if (isNew) "Add playlist" else "Save", fontWeight = FontWeight.Medium) }

@@ -152,7 +152,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                         trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background) }) else null,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search speakers" },
                     )
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
                         if (sources.size > 2) {
                             Segmented(sources.map { it.second }, sources.indexOfFirst { it.first == source }.coerceAtLeast(0), { source = sources[it].first }, Modifier.semantics { contentDescription = "Show speakers from" })
                         }
@@ -173,7 +173,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                             key(tick) {}
                             Text(
                                 when {
-                                    scanning -> "Scanning..."
+                                    scanning -> "Scanning…"
                                     network.lastScan == null -> "Not scanned yet"
                                     else -> "Last scan ${SpeakerRules.timeAgo(network.lastScan)} · ${network.found} found"
                                 },
@@ -187,7 +187,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                             enabled = !scanning,
                             border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                         ) {
-                            Icon(SIcons.Refresh, null, tint = Palette.text, modifier = Modifier.size(14.dp))
+                            Icon(SIcons.Refresh, null, tint = Palette.text, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(if (scanning) "Scanning…" else if (network != null) "Rescan network" else "Refresh from HA", color = Palette.text)
                         }
@@ -198,19 +198,19 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                 item {
                     Row(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(color = Palette.accent, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(10.dp))
-                        Text("Loading speakers...", color = Palette.textSecondary)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Loading speakers…", color = Palette.textSecondary)
                     }
                 }
             } else {
                 val sections = SpeakerRules.sections(h) { SpeakerRules.matches(it, query, source, hideOffline) }
                 when {
-                    SpeakerRules.all(h).isEmpty() -> item { EmptyState("No speakers found yet", null) }
+                    SpeakerRules.all(h).isEmpty() -> item { EmptyState("No speakers found yet", if (network != null) "Rescan the network, or add a speaker by its address" else "Refresh from Home Assistant to look again") }
                     sections.isEmpty() -> item {
                         Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(SIcons.Search, null, tint = Palette.textMuted, modifier = Modifier.size(28.dp))
                             Text("No speakers match", color = Palette.text, fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))
-                            OutlinedButton(onClick = { clearFilters() }, border = BorderStroke(1.dp, Palette.border)) { Text("Clear filters", color = Palette.text) }
+                            OutlinedButton(onClick = { clearFilters() }, border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Clear filters", color = Palette.text) }
                         }
                     }
                 }
@@ -225,9 +225,9 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                             }.padding(top = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Icon(if (isClosed) SIcons.ChevronRight else SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
+                            Icon(if (isClosed) SIcons.ChevronRight else SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(sec.title, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
+                            Text(sec.title, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                             Spacer(Modifier.width(8.dp))
                             Text("${GroupRules.plural(sec.speakers.size, "speaker")} · $on of ${sec.speakers.size} on", color = Palette.textMuted, fontSize = 12.sp)
                         }
@@ -263,7 +263,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
     }
 
     removing?.let { (title, id) ->
-        ConfirmDialog(title, null, "Remove", onConfirm = { model.removeManualSpeaker(id) }, onDismiss = { removing = null })
+        ConfirmDialog(title, "Sonorium stops using this address.", "Remove", onConfirm = { model.removeManualSpeaker(id) }, onDismiss = { removing = null })
     }
     if (adding) AddSpeakerDialog(state, model, onClose = { adding = false })
 }
@@ -510,10 +510,11 @@ private fun AddSpeakerDialog(state: ServerState, model: ServerViewModel, onClose
                 }
                 TextButton(
                     enabled = !checking,
+                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                     onClick = {
                         val body = form() ?: return@TextButton
                         checking = true
-                        result = null to "Checking..."
+                        result = null to "Checking…"
                         scope.launch {
                             model.checkManualSpeaker(body).fold(
                                 onSuccess = { r ->
@@ -535,9 +536,12 @@ private fun AddSpeakerDialog(state: ServerState, model: ServerViewModel, onClose
             Button(
                 onClick = { add() }, enabled = !adding,
                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar), shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             ) { Text("Add speaker") }
         },
-        dismissButton = { TextButton(onClick = onClose) { Text("Cancel", color = Palette.textSecondary) } },
+        dismissButton = {
+            TextButton(onClick = onClose, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.textSecondary) }
+        },
     )
     LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }

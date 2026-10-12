@@ -185,7 +185,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         val cur = w
                         if (cur != null) {
                             item(key = "note") {
-                                Column(Modifier.padding(top = 10.dp)) {
+                                Column(Modifier.padding(top = 12.dp)) {
                                     Text("For this step only. Anything you don't change follows the preset, $name.", color = Palette.textSecondary, fontSize = 13.sp)
                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
                                         Text("Tracks", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
@@ -195,7 +195,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                                         TextButton(onClick = {
                                             w = AdvancedRules.revert(cur, null, null)
                                             editor.toastInfo("Reverted to the last save")
-                                        }, enabled = AdvancedRules.unsaved(cur)) { Text("Revert changes") }
+                                        }, enabled = AdvancedRules.unsaved(cur), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Revert changes") }
                                     }
                                 }
                             }
@@ -262,7 +262,7 @@ private fun LazyListScope.whileSections(
         val keys = w.tracks.keys.filter { w.modes[it] == section }
         val groups = if (section.groupMode == null) emptyList() else ui.listedGroups.filter { Section.ofGroupMode(ThemeEditorRules.groupMode(it)) == section && it.name in w.groups }
         item(key = "tw-sec-${section.mode}") {
-            Column(Modifier.padding(top = 14.dp, bottom = 4.dp)) {
+            Column(Modifier.padding(top = 16.dp, bottom = 4.dp)) {
                 HorizontalDivider(color = Palette.border)
                 Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(section.label, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
@@ -516,8 +516,8 @@ private fun TransitionRow(r: TxRow, side: String, ramp: Int, change: ((TxRow) ->
                 val label = names.getValue(k)
                 Box(
                     Modifier
-                        .heightIn(min = 36.dp)
-                        .alpha(if (disabled) 0.4f else 1f)
+                        .heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
+                        .alpha(if (disabled) app.sonorium.ui.UiSize.DISABLED_ALPHA else 1f)
                         .background(if (on) (if (out) Palette.warning else Palette.accent).copy(alpha = 0.18f) else Palette.backgroundSecondary, RoundedCornerShape(16.dp))
                         .border(1.dp, if (on) (if (out) Palette.warning else Palette.accent) else Palette.border, RoundedCornerShape(16.dp))
                         .clickable(enabled = !disabled) { change { it.copy(on = if (k in it.on) it.on - k else it.on + k) } }
