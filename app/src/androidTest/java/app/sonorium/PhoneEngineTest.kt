@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import app.sonorium.audio.PcmDecoder
+import app.sonorium.engine.EngineDataSource
 import app.sonorium.engine.PhoneEngine
 import app.sonorium.engine.PhonePlayer
 import app.sonorium.engine.PhonePlayerService
@@ -45,15 +46,19 @@ class PhoneEngineTest {
         assertTrue("The engine rendered silence (peak $peak)", peak > 500)
         assertTrue("presets: $presets", presets.size >= 0)
 
-        // The media service plays the engine's stream (ExoPlayer accepts the WAV stream)
+        // The media service plays the engine's stream (ExoPlayer accepts the WAV stream and pulls the mix)
+        EngineDataSource.served = 0
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, "Test Theme"))
         val end = System.currentTimeMillis() + 20_000
-        while (!PhonePlayer.state.value.playing && System.currentTimeMillis() < end) Thread.sleep(200)
+        val second = 44_100L * 2
+        while (!(PhonePlayer.state.value.playing && EngineDataSource.served > second) && System.currentTimeMillis() < end) Thread.sleep(200)
         val playing = PhonePlayer.state.value.playing
+        val served = EngineDataSource.served
         val error = PhonePlayer.state.value.error
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_STOP))
         Thread.sleep(500)
         PhoneEngine.close()
         assertTrue("The on-phone player didn't start playing (error: $error)", playing)
+        assertTrue("The player took only $served bytes of the engine's mix", served > second)
     }
 }

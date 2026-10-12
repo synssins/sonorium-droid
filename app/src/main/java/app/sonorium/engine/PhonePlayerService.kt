@@ -41,7 +41,16 @@ class PhonePlayerService : MediaSessionService() {
             .setLoadControl(DefaultLoadControl.Builder().setBufferDurationsMs(1_500, 3_000, 500, 1_000).build())
             .build()
         exo.addListener(object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) = PhonePlayer.onPlaying(isPlaying || (wanted && exo.playWhenReady))
+            // Playing, or about to (buffering, or held back for a moment by audio focus): the Play button shows Stop.
+            // isPlaying alone never changes while audio focus holds playback back, so follow every change.
+            override fun onEvents(player: Player, events: Player.Events) {
+                val on = exo.isPlaying || (wanted && exo.playWhenReady && exo.playbackState != Player.STATE_IDLE && exo.playbackState != Player.STATE_ENDED)
+                PhonePlayer.onPlaying(on)
+            }
+
+            override fun onPlaybackSuppressionReasonChanged(reason: Int) {
+                if (reason != Player.PLAYBACK_SUPPRESSION_REASON_NONE) android.util.Log.w("PhonePlayer", "Playback held back (reason $reason)")
+            }
 
             override fun onPlaybackStateChanged(state: Int) {
                 // The long WAV "file" ran out (hours): start a new one

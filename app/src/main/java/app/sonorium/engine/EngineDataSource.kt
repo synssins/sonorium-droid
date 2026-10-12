@@ -34,6 +34,7 @@ class EngineDataSource : BaseDataSource(false) {
         }
         // Whole samples, at most ~0.1 s per call so a preset or volume change is heard soon
         val n = PhoneEngine.render(buffer, offset, minOf(length, 8192) and 1.inv())
+        served += n
         bytesTransferred(n)
         return n
     }
@@ -43,6 +44,12 @@ class EngineDataSource : BaseDataSource(false) {
     override fun close() {
         if (uri != null) transferEnded()
         uri = null
+    }
+
+    companion object {
+        /** Engine audio handed to the player so far (the device test checks the player takes it). */
+        @Volatile
+        var served = 0L
     }
 
     class Factory : DataSource.Factory {
