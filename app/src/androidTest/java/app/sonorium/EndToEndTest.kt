@@ -284,7 +284,8 @@ class EndToEndTest {
             Thread.sleep(500)
         }
         Thread.sleep(400)
-        if (device.findObject(By.text(text)) == null) {
+        // The field can show the text a moment later than setText returns
+        if (device.wait(Until.hasObject(By.text(text)), 3_000) != true) {
             screenshot("99-typing")
             throw AssertionError("Couldn't type \"$text\"; see 99-typing.png")
         }
