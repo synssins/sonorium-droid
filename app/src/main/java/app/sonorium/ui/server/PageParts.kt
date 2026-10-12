@@ -37,9 +37,14 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.sonorium.ui.Palette
@@ -127,7 +132,7 @@ fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Palette.card,
-        title = { Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text(title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = sub?.let { { Text(it, color = Palette.textSecondary, fontSize = 14.sp) } },
         confirmButton = {
             Button(
@@ -137,10 +142,16 @@ fun ConfirmDialog(
                     contentColor = if (danger) Palette.text else Palette.bar,
                 ),
                 shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             ) { Text(action) }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp)) {
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(1.dp, Palette.border),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) {
                 Text("Cancel", color = Palette.text)
             }
         },
@@ -167,9 +178,14 @@ fun PromptDialog(message: String, initial: String, onOk: (String) -> Unit, onDis
                 onClick = { onDismiss(); onOk(text) },
                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                 shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             ) { Text("OK") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = Palette.textSecondary) } },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
+                Text("Cancel", color = Palette.textSecondary)
+            }
+        },
     )
     LaunchedEffect(Unit) { focus.requestFocus() }
 }
@@ -190,14 +206,17 @@ fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit, modi
 /** A two-way segmented control (`In order` / `Shuffle`, `Server` / `As heard`). */
 @Composable
 fun Segmented(options: List<String>, selected: Int, onSelect: (Int) -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier.background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)).padding(3.dp)) {
+    Row(modifier.background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)).padding(3.dp).selectableGroup()) {
         options.forEachIndexed { i, label ->
             val on = i == selected
             TextButton(
                 onClick = { onSelect(i) },
                 shape = RoundedCornerShape(6.dp),
                 colors = ButtonDefaults.textButtonColors(containerColor = if (on) Palette.card else Color.Transparent),
-                modifier = Modifier.heightIn(min = 38.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).semantics {
+                    role = Role.Tab
+                    this.selected = on
+                },
             ) { Text(label, color = if (on) Palette.text else Palette.textSecondary, fontSize = 14.sp) }
         }
     }
@@ -213,8 +232,17 @@ fun Dot(color: Color, size: Int = 8) {
 @Composable
 fun EmptyState(title: String, sub: String?) {
     Column(Modifier.fillMaxWidth().padding(vertical = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        sub?.let { Text(it, color = Palette.textSecondary, fontSize = 14.sp) }
+        Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+        sub?.let {
+            Spacer(Modifier.size(4.dp))
+            Text(
+                it,
+                color = Palette.textSecondary,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 24.dp),
+            )
+        }
     }
 }
 

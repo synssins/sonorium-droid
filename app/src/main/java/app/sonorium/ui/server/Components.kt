@@ -41,7 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +69,7 @@ data class PickOption(
 fun Marks(o: PickOption) {
     if (o.isDefault) Text("★", color = Palette.warning, fontSize = 13.sp, modifier = Modifier.padding(start = 6.dp))
     if (o.intrusion) Text("⚭", color = Palette.accentSecondary, fontSize = 13.sp, modifier = Modifier.padding(start = 4.dp))
-    if (o.sequence) Icon(SIcons.Sequence, "Sequence", tint = Palette.textSecondary, modifier = Modifier.padding(start = 4.dp).size(13.dp))
+    if (o.sequence) Icon(SIcons.Sequence, "Sequence", tint = Palette.textSecondary, modifier = Modifier.padding(start = 4.dp).size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
 }
 
 /**
@@ -103,7 +105,7 @@ fun PickerField(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)
-                .alpha(if (enabled) 1f else 0.5f)
+                .alpha(if (enabled) 1f else app.sonorium.ui.UiSize.DISABLED_ALPHA)
                 .semantics { contentDescription = label }
                 .clickable(enabled = enabled) { open = true },
         ) {
@@ -121,7 +123,7 @@ fun PickerField(
                     selected?.let { Marks(it) }
                 }
                 Spacer(Modifier.width(6.dp))
-                Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
+                Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
             }
         }
         DropdownMenu(
@@ -136,7 +138,7 @@ fun PickerField(
                     text = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(Modifier.width(22.dp)) {
-                                if (o.value == current) Icon(SIcons.Check, null, tint = Palette.accent, modifier = Modifier.size(14.dp))
+                                if (o.value == current) Icon(SIcons.Check, null, tint = Palette.accent, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             }
                             o.icon?.let { Icon(it, null, tint = Palette.textSecondary, modifier = Modifier.padding(end = 8.dp).size(16.dp)) }
                             Text(o.label, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -272,8 +274,10 @@ fun ToastHost(toast: Toast?, modifier: Modifier = Modifier) {
             shape = RoundedCornerShape(8.dp),
             border = BorderStroke(1.dp, if (t.error) Palette.danger else Palette.accent),
             shadowElevation = 6.dp,
+            // Announced by TalkBack when it appears (ui-standards: toasts are a polite live region)
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         ) {
-            Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(if (t.error) SIcons.Close else SIcons.Check, null, tint = if (t.error) Palette.danger else Palette.accent, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(t.text, color = Palette.text, fontSize = 14.sp)
