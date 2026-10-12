@@ -87,7 +87,6 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     val packages by model.packages.collectAsState()
     val localThemes by model.localThemes.collectAsState()
     val downloads by model.downloads.collectAsState()
-    val isPro by model.entitlement.isPro.collectAsState()
     var unlockFor by remember { mutableStateOf<String?>(null) }
     var folderFor by remember { mutableStateOf<String?>(null) }
     val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -100,7 +99,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     }
     fun saveToPhone(id: String) {
         when {
-            !isPro -> unlockFor = id
+            !model.entitlement.isPro.value -> unlockFor = id
             model.themeStore.root == null -> { folderFor = id; pickFolder.launch(app.sonorium.local.ThemeStore.suggestedStart()) }
             else -> model.saveThemeToPhone(id)
         }
@@ -151,7 +150,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                     Column {
                         PageHeader("Themes", themes.size, help = "themes") {
                             Button(
-                                onClick = { creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                                onClick = { if (model.reachableOrSay()) creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                             ) {
                                 Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))

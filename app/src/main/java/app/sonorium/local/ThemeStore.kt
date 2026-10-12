@@ -191,6 +191,12 @@ class ThemeStore(private val context: Context) {
         }.orEmpty()
     }
 
+    /** A text file at the top of [theme]'s folder (presets.json, metadata.json), or null. */
+    suspend fun readFile(theme: LocalTheme, name: String): String? = withContext(Dispatchers.IO) {
+        val tree = root ?: return@withContext null
+        children(tree, theme.docId).firstOrNull { it.name == name && !it.isDir }?.let { readText(tree, it.id) }
+    }
+
     /** Removes a theme folder from the phone. */
     suspend fun remove(theme: LocalTheme): Boolean = withContext(Dispatchers.IO) {
         val tree = root ?: return@withContext false

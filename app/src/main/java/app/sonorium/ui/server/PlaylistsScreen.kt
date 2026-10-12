@@ -88,7 +88,7 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
             item {
                 PageHeader("Playlists", state.playlists.size, help = "playlists") {
                     // Playlists live on the server: nothing to add to without one (R15)
-                    if (state.record != null) AddButton("Add playlist", narrow) { adding = true }
+                    if (state.record != null) AddButton("Add playlist", narrow) { if (model.reachableOrSay()) adding = true }
                 }
             }
             if (state.record == null) {

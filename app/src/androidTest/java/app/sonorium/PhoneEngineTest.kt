@@ -46,6 +46,21 @@ class PhoneEngineTest {
         assertTrue("The engine rendered silence (peak $peak)", peak > 500)
         assertTrue("presets: $presets", presets.size >= 0)
 
+        // Another theme while it plays: the engine crossfades to it (Chris's bug: the theme didn't switch)
+        val other = File(Python.getInstance().getModule("lab").callAttr("make_test_theme", File(root, "other").apply { mkdirs() }.path).toString())
+        File(other, "metadata.json").let { f -> f.writeText(org.json.JSONObject(f.readText()).put("id", "other-theme").put("name", "Other").toString()) }
+        val otherPcm = File(root, "other-pcm")
+        other.walkTopDown().filter { it.isFile && it.extension.lowercase() == "wav" }.forEach { f ->
+            PcmDecoder.decodeToWav(f, File(otherPcm, f.relativeTo(other).path.substringBeforeLast('.') + ".wav"))
+        }
+        PhoneEngine.setTheme(ThemePrep.Prepared(other, otherPcm), null)
+        val after = ByteArray(44_100 * 2 * 6)
+        PhoneEngine.render(after, 0, after.size)
+        val tail = ByteBuffer.wrap(after, after.size - 44_100 * 2, 44_100 * 2).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        var peakAfter = 0
+        while (tail.hasRemaining()) peakAfter = maxOf(peakAfter, kotlin.math.abs(tail.get().toInt()))
+        assertTrue("Silence after switching themes (peak $peakAfter)", peakAfter > 500)
+
         // The media service plays the engine's stream (ExoPlayer accepts the WAV stream and pulls the mix)
         EngineDataSource.served = 0
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, "Test Theme"))

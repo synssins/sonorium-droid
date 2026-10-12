@@ -32,6 +32,7 @@ class PhonePlayerService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        running = this
         exo = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(EngineDataSource.Factory()))
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MUSIC).build(), true)
@@ -89,11 +90,21 @@ class PhonePlayerService : MediaSessionService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun start() {
+    private fun item(): MediaItem {
         val metadata = MediaMetadata.Builder().setTitle(title.ifEmpty { "Sonorium" }).setArtist("On this phone").setIsPlayable(true).build()
-        exo.setMediaItem(MediaItem.Builder().setUri("sonorium-engine:play").setMimeType(MimeTypes.AUDIO_WAV).setMediaMetadata(metadata).build())
+        return MediaItem.Builder().setUri("sonorium-engine:play").setMimeType(MimeTypes.AUDIO_WAV).setMediaMetadata(metadata).build()
+    }
+
+    private fun start() {
+        exo.setMediaItem(item())
         exo.prepare()
         exo.play()
+    }
+
+    /** The theme changed while playing: same stream, new title in the notification. */
+    private fun rename(newTitle: String) {
+        title = newTitle
+        if (exo.mediaItemCount > 0) exo.replaceMediaItem(0, item())
     }
 
     private fun end() {
@@ -109,6 +120,7 @@ class PhonePlayerService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        if (running === this) running = null
         session?.release()
         session = null
         exo.release()
@@ -120,5 +132,12 @@ class PhonePlayerService : MediaSessionService() {
         const val ACTION_PLAY = "app.sonorium.engine.PLAY"
         const val ACTION_STOP = "app.sonorium.engine.STOP"
         const val EXTRA_TITLE = "title"
+
+        @Volatile private var running: PhonePlayerService? = null
+
+        /** Renames what's playing (main thread), when the service is running. */
+        fun retitle(title: String) {
+            running?.rename(title)
+        }
     }
 }

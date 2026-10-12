@@ -73,7 +73,6 @@ fun bytesText(b: Long): String = when {
 fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {}) {
     val context = LocalContext.current
     val themes by model.localThemes.collectAsState()
-    val isPro by model.entitlement.isPro.collectAsState()
     var unlock by remember { mutableStateOf(false) }
     var removing by remember { mutableStateOf<LocalTheme?>(null) }
     var folderKnown by remember { mutableStateOf(model.themeStore.root != null) }
@@ -93,7 +92,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {})
     }
     fun import() {
         when {
-            !isPro -> unlock = true
+            !model.entitlement.isPro.value -> unlock = true
             model.themeStore.root == null -> pickFolder.launch(ThemeStoreStart)
             else -> pickZip.launch(ZIP_TYPES)
         }

@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -105,6 +106,8 @@ fun ServerScreen(
     val phonePlaying = app.sonorium.engine.PhonePlayer.state.collectAsState().value.playing
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
     var themesOnPhone by rememberSaveable { mutableStateOf(false) }
+    // A server that can't be reached: Themes opens on the themes on this phone (R19)
+    LaunchedEffect(state.failure != null) { if (state.failure != null) themesOnPhone = true }
     var editing by remember { mutableStateOf<Session?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
     // Link channels (Zones, admin): null = closed; a link = change it; NEW_LINK = a new one
@@ -199,7 +202,7 @@ fun ServerScreen(
                                 state = state,
                                 model = model,
                                 listenVolume = listenVolume,
-                                onNew = { creating = true },
+                                onNew = { if (model.reachableOrSay()) creating = true },
                                 onEdit = { editing = it },
                                 onLink = { linking = it ?: NEW_LINK },
                             )

@@ -43,7 +43,7 @@ fun PhoneView(themes: List<LocalTheme>) {
     // A theme to start with: the last one, else the first on the phone
     LaunchedEffect(themes) {
         val current = s.theme
-        if (current == null || themes.none { it.docId == current.docId }) themes.firstOrNull()?.let(PhonePlayer::choose)
+        if (current == null || themes.none { it.docId == current.docId }) themes.firstOrNull()?.let { PhonePlayer.choose(context, it) }
     }
     val busy = s.preparing != null
     Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, if (s.playing) Palette.accent else Palette.border)) {
@@ -53,7 +53,7 @@ fun PhoneView(themes: List<LocalTheme>) {
                 label = "Theme",
                 options = themes.map { PickOption(it.docId, it.name) },
                 current = s.theme?.docId,
-                onPick = { o -> themes.firstOrNull { it.docId == o.value }?.let(PhonePlayer::choose) },
+                onPick = { o -> themes.firstOrNull { it.docId == o.value }?.let { PhonePlayer.choose(context, it) } },
                 placeholder = "Choose a theme",
                 enabled = themes.isNotEmpty() && !busy,
             )
@@ -63,8 +63,8 @@ fun PhoneView(themes: List<LocalTheme>) {
                 options = listOf(PickOption("", "Default settings")) + s.presets.map { PickOption(it.id, it.name, isDefault = it.isDefault) },
                 current = s.presetId ?: "",
                 onPick = { PhonePlayer.setPreset(it.value.ifEmpty { null }) },
-                placeholder = if (s.presets.isEmpty()) "Presets show after the first Play" else "Default settings",
-                enabled = s.presets.isNotEmpty(),
+                placeholder = "Default settings",
+                enabled = s.presets.isNotEmpty() && !busy,
             )
             FieldLabel("Volume")
             PercentSlider(s.volume, "Volume on this phone", onRelease = PhonePlayer::setVolume)

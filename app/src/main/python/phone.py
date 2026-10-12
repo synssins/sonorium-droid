@@ -26,17 +26,37 @@ def package_values(theme_dir):
 
 
 class Player:
-    """One engine on a prepared theme folder; `cache_dir` holds its predecoded WAVs."""
+    """
+    One engine on prepared theme folders: each theme's `cache_dir` holds its predecoded WAVs.
+    set_theme() crossfades to another prepared theme while playing.
+    """
 
     def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0):
+        self._mirrors = [mirror_lookup(theme_dir, cache_dir)]
+        self._roots = [os.path.realpath(theme_dir)]
         self.engine = Engine(
             theme_dir,
             preset_id=preset_id or None,
             playback_values=package_values(theme_dir),
             seed=int(seed),
-            decoder=PcmFileDecoder(lookup=mirror_lookup(theme_dir, cache_dir)),
+            decoder=PcmFileDecoder(lookup=self._lookup),
         )
         self.engine.set_volume(float(volume))
+
+    def _lookup(self, path):
+        real = os.path.realpath(str(path))
+        for root, mirror in zip(self._roots, self._mirrors):
+            if real == root or real.startswith(root + os.sep):
+                return mirror(path)
+        return path
+
+    def set_theme(self, theme_dir, cache_dir, preset_id=None):
+        """Crossfades to another prepared theme (its default preset when preset_id is None)."""
+        root = os.path.realpath(theme_dir)
+        if root not in self._roots:
+            self._roots.insert(0, root)
+            self._mirrors.insert(0, mirror_lookup(theme_dir, cache_dir))
+        self.engine.set_theme(theme_dir, preset_id=preset_id)
 
     def render(self, n):
         return self.engine.render(int(n)).tobytes()

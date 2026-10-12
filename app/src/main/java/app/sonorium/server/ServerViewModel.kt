@@ -1192,10 +1192,27 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         if (e.unlinked) markUnlinked() else reachable(true)
         null
     } catch (e: java.io.IOException) {
+        // A dropped network leaves dead pooled connections that every later call would reuse (R16)
+        runCatching { client?.connectionPool?.evictAll() }
         reachable(false)
         null
     } catch (_: Exception) {
         null
+    }
+
+    /** False (and a toast saying why) while the server can't be reached: for actions that need it (R15b). */
+    fun reachableOrSay(): Boolean {
+        val s = _state.value
+        val record = s.record
+        if (record == null) {
+            toast("Connect to your Sonorium server first", error = true)
+            return false
+        }
+        if (s.failure != null || api == null) {
+            toast(s.failure ?: unreachableText(record), error = true)
+            return false
+        }
+        return true
     }
 
     private fun unreachableText(record: ServerRecord) = "Can't reach ${record.displayName}. Check that this phone is on the same network."

@@ -35,12 +35,22 @@ object PhonePlayer {
     /** The engine is open on [State.theme] (prepared). */
     private var openFor: String? = null
 
-    /** Picks a theme (and its default preset); opening happens on Play. */
-    fun choose(theme: LocalTheme) {
+    /**
+     * Picks a theme. Its presets show at once (read from its presets.json). While playing, the engine
+     * crossfades to it (after getting it ready the first time); when stopped, the next Play uses it.
+     */
+    fun choose(context: Context, theme: LocalTheme) {
         if (_state.value.theme?.docId == theme.docId) return
-        stop(null)
-        openFor = null
+        val app = context.applicationContext as SonoriumApp
+        val switching = _state.value.playing
         _state.update { it.copy(theme = theme, presets = emptyList(), presetId = null, error = null) }
+        scope.launch {
+            val presets = PhoneEngine.presetsFromJson(app.themeStore.readFile(theme, "presets.json").orEmpty())
+            if (_state.value.theme?.docId == theme.docId && _state.value.presets.isEmpty()) {
+                _state.update { it.copy(presets = presets, presetId = it.presetId ?: presets.firstOrNull { p -> p.isDefault }?.id) }
+            }
+        }
+        if (switching) play(context)
     }
 
     /** Play: prepares the theme the first time (decoding its audio once), opens the engine, starts playback. */
@@ -54,11 +64,19 @@ object PhonePlayer {
                     _state.update { it.copy(preparing = 0 to theme.tracks, error = null) }
                     val prepared = ThemePrep.prepare(app, app.themeStore, theme) { done, total -> _state.update { it.copy(preparing = done to total) } }
                     val s = _state.value
-                    val presets = withContext(Dispatchers.IO) { PhoneEngine.open(app, prepared, s.presetId, s.volume / 100f) }
+                    val presets = withContext(Dispatchers.IO) {
+                        // Already playing another theme: crossfade to this one; else open the engine on it
+                        if (PhoneEngine.isOpen && openFor != null) PhoneEngine.setTheme(prepared, s.presetId).also { PhoneEngine.setVolume(s.volume / 100f) }
+                        else PhoneEngine.open(app, prepared, s.presetId, s.volume / 100f)
+                    }
                     openFor = theme.docId
                     _state.update { st -> st.copy(presets = presets, presetId = st.presetId ?: presets.firstOrNull { it.isDefault }?.id, preparing = null) }
                 }
-                app.startService(Intent(app, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, theme.name))
+                if (!_state.value.playing) {
+                    app.startService(Intent(app, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, theme.name))
+                } else {
+                    PhonePlayerService.retitle(theme.name)
+                }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {

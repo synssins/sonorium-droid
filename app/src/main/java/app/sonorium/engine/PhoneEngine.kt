@@ -28,6 +28,26 @@ object PhoneEngine {
         presetsOf(p)
     }
 
+    /** The engine is open (on some theme). */
+    val isOpen: Boolean get() = player != null
+
+    /** Crossfades the open engine to another prepared theme (its default preset when [presetId] is null). */
+    fun setTheme(prepared: ThemePrep.Prepared, presetId: String?): List<Preset> = synchronized(lock) {
+        val p = player ?: throw IllegalStateException("The engine isn't open")
+        p.callAttr("set_theme", prepared.themeDir.path, prepared.pcmDir.path, presetId)
+        presetsOf(p)
+    }
+
+    /** A theme folder's presets.json read directly (before the engine opens it), in the engine's terms. */
+    fun presetsFromJson(text: String): List<Preset> = runCatching {
+        val root = org.json.JSONObject(text)
+        val presets = root.optJSONObject("presets") ?: root
+        presets.keys().asSequence().mapNotNull { id ->
+            val p = presets.optJSONObject(id) ?: return@mapNotNull null
+            Preset(id, p.optString("name", id).ifBlank { id }, p.optBoolean("is_default"))
+        }.toList()
+    }.getOrDefault(emptyList())
+
     private fun presetsOf(p: PyObject): List<Preset> {
         val arr = JSONArray(p.callAttr("presets").toString())
         return (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Preset(it.getString("id"), it.optString("name", it.getString("id")), it.optBoolean("is_default")) } }
