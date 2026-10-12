@@ -1,6 +1,6 @@
 # Sonorium for Android: status and how to continue
 
-Written 2026-10-12 ~03:50 UTC by the app session, for the next session. Read this first.
+Updated 2026-10-12 ~04:30 UTC by the second app session, for the next session. Read this first.
 
 ## People and places
 - **Chris** (owner). Writes plain language; keep messages short and concrete. Credits are limited:
@@ -31,8 +31,10 @@ Written 2026-10-12 ~03:50 UTC by the app session, for the next session. Read thi
   to branches `e2e-results` and `e2e-results-android8` (summary.md, instrumentation.txt, logcat,
   screens/). A newer push cancels the older run. A run takes ~25 min.
 - **Releases:** this session can't push tags. Trigger the workflow with
-  `run_workflow` on `android.yml`, ref = the branch, input `release: v0.1.0-alphaN`. Last
-  release: **v0.1.0-alpha7**. Release notes come from `.github/release-notes.md` (keep it
+  `run_workflow` on `android.yml`, ref = the branch, input `release: v0.1.0-alphaN`. It builds the
+  branch head **at dispatch time** in its own concurrency group (a later push doesn't cancel it), so
+  dispatch before pushing newer, untested work. Last release: **v0.1.0-alpha8** (`cd8e380`, native
+  Channels). Release notes come from `.github/release-notes.md` (keep it
   current: what's new, please test, not built yet).
 - Signing key and secrets are set up by Chris; package `app.sonorium` (debug `app.sonorium.debug`).
 
@@ -48,25 +50,32 @@ Written 2026-10-12 ~03:50 UTC by the app session, for the next session. Read thi
   Icons.kt = the web UI's SVG icons). Zones on cards (link strips, owner/Kid mode, editor fields).
 - Listen here: `listen/ListenService.kt` (Media3 MediaSessionService, lock-screen controls,
   reconnect, hold_seconds 120, `listen_path`, personal channel via /api/me/channel/listen).
-- Pages not native yet open the server's web UI in `web/ServerActivity.kt` (loopback proxy)
-  at that page.
+- **Phase 2 (native)**, commit `69dae63`: `ui/server/PlaylistsScreen.kt`, `ThemesScreen.kt`
+  (preview player in the view model), `SpeakersScreen.kt`, `GroupsScreen.kt`, `SpacesScreen.kt`
+  (Floors & Areas), `StatusScreen.kt` (200 ms poll while resumed); shared pieces in `PageParts.kt`;
+  client-side rules in `server/{Playlist,Group,Speaker,Status,Theme}Rules.kt`, each unit-tested.
+  **Link channels** dialog: `ui/server/LinkChannelsDialog.kt` (header button + Change on link bars).
+  Full-screen editors use `EditorSurface` so toasts show above them.
+- Pages not native yet (Phase 3: Theme Editor, Connection, Audio, Plugins, Logs, Advanced) open the
+  server's web UI in `web/ServerActivity.kt` (loopback proxy) at that page.
 
 ## State at hand-over
-- Commit `71e4809` (collapsed rows, Zones, listen_path, editor above keyboard) was pushed; its CI
-  run was in progress. The previous run (74b6c6f) passed linking, channel list, preset toast and
-  Play-refused on both emulators; its failures were test steps (fixed in 71e4809).
-- Not yet done: the **validation note to the server session** for the native Channels screen
-  (post it once CI is green, with screenshot links), and a release (**v0.1.0-alpha8**) once green.
+- alpha8 released from `cd8e380` (both emulators green). Validation asked in
+  sonorium-handoff `to-server/2026-10-12-04-validate-channels-and-phase2.md` (also lists the Phase 2
+  deviations/questions: `This phone` label, page help texts, playlist reorder via menu).
+- Phase 2 + Link channels pushed as `69dae63`; its CI run decides alpha9.
+- Local build needs the SDK installed (see above) and the mirror init script; it is not in the
+  repo, recreate it (rewrite repo.maven.apache.org to the Google mirror in settings + projects).
 
 ## Next, in order
-1. Get CI green on the native Channels screen; post the note in `to-server/`; release alpha8.
-2. **Phase 2 native screens** (native-api.md "## Phase 2"): Playlists, Themes, Settings ›
-   Speakers, Speaker Groups, Floors & Areas, Status. No top-level Speakers page. Add each to the
-   menu as native (Page enum in ServerScreen.kt), add device-test steps and ScreensTest captures.
-3. **Link channels dialog** (Zones, admin; native-api.md 1.6).
-4. **Engine prototype** (shared/engine.md): Chaquopy + `sonorium.engine` with decoded PCM
-   (MediaCodec) vs a minimal Kotlin mixer; battery benchmark plan for Chris's Galaxy S25 Ultra.
-5. Phase 3 (Theme Editor, core Settings pages). Users & devices and Keys never go in the app.
+1. When `69dae63` (or a fix) is green: post screenshot links in `to-server/`, release
+   **v0.1.0-alpha9** (release notes already describe Phase 2).
+2. Act on the server session's replies (Validated / Rejected, answers to the questions).
+3. **Engine prototype** (shared/engine.md): needs the `engine-core` branch of synssins/sonorium
+   (add it read-only with add_repo), Chaquopy, and MediaCodec predecoding to 44.1 kHz mono WAV
+   (engine.md 5a). Keep it out of the main app build (separate module or flag) until measured.
+   Battery benchmark plan for Chris's Galaxy S25 Ultra.
+4. Phase 3 (Theme Editor, core Settings pages). Users & devices and Keys never go in the app.
 
 ## Rules that matter
 - Behave exactly like the web UI (toasts, texts, order) per native-api.md; Chris's wording verbatim.

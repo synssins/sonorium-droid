@@ -36,7 +36,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
 
       - name: Unit tests, lint and debug build
-        run: ./gradlew --stacktrace testDebugUnitTest lintDebug assembleDebug
+        run: ./gradlew --stacktrace :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
 
       # The newest push's debug APK, for testers on other machines: a pre-release
       # named ci-latest (Actions artifact storage isn't available on this account).
@@ -59,6 +59,18 @@ jobs:
             gh release create ci-latest --verify-tag --prerelease --title "CI build (newest push)" --notes "$notes"
           fi
           gh release upload ci-latest "sonorium-debug-$short.apk" --clobber
+
+      # The engine lab (shared/engine.md), a separate test app; never blocks the Sonorium app.
+      # Chaquopy can't use the configuration cache.
+      - name: Engine lab APK
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./gradlew --no-configuration-cache :enginelab:assembleDebug
+          cp enginelab/build/outputs/apk/debug/enginelab-debug.apk "sonorium-enginelab-${GITHUB_SHA::7}.apk"
+          gh release upload ci-latest "sonorium-enginelab-${GITHUB_SHA::7}.apk" --clobber
 
   device:
     # The app on Android emulators against a real Sonorium server (Docker),
@@ -108,7 +120,7 @@ jobs:
           python3 e2e/server_setup.py https://127.0.0.1:8808 10.0.2.2 >> "$GITHUB_ENV"
 
       - name: Build the app and its device tests
-        run: ./gradlew assembleDebug assembleDebugAndroidTest
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: Run on the emulator
         id: device
@@ -196,7 +208,7 @@ jobs:
           SONORIUM_VERSION_CODE: ${{ github.run_number }}
         run: |
           export SONORIUM_VERSION_NAME="${SONORIUM_VERSION_NAME#v}"
-          ./gradlew --stacktrace assembleRelease
+          ./gradlew --stacktrace :app:assembleRelease
           cp app/build/outputs/apk/release/app-release.apk "sonorium-${SONORIUM_VERSION_NAME}.apk"
           "$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1)/apksigner" verify --print-certs "sonorium-${SONORIUM_VERSION_NAME}.apk" | grep -i sha-256 || true
 

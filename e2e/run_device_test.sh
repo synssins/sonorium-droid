@@ -19,7 +19,7 @@ set +e
 adb shell am instrument -w -r \
   -e linkUri "$LINK_URI_B64" \
   -e channelName "'$CHANNEL_NAME'" \
-  -e class app.sonorium.EndToEndTest \
+  -e class app.sonorium.EndToEndTest,app.sonorium.PcmDecoderTest \
   "$RUNNER" | tee e2e-out/instrumentation.txt
 grep -q "^OK (" e2e-out/instrumentation.txt
 e2e=$?
