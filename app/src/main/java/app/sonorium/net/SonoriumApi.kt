@@ -377,7 +377,11 @@ class SonoriumApi(
     /** [method] `/api/<path>` with an optional JSON body; a 2xx `{"error": …}` fails too. */
     suspend fun json(method: String, path: String, body: JsonObject? = null): JsonObject {
         val b = body?.toString()?.toRequestBody(JSON) ?: if (method == "GET" || method == "DELETE") null else EMPTY
-        val text = strict(request(path).method(method, b).build())
+        val builder = request(path.substringBefore('?'))
+        if ('?' in path) {
+            builder.url(baseUrl.newBuilder().addPathSegment("api").addPathSegments(path.substringBefore('?')).encodedQuery(path.substringAfter('?')).build())
+        }
+        val text = strict(builder.method(method, b).build())
         return runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: JsonObject(emptyMap())
     }
 

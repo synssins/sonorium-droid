@@ -12,6 +12,7 @@
 - **Settings › Connection is native:** Home Assistant, MQTT and plugin connections with their status, **Test**, **Edit** (Save restarts Sonorium for HA/MQTT, after asking), ⋯ › Remove…, and the dashboard-cards line. The Settings menu now follows the web UI's order.
 - **Settings › Audio Settings is native:** Crossfade, Default volume, Master output gain as a draft; **Save settings** / **Cancel**; ⋯ › Reset to defaults….
 - **Settings › Plugins is native:** Installed (on/off, each plugin's form and actions, its settings, ⋯ › Uninstall…) and Catalog (Install / Update), **Upload plugin** (.zip).
+- **Settings › Logs is native:** the server's log, updated every 3 s while it shows; search, All / Info / Warnings / Errors / Playback, Pause, Copy, Download.
 - Each page's **?** button shows its help (the web UI's texts): Channels, Playlists, Themes, Speakers, Speaker Groups, Floors & Areas, Status.
 
 ## Please test
@@ -27,9 +28,10 @@
 9. Settings › **Connection**: Test on MQTT; Edit MQTT and Cancel (Save restarts Sonorium).
 10. Settings › **Audio Settings**: move Crossfade, Cancel; move it again, Save settings.
 11. Settings › **Plugins**: switch a plugin off and on; open the Catalog tab.
+12. Settings › **Logs**: play a channel and pick **Playback**; Pause, then Resume.
 
 ## Not built yet
 
 - The ▶ preview of a single transition in Advanced (the web UI's Web Audio preview).
-- Settings › Logs and Advanced (web view).
+- Settings › Advanced (web view).
 - Cast to speakers, finding servers on the network.

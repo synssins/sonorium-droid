@@ -779,6 +779,20 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         refreshZones()
     }
 
+    /** Settings › Logs: what the page collected, its filter, search and pause, kept while the app runs. */
+    class LogsHolder {
+        var entries by androidx.compose.runtime.mutableStateOf(emptyList<LogsRules.Entry>())
+        /** What the list shows; frozen while paused. */
+        var shown by androidx.compose.runtime.mutableStateOf(emptyList<LogsRules.Entry>())
+        var after = 0L
+        var version = ""
+        var filter by androidx.compose.runtime.mutableStateOf("Info")
+        var search by androidx.compose.runtime.mutableStateOf("")
+        var paused by androidx.compose.runtime.mutableStateOf(false)
+        var meta by androidx.compose.runtime.mutableStateOf("")
+    }
+    val logs = LogsHolder()
+
     /** After Home Assistant is removed: speakers, groups, channels and network info change (`afterHomeAssistantRemoved`). */
     fun afterHomeAssistantRemoved() = viewModelScope.launch {
         refreshSpeakers()

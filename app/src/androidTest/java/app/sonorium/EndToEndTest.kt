@@ -217,6 +217,12 @@ class EndToEndTest {
             need(By.textContains("Installed ("), 15_000, "31-plugins", "The Plugins page didn't open")
             Thread.sleep(1_500)
             screenshot("31-plugins")
+
+            // Settings › Logs: lines arrive from the server
+            openPage("Logs", settings = true)
+            need(By.textContains("log level:"), 15_000, "32-logs", "The Logs page didn't load")
+            Thread.sleep(1_000)
+            screenshot("32-logs")
             openPage("Channels")
             need(By.text(channelName), 15_000, "26-back", "Channels didn't come back")
 
