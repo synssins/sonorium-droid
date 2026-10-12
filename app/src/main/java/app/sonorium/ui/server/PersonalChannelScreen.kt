@@ -58,6 +58,15 @@ fun PersonalChannelScreen(
                 Spacer(Modifier.width(10.dp))
                 Text("My channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
+            // Neither a server's personal channel nor a theme on this phone: say what's needed
+            if (state.record == null || !state.personalChannel) {
+                Text(
+                    if (state.record == null) "Connect to your Sonorium server to use your account's channel, or put a theme on this phone (Pro) to play it here without a server."
+                    else "This server has no personal channel. Put a theme on this phone (Pro) to play it here.",
+                    color = Palette.textSecondary, fontSize = 14.sp,
+                )
+                return@Column
+            }
             if (channel == null) {
                 state.personalProblem?.let { Text(it, color = Palette.text) } ?: CircularProgressIndicator(color = Palette.accent)
                 return@Column

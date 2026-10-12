@@ -112,7 +112,12 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val _listenVolume = MutableStateFlow(prefs.getInt("listenVolume", 100))
     val listenVolume: StateFlow<Int> = _listenVolume.asStateFlow()
 
-    fun open(id: String) {
+    fun open(id: String?) {
+        if (id == null) {
+            // No server linked or chosen: the interface still shows (offline / local themes)
+            _state.value = ServerState(connecting = false)
+            return
+        }
         if (serverId == id && api != null) return
         serverId = id
         loadExpanded()

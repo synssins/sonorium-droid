@@ -88,7 +88,7 @@ fun StartScreen(model: LinkViewModel) {
                         Spacer(Modifier.height(16.dp))
                         PrimaryButton("Open") {
                             model.reset()
-                            context.startActivity(NativeServerActivity.intent(context, s.record.id))
+                            NativeServerActivity.open(context, s.record.id)
                         }
                     }
                     is LinkState.ConfirmWords -> Card { ConfirmWords(s, model) }
@@ -114,7 +114,7 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 520.dp)) {
         items(servers, key = { it.id }) { server ->
-            Card(Modifier.clickable { model.select(server); context.startActivity(NativeServerActivity.intent(context, server.id)) }) {
+            Card(Modifier.clickable { model.select(server); NativeServerActivity.open(context, server.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         server.displayName,

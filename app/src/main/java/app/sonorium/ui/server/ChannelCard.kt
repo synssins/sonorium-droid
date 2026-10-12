@@ -322,7 +322,7 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                        session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 21.sp,
                         maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
                     )
                     Spacer(Modifier.width(8.dp))
@@ -331,7 +331,7 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
                 val line = nowPlayingLine(session, state)
                 Text(
                     line, color = if (session.themeId == null && session.playlistId == null) Palette.textMuted else Palette.textSecondary,
-                    fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    fontSize = 13.sp, lineHeight = 17.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
             Surface(
@@ -356,7 +356,7 @@ private fun StateChip(playing: Boolean) {
         Modifier
             .background(if (playing) Palette.accent.copy(alpha = 0.15f) else Palette.backgroundSecondary, RoundedCornerShape(50))
             .padding(horizontal = 10.dp, vertical = 3.dp),
-    ) { Text(if (playing) "Playing" else "Stopped", color = if (playing) Palette.accent else Palette.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium) }
+    ) { Text(if (playing) "Playing" else "Stopped", color = if (playing) Palette.accent else Palette.textMuted, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium) }
 }
 
 @Composable

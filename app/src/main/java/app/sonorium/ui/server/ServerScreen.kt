@@ -137,6 +137,21 @@ fun ServerScreen(
                         personalOn = listening?.let { it.personal && it.playing && it.serverId == state.record?.id } == true,
                         onPersonal = { page = Page.Personal },
                     )
+                    // A server that can't be reached: a line above the page, which stays browsable
+                    state.failure?.let { failure ->
+                        Row(
+                            Modifier.fillMaxWidth().background(Palette.backgroundSecondary).padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(failure, color = Palette.text, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            if (!state.unlinked) {
+                                androidx.compose.material3.TextButton(onClick = { model.connect() }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
+                                    Text("Try again", color = Palette.accent)
+                                }
+                            }
+                        }
+                    }
                     Box(Modifier.weight(1f)) {
                         when {
                             state.connecting && state.sessions.isEmpty() -> Centered {
@@ -144,19 +159,17 @@ fun ServerScreen(
                                 Spacer(Modifier.height(12.dp))
                                 Text("Connecting to ${state.record?.displayName.orEmpty()}", color = Palette.textSecondary)
                             }
-                            state.failure != null -> Centered {
-                                Text(state.failure.orEmpty(), color = Palette.text)
+                            // No server: Channels explains and offers Connect; the other pages show their empty state
+                            state.record == null && page == Page.Channels -> Centered {
+                                Text("No server connected", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                                Spacer(Modifier.height(8.dp))
+                                Text("Connect to your Sonorium server to see its channels.", color = Palette.textSecondary, fontSize = 14.sp)
                                 Spacer(Modifier.height(16.dp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    androidx.compose.material3.OutlinedButton(onClick = onServers, border = BorderStroke(1.dp, Palette.border)) {
-                                        Text("Servers", color = Palette.text)
-                                    }
-                                    if (!state.unlinked) {
-                                        Button(onClick = { model.connect() }, colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar)) {
-                                            Text("Try again")
-                                        }
-                                    }
-                                }
+                                Button(
+                                    onClick = onServers,
+                                    colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                                ) { Text("Connect") }
                             }
                             page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening)
                             page == Page.Playlists -> PlaylistsPage(state, model)
@@ -247,7 +260,7 @@ private fun TopBar(
         )
         Spacer(Modifier.weight(1f))
         // The server button: the name given in the app, else the address (1.8)
-        val label = state.record?.displayName.orEmpty()
+        val label = state.record?.displayName ?: "Connect"
         Surface(
             color = Palette.accent,
             shape = RoundedCornerShape(8.dp),
@@ -260,7 +273,8 @@ private fun TopBar(
             }
         }
         // The headphone button: the account's personal channel (native only), when the server has it
-        if (state.personalChannel) {
+        // Always there: the account's channel on a server, or this phone's own player (Pro); else it explains
+        run {
             Spacer(Modifier.width(8.dp))
             IconBox(
                 SIcons.Headphones, "My channel", onPersonal,

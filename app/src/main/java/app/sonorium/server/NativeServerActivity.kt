@@ -20,7 +20,8 @@ class NativeServerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val id = intent.getStringExtra(EXTRA_SERVER_ID) ?: return finish()
+        // No server: the main screen still opens (Connect button, browse, local themes)
+        val id = intent.getStringExtra(EXTRA_SERVER_ID)
         model.open(id)
         askForNotifications()
         setContent {
@@ -28,7 +29,7 @@ class NativeServerActivity : ComponentActivity() {
                 ServerScreen(
                     model = model,
                     onServers = { showServers(this) },
-                    onWebPage = { view -> startActivity(ServerActivity.intent(this, id, view)) },
+                    onWebPage = { view -> id?.let { startActivity(ServerActivity.intent(this, it, view)) } },
                 )
             }
         }
@@ -56,16 +57,17 @@ class NativeServerActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_SERVER_ID = "server_id"
 
-        fun intent(context: Context, serverId: String): Intent =
-            Intent(context, NativeServerActivity::class.java).putExtra(EXTRA_SERVER_ID, serverId)
+        fun intent(context: Context, serverId: String?): Intent =
+            Intent(context, NativeServerActivity::class.java).apply { serverId?.let { putExtra(EXTRA_SERVER_ID, it) } }
 
-        /** Back to the server list, closing the server screens above it. */
+        /** Opens [serverId]'s main screen as the only screen (from the Servers page or a new link). */
+        fun open(context: Context, serverId: String) {
+            context.startActivity(intent(context, serverId).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        }
+
+        /** The Servers page, over the main screen: Back returns to it. */
         fun showServers(context: Context) {
-            context.startActivity(
-                Intent(context, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    .putExtra(MainActivity.EXTRA_SHOW_LIST, true),
-            )
+            context.startActivity(Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_SHOW_LIST, true))
         }
     }
 }
