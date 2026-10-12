@@ -52,10 +52,8 @@ class Player:
 
     def presets(self):
         """[{"id", "name", "is_default"}] as JSON."""
-        out = []
-        for pid, data in (self.engine.presets or {}).items():
-            data = data or {}
-            out.append({"id": pid, "name": data.get("name") or pid, "is_default": bool(data.get("is_default"))})
+        default = self.engine._folder.default_preset()
+        out = [{"id": pid, "name": name or pid, "is_default": pid == default} for pid, name in (self.engine.presets or {}).items()]
         return json.dumps(out)
 
     def close(self):
