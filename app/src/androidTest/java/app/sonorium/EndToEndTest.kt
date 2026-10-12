@@ -44,7 +44,14 @@ class EndToEndTest {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(link))
             .setClassName(instrumentation.targetContext, MainActivity::class.java.name)
         ActivityScenario.launch<MainActivity>(intent).use {
-            val open = device.wait(Until.findObject(By.text("Open")), 30_000)
+            var open = device.wait(Until.findObject(By.text("Open")), 30_000)
+            // A slow emulator can show "Pixel Launcher isn't responding" over the app: Wait, then look again
+            repeat(3) {
+                if (open == null && device.hasObject(By.textContains("isn't responding"))) {
+                    device.findObject(By.text("Wait"))?.click()
+                    open = device.wait(Until.findObject(By.text("Open")), 20_000)
+                }
+            }
             screenshot("01-linked")
             assertNotNull("Linking didn't finish; see 01-linked.png", open)
 
