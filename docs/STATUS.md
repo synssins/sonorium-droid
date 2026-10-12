@@ -1,6 +1,6 @@
 # Sonorium for Android: status and how to continue
 
-Updated 2026-10-12 ~04:30 UTC by the second app session, for the next session. Read this first.
+Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. Read this first.
 
 ## People and places
 - **Chris** (owner). Writes plain language; keep messages short and concrete. Credits are limited:
@@ -33,8 +33,16 @@ Updated 2026-10-12 ~04:30 UTC by the second app session, for the next session. R
 - **Releases:** this session can't push tags. Trigger the workflow with
   `run_workflow` on `android.yml`, ref = the branch, input `release: v0.1.0-alphaN`. It builds the
   branch head **at dispatch time** in its own concurrency group (a later push doesn't cancel it), so
-  dispatch before pushing newer, untested work. Last release: **v0.1.0-alpha8** (`cd8e380`, native
-  Channels). Release notes come from `.github/release-notes.md` (keep it
+  dispatch before pushing newer, untested work. Releases so far tonight:
+  **v0.1.0-alpha8** (`cd8e380`, native Channels), **v0.1.0-alpha9** (`0ae78df`, Phase 2 + Link
+  channels). `.github/release-notes.md` describes alpha9; rewrite it before the next release.
+- CI Gradle calls are scoped to `:app` (the `:enginelab` module uses Chaquopy, which can't use the
+  configuration cache; it builds in its own non-blocking step with `--no-configuration-cache` and
+  its APK goes to `ci-latest` as `sonorium-enginelab-<sha>.apk`). Locally: always `:app:` tasks.
+- Mirror init script (recreate in your scratchpad, pass with `-I`): in `settingsEvaluated` and
+  `allprojects`, every MavenArtifactRepository whose url starts with `https://repo.maven.apache.org`
+  gets url `https://maven-central.storage-download.googleapis.com/maven2/`.
+- The handoff repo is attached read-only but pushing notes to its `main` works. Release notes come from `.github/release-notes.md` (keep it
   current: what's new, please test, not built yet).
 - Signing key and secrets are set up by Chris; package `app.sonorium` (debug `app.sonorium.debug`).
 
@@ -60,22 +68,25 @@ Updated 2026-10-12 ~04:30 UTC by the second app session, for the next session. R
   server's web UI in `web/ServerActivity.kt` (loopback proxy) at that page.
 
 ## State at hand-over
-- alpha8 released from `cd8e380` (both emulators green). Validation asked in
-  sonorium-handoff `to-server/2026-10-12-04-validate-channels-and-phase2.md` (also lists the Phase 2
-  deviations/questions: `This phone` label, page help texts, playlist reorder via menu).
-- Phase 2 + Link channels pushed as `69dae63`; its CI run decides alpha9.
-- Local build needs the SDK installed (see above) and the mirror init script; it is not in the
-  repo, recreate it (rewrite repo.maven.apache.org to the Google mirror in settings + projects).
+- **alpha9 released** from `0ae78df`: Phase 2 native (Playlists, Themes, Speakers, Speaker Groups,
+  Floors & Areas, Status) + Link channels. Both emulators green; the device test drives every new
+  page (`EndToEndTest` steps 20-26) and `PcmDecoderTest`; `ScreensTest` captures `portrait-4-*` per
+  profile (on some profiles a menu item below the fold is skipped: the menu needs a scroll there).
+- Mailbox: `to-server/04` (validate Channels/alpha8 + questions), `to-server/05` (Phase 2 green,
+  alpha9, engine lab). **No replies yet** from the server session as of 05:20 UTC.
+- Open questions (to the server session / Chris): Status label `This phone` vs `This browser`;
+  the PAGE_HELP texts for the `?` buttons (not built); playlist entry reorder via ⋯ (no drag).
+- **Engine lab** (`enginelab/`, see its README): built and on ci-latest; needs Chris to run the
+  benchmarks/battery plan on the S25 Ultra. Engine files copied from `engine-core` `5a637af`.
 
 ## Next, in order
-1. When `69dae63` (or a fix) is green: post screenshot links in `to-server/`, release
-   **v0.1.0-alpha9** (release notes already describe Phase 2).
-2. Act on the server session's replies (Validated / Rejected, answers to the questions).
-3. **Engine prototype** (shared/engine.md): needs the `engine-core` branch of synssins/sonorium
-   (add it read-only with add_repo), Chaquopy, and MediaCodec predecoding to 44.1 kHz mono WAV
-   (engine.md 5a). Keep it out of the main app build (separate module or flag) until measured.
-   Battery benchmark plan for Chris's Galaxy S25 Ultra.
-4. Phase 3 (Theme Editor, core Settings pages). Users & devices and Keys never go in the app.
+1. Check `to-app/` for replies; fix anything Rejected (CI can't show speakers/groups/HA areas:
+   the server session's validation on real servers is what counts there).
+2. **Phase 3** (native-api.md "## Phase 3", read its "Conventions" first): Theme Editor (biggest,
+   ~420 lines of contract), then Settings › Connection, Audio Settings, Plugins, Logs, Advanced.
+   Users & devices and Keys never go in the app. Move each from `webView` to native in the `Page`
+   enum (ServerScreen.kt); add device-test steps and ScreensTest captures like Phase 2.
+3. Engine: act on Chris's lab numbers; re-copy the engine if `engine-core` changes.
 
 ## Rules that matter
 - Behave exactly like the web UI (toasts, texts, order) per native-api.md; Chris's wording verbatim.
