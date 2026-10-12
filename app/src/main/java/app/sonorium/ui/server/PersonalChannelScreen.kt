@@ -85,6 +85,8 @@ fun PersonalChannelScreen(
                 Text(
                     when {
                         isPro -> "Import or download a theme (Themes › On this phone) to play it here, without a server."
+                        state.failure != null && state.record != null -> "Can't reach ${state.record.displayName}, so its channel isn't available. " +
+                            if (isPro) "" else "Unlock Pro to play themes on this phone without a server."
                         state.record == null -> "Connect to your Sonorium server to use your account's channel, or unlock Pro to play themes on this phone without a server."
                         else -> "This server has no personal channel. Unlock Pro to play themes on this phone."
                     },

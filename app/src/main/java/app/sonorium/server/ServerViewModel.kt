@@ -148,7 +148,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 _state.update {
                     it.copy(
                         connecting = false,
-                        failure = if (reached == null) "Can't reach ${record.displayName}. Check that this phone is on the same network."
+                        failure = if (reached == null) unreachableText(record)
                         else "A different server answered at ${reached.host}.",
                     )
                 }
@@ -245,6 +245,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         events = EventSources.createFactory(streamClient).newEventSource(request, object : EventSourceListener() {
             override fun onOpen(eventSource: EventSource, response: Response) {
                 // Every (re)connect: refetch once, then apply events (APP_API.md 8.3)
+                reachable(true)
                 viewModelScope.launch { refreshSessions() }
             }
 
@@ -255,6 +256,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
             override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
                 if (response?.code == 401) viewModelScope.launch { guard { api.me() } }
+                // No answer at all: check with a plain request (shows or clears the unreachable line)
+                if (response == null) viewModelScope.launch { refreshSessions() }
                 scheduleEventsRetry()
             }
 
@@ -1184,12 +1187,33 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private suspend fun <T> guard(block: suspend () -> T): T? = try {
-        block()
+        block().also { reachable(true) }
     } catch (e: ApiException) {
-        if (e.unlinked) markUnlinked()
+        if (e.unlinked) markUnlinked() else reachable(true)
+        null
+    } catch (e: java.io.IOException) {
+        reachable(false)
         null
     } catch (_: Exception) {
         null
+    }
+
+    private fun unreachableText(record: ServerRecord) = "Can't reach ${record.displayName}. Check that this phone is on the same network."
+
+    /**
+     * The server answered (or not) while the app is open: show the unreachable line when the connection
+     * drops, and clear it on the next answer (R16), as at launch.
+     */
+    private fun reachable(ok: Boolean) {
+        val record = _state.value.record ?: return
+        val text = unreachableText(record)
+        _state.update { s ->
+            when {
+                ok && s.failure == text -> s.copy(failure = null)
+                !ok && s.failure == null && !s.connecting -> s.copy(failure = text)
+                else -> s
+            }
+        }
     }
 
     private suspend fun fail(e: Exception) {

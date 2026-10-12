@@ -25,6 +25,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The launcher icon while the app is open in the background: just bring it back (R13)
+        if (!isTaskRoot && intent?.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
+            finish()
+            return
+        }
         enableEdgeToEdge()
         // A fresh start: the splash, then the main screen, always (with the last server, or none)
         val route = savedInstanceState == null && !handleLink(intent) && !intent.getBooleanExtra(EXTRA_SHOW_LIST, false)
@@ -39,7 +44,7 @@ class MainActivity : ComponentActivity() {
                         openMain()
                     })
                     route -> app.sonorium.ui.Splash()
-                    else -> StartScreen(linkModel)
+                    else -> StartScreen(linkModel, onBack = if (isTaskRoot) null else ::finish)
                 }
             }
         }

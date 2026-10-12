@@ -87,10 +87,13 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = side)) {
             item {
                 PageHeader("Playlists", state.playlists.size, help = "playlists") {
-                    AddButton("Add playlist", narrow) { adding = true }
+                    // Playlists live on the server: nothing to add to without one (R15)
+                    if (state.record != null) AddButton("Add playlist", narrow) { adding = true }
                 }
             }
-            if (state.playlists.isEmpty()) {
+            if (state.record == null) {
+                item { EmptyState("No server connected", "Playlists are kept on your Sonorium server. Connect to see and add them.") }
+            } else if (state.playlists.isEmpty()) {
                 item { EmptyState("No playlists", "Themes in order or shuffled") }
             } else if (!narrow) {
                 item { PlaylistHeaderRow() }

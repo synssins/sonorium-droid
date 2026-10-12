@@ -59,6 +59,7 @@ object SIcons {
     val Check = icon("check", listOf("M20 6L9 17l-5-5"))
     val ChevronDown = icon("chevron", listOf("M6 9l6 6 6-6"))
     val ChevronRight = icon("chevron-right", listOf("M9 6l6 6-6 6"))
+    val Back = icon("arrow-left", listOf("M19 12H5", "M12 19l-7-7 7-7"))
     val Link = icon(
         "link",
         listOf(

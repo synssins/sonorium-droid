@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -55,7 +56,7 @@ import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 
 /** The native start: linked servers, and linking a new one. A card is at most 420 dp wide (UI_STYLE.md). */
 @Composable
-fun StartScreen(model: LinkViewModel) {
+fun StartScreen(model: LinkViewModel, onBack: (() -> Unit)? = null) {
     val servers by model.servers.collectAsState()
     val state by model.state.collectAsState()
     var typing by rememberSaveable { mutableStateOf(false) }
@@ -65,7 +66,17 @@ fun StartScreen(model: LinkViewModel) {
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp), contentAlignment = Alignment.TopCenter) {
             Column(Modifier.widthIn(max = 420.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text("Servers", fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = Palette.text)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Back to the main screen (R14), when the list was opened from it
+                    if (onBack != null) {
+                        app.sonorium.ui.server.IconBox(
+                            app.sonorium.ui.server.SIcons.Back, "Back", onBack, size = app.sonorium.ui.UiSize.STANDARD,
+                            tint = Palette.text, background = Palette.background, border = Palette.background,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text("Servers", fontSize = 24.sp, fontWeight = FontWeight.SemiBold, color = Palette.text)
+                }
                 crash?.let { report ->
                     Card { CrashReport(report) { CrashLog.clear(context); crash = null } }
                 }
