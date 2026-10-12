@@ -117,6 +117,8 @@ fun ServerScreen(
 
     // Back from any other page returns to Channels (R6), not to the Servers list
     androidx.activity.compose.BackHandler(enabled = page != Page.Channels) { page = Page.Channels }
+    // Registered later, so it goes first: Back with the menu open just closes the menu (R10)
+    androidx.activity.compose.BackHandler(enabled = drawer.isOpen || drawer.targetValue == DrawerValue.Open) { scope.launch { drawer.close() } }
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {

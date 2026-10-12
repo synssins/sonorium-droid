@@ -83,8 +83,17 @@ fun PickerField(
     modifier: Modifier = Modifier,
     placeholder: String = "",
     enabled: Boolean = true,
+    /** True asks the menu to open now (e.g. right after switching to playlist mode); [onOpened] clears it. */
+    openNow: Boolean = false,
+    onOpened: () -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
+    LaunchedEffect(openNow) {
+        if (openNow) {
+            if (enabled) open = true
+            onOpened()
+        }
+    }
     val selected = options.firstOrNull { it.value == current }
     Box(modifier) {
         Surface(

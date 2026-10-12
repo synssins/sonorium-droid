@@ -106,7 +106,9 @@ fun ChannelCard(
     val playlistMode = session.playlistId != null || session.id in state.playlistMode
     val zones = state.zones
     val link = zones?.linkOf(session.id)
-    val linked = link != null && session.id in link.channels
+    var openPlaylistMenu by remember { mutableStateOf(false) }
+    // A channel that left stays in `channels` and is listed in `left` too (R4)
+    val linked = link != null && session.id in link.channels && session.id !in link.left
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
@@ -194,11 +196,15 @@ fun ChannelCard(
             // Source fields + mode buttons
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (playlistMode) PlaylistFields(session, state, actions) else ThemeFields(session, state, actions)
+                    if (playlistMode) PlaylistFields(session, state, actions, openMenu = openPlaylistMenu) { openPlaylistMenu = false } else ThemeFields(session, state, actions)
                 }
                 Column(Modifier.padding(start = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ModeButton(SIcons.Palette, "Play a theme", on = !playlistMode) { actions.themeMode(session) }
-                    ModeButton(SIcons.Playlist, "Play a playlist", on = playlistMode) { actions.playlistMode(session) }
+                    // Switch to playlist mode and open the Playlist menu at once (1.2 Mode buttons, R9)
+                    ModeButton(SIcons.Playlist, "Play a playlist", on = playlistMode) {
+                        actions.playlistMode(session)
+                        openPlaylistMenu = true
+                    }
                 }
             }
 
@@ -296,7 +302,7 @@ fun nowPlayingLine(session: Session, state: ServerState): String {
 fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTogglePlay: () -> Unit, modifier: Modifier = Modifier) {
     val playing = session.isPlaying
     val zones = state.zones
-    val linked = zones?.linkOf(session.id)?.let { session.id in it.channels } == true
+    val linked = zones?.linkOf(session.id)?.let { session.id in it.channels && session.id !in it.left } == true
     Surface(
         color = Palette.card,
         shape = RoundedCornerShape(12.dp),
@@ -391,7 +397,7 @@ private fun ThemeFields(session: Session, state: ServerState, actions: CardActio
 }
 
 @Composable
-private fun PlaylistFields(session: Session, state: ServerState, actions: CardActions) {
+private fun PlaylistFields(session: Session, state: ServerState, actions: CardActions, openMenu: Boolean = false, onMenuOpened: () -> Unit = {}) {
     FieldLabel("Playlist")
     val options = state.playlists.map {
         PickOption(it.id, it.name, icon = SIcons.Playlist, note = if (it.entries.size == 1) "1 entry" else "${it.entries.size} entries")
@@ -404,6 +410,8 @@ private fun PlaylistFields(session: Session, state: ServerState, actions: CardAc
         onPick = { actions.pickPlaylist(session, it.value) },
         placeholder = if (state.playlists.isEmpty()) "No playlists yet" else "Choose a playlist",
         enabled = state.playlists.isNotEmpty(),
+        openNow = openMenu,
+        onOpened = onMenuOpened,
     )
     FieldLabel("Playing")
     // <theme name> · <what>: the current entry's sequence or preset, else the channel's own (1.2)
