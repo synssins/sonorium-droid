@@ -88,6 +88,10 @@ EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.k
 `ui/wizard/FirstRunWizard.kt`, off (`FirstRun.ENABLED`).
 
 ## State at hand-over
+- **alpha14** (~17:36 UTC, built from green `41fd030`): offline steps 2-4. Server session asked to validate
+  in to-server/23. After it: `b1a7f85` (R13-R17 from to-app/39), `13eac2f` (player state follows every
+  event; device test checks the player pulled the mix): green on API 35 and 26. Next: R12 field heights,
+  step 5 polish, to-app/39 follow-ups once validated.
 - **alpha13** (~13:40 UTC, `557a8f9` = green `2d057a3` + notes): 48 dp standard, R4, R9, R10, `accounts`.
   to-server/11 asks the server session to validate R4, R9, R10 and the 48 sizes.
 - Releases tonight: alpha8, alpha9, alpha10 (Phase 3 native), alpha11, **alpha12** (~12:45 UTC, `427299e` =
