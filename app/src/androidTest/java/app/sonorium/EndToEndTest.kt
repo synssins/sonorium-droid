@@ -109,7 +109,7 @@ class EndToEndTest {
             // Phase 2 native screens. Playlists: add one with an entry → the web UI's toast.
             openPage("Playlists")
             need(By.desc("Add playlist"), 15_000, "20-playlists", "No Add playlist button").click()
-            need(By.desc("Name"), 10_000, "20-playlist-editor", "The playlist editor didn't open").text = "CI playlist"
+            typeInto(need(By.clazz("android.widget.EditText"), 10_000, "20-playlist-editor", "The playlist editor didn't open"), "CI playlist")
             hideKeyboard()
             find(By.text("Add entry"), "No Add entry button").click()
             find(By.desc("Theme 1"), "No theme field on the new entry").click()
@@ -143,7 +143,7 @@ class EndToEndTest {
             // Settings › Speaker Groups: nothing selected → the web UI's refusal
             openPage("Speaker Groups", settings = true)
             need(By.desc("Add group"), 15_000, "24-groups", "No Add group button").click()
-            need(By.desc("Name"), 10_000, "24-group-editor", "The group editor didn't open").text = "CI group"
+            typeInto(need(By.clazz("android.widget.EditText"), 10_000, "24-group-editor", "The group editor didn't open"), "CI group")
             hideKeyboard()
             screenshot("24-group-editor")
             find(By.desc("Save group"), "No save button in the group editor").click()
@@ -155,7 +155,7 @@ class EndToEndTest {
             need(By.text(java.util.regex.Pattern.compile("^(Group speakers by floor|From Home Assistant).*", java.util.regex.Pattern.DOTALL)), 15_000, "25-spaces", "The Floors & Areas page didn't open")
             device.findObject(By.text("Add floor"))?.let { add ->
                 add.click()
-                need(By.desc("Name"), 10_000, "25-add-floor", "The Add floor dialog didn't open").text = "CI floor"
+                typeInto(need(By.clazz("android.widget.EditText"), 10_000, "25-add-floor", "The Add floor dialog didn't open"), "CI floor")
                 find(By.desc("Save floor"), "No save button in the Add floor dialog").click()
                 need(By.text("CI floor"), 10_000, "25-floor-added", "The new floor isn't listed")
             }
@@ -175,6 +175,18 @@ class EndToEndTest {
             need(By.text("Scan Link App code"), 15_000, "11-servers", "The server button didn't return to the list")
             screenshot("11-servers")
             oldWebView?.let { File(shots, "old-webview.txt").writeText("WebView ${it.versionName}\n") }
+        }
+    }
+
+    /** Types into a Compose text field: focus it first, then set the text; checks it arrived. */
+    private fun typeInto(field: UiObject2, text: String) {
+        field.click()
+        Thread.sleep(400)
+        field.text = text
+        Thread.sleep(400)
+        if (device.findObject(By.text(text)) == null) {
+            screenshot("99-typing")
+            throw AssertionError("Couldn't type \"$text\"; see 99-typing.png")
         }
     }
 
