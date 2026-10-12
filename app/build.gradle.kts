@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    // The theme engine (sonorium.engine, Python) for playing themes on the phone
+    id("com.chaquo.python") version "17.0.0"
 }
 
 // Release signing comes from environment variables (CI) or an untracked
@@ -32,6 +34,8 @@ android {
         versionCode = (System.getenv("SONORIUM_VERSION_CODE") ?: "1").toInt()
         versionName = System.getenv("SONORIUM_VERSION_NAME") ?: "0.1.0-dev"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // The engine's Python and numpy are per ABI: phones (arm64) and the CI emulators (x86_64)
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }
 
     signingConfigs {
@@ -112,4 +116,15 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     androidTestImplementation(libs.espresso.web)
     androidTestImplementation(libs.uiautomator)
+}
+
+// The theme engine: the same files as Engine Lab (engine-core), plus the app's own calls (src/main/python)
+chaquopy {
+    defaultConfig {
+        version = "3.12"
+        pip { install("numpy==1.26.2") }
+    }
+    sourceSets {
+        getByName("main") { srcDir("../enginelab/src/main/python") }
+    }
 }

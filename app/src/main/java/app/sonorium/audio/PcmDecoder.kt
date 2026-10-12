@@ -21,13 +21,18 @@ object PcmDecoder {
     data class Result(val samples: Long, val sourceRate: Int, val sourceChannels: Int)
 
     /** Decodes [input] to [output] (overwritten). Throws if the file has no audio track. */
-    fun decodeToWav(input: File, output: File): Result {
-        val extractor = MediaExtractor()
-        extractor.setDataSource(input.path)
+    fun decodeToWav(input: File, output: File): Result =
+        decode(MediaExtractor().apply { setDataSource(input.path) }, input.name, output)
+
+    /** The same, reading a document (e.g. a file in the user's themes folder) through [context]. */
+    fun decodeToWav(context: android.content.Context, input: android.net.Uri, output: File): Result =
+        decode(MediaExtractor().apply { setDataSource(context, input, null) }, input.lastPathSegment.orEmpty(), output)
+
+    private fun decode(extractor: MediaExtractor, name: String, output: File): Result {
         try {
             val track = (0 until extractor.trackCount).firstOrNull {
                 extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
-            } ?: throw IllegalArgumentException("No audio in ${input.name}")
+            } ?: throw IllegalArgumentException("No audio in $name")
             extractor.selectTrack(track)
             val format = extractor.getTrackFormat(track)
             val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)

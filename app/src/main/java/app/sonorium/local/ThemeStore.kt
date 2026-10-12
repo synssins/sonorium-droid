@@ -152,6 +152,39 @@ class ThemeStore(private val context: Context) {
         return DocumentsContract.getDocumentId(uri)
     }
 
+    /** A file of a theme folder: its path inside the folder ("Birds/robin.mp3"), where to read it, its size. */
+    data class ThemeFile(val path: String, val uri: Uri, val bytes: Long, val modified: Long)
+
+    /** Every file of [theme] (the folder itself and its group folders). */
+    suspend fun files(theme: LocalTheme): List<ThemeFile> = withContext(Dispatchers.IO) {
+        val tree = root ?: return@withContext emptyList()
+        fun walk(parentId: String, prefix: String, depth: Int): List<ThemeFile> = childrenFull(tree, parentId).flatMap { d ->
+            when {
+                d.isDir && depth < 2 && !d.name.startsWith(".") -> walk(d.id, prefix + d.name + "/", depth + 1)
+                d.isDir -> emptyList()
+                else -> listOf(ThemeFile(prefix + d.name, DocumentsContract.buildDocumentUriUsingTree(tree, d.id), d.size, d.modified))
+            }
+        }
+        walk(theme.docId, "", 0)
+    }
+
+    private data class FullDoc(val id: String, val name: String, val mime: String, val size: Long, val modified: Long) {
+        val isDir: Boolean get() = mime == DocumentsContract.Document.MIME_TYPE_DIR
+    }
+
+    private fun childrenFull(tree: Uri, parentId: String): List<FullDoc> {
+        val uri = DocumentsContract.buildChildDocumentsUriUsingTree(tree, parentId)
+        val cols = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE, DocumentsContract.Document.COLUMN_SIZE, DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+        )
+        return resolver.query(uri, cols, null, null, null)?.use { c ->
+            buildList {
+                while (c.moveToNext()) add(FullDoc(c.getString(0), c.getString(1) ?: "", c.getString(2) ?: "", if (c.isNull(3)) 0 else c.getLong(3), if (c.isNull(4)) 0 else c.getLong(4)))
+            }
+        }.orEmpty()
+    }
+
     /** Removes a theme folder from the phone. */
     suspend fun remove(theme: LocalTheme): Boolean = withContext(Dispatchers.IO) {
         val tree = root ?: return@withContext false

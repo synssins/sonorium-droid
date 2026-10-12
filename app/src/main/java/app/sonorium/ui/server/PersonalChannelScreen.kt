@@ -26,6 +26,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -50,6 +53,11 @@ fun PersonalChannelScreen(
     listening: ListenController.Listening?,
 ) {
     LaunchedEffect(state.record?.id) { model.refreshPersonal() }
+    LaunchedEffect(Unit) { model.refreshLocalThemes() }
+    val localThemes by model.localThemes.collectAsState()
+    val isPro by model.entitlement.isPro.collectAsState()
+    var onPhone by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(state.record == null || state.failure != null) }
+    var unlock by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
     val channel = state.personal
     Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -58,13 +66,38 @@ fun PersonalChannelScreen(
                 Spacer(Modifier.width(10.dp))
                 Text("My channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
-            // Neither a server's personal channel nor a theme on this phone: say what's needed
-            if (state.record == null || !state.personalChannel) {
+            // On this phone (the engine, local themes) and/or On <server> (the account's channel)
+            val canServer = state.record != null && state.personalChannel
+            val canPhone = isPro && !localThemes.isNullOrEmpty()
+            if (canServer && canPhone) {
+                Segmented(
+                    listOf("On this phone", "On ${state.record?.displayName.orEmpty()}"),
+                    if (onPhone) 0 else 1,
+                    { onPhone = it == 0 },
+                )
+            }
+            if (canPhone && (onPhone || !canServer)) {
+                PhoneView(localThemes.orEmpty())
+                return@Column
+            }
+            // Neither: say what's needed
+            if (!canServer) {
                 Text(
-                    if (state.record == null) "Connect to your Sonorium server to use your account's channel, or put a theme on this phone (Pro) to play it here without a server."
-                    else "This server has no personal channel. Put a theme on this phone (Pro) to play it here.",
+                    when {
+                        isPro -> "Import or download a theme (Themes › On this phone) to play it here, without a server."
+                        state.record == null -> "Connect to your Sonorium server to use your account's channel, or unlock Pro to play themes on this phone without a server."
+                        else -> "This server has no personal channel. Unlock Pro to play themes on this phone."
+                    },
                     color = Palette.textSecondary, fontSize = 14.sp,
                 )
+                if (!isPro) {
+                    Button(
+                        onClick = { unlock = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                    ) { Text("Unlock Pro") }
+                }
+                if (unlock) UnlockScreen(model, onClose = { unlock = false }, onUnlocked = { unlock = false })
                 return@Column
             }
             if (channel == null) {

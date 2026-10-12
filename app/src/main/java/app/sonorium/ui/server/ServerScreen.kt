@@ -102,6 +102,7 @@ fun ServerScreen(
     val listenVolume by model.listenVolume.collectAsState()
     val listening by ListenController.state.collectAsState()
     val themeEditor by model.editor.collectAsState()
+    val phonePlaying = app.sonorium.engine.PhonePlayer.state.collectAsState().value.playing
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
     var themesOnPhone by rememberSaveable { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Session?>(null) }
@@ -135,7 +136,7 @@ fun ServerScreen(
                         showMenuButton = !permanent,
                         onMenu = { scope.launch { drawer.open() } },
                         onServers = onServers,
-                        personalOn = listening?.let { it.personal && it.playing && it.serverId == state.record?.id } == true,
+                        personalOn = phonePlaying || listening?.let { it.personal && it.playing && it.serverId == state.record?.id } == true,
                         onPersonal = { page = Page.Personal },
                     )
                     // A server that can't be reached: a line above the page, which stays browsable
