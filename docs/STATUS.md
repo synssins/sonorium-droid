@@ -88,6 +88,13 @@ EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.k
 `ui/wizard/FirstRunWizard.kt`, off (`FirstRun.ENABLED`).
 
 ## State at hand-over
+- **`085a06b` green** (API 35 + 26, 5 device tests): Chris's alpha14 bugs 1 and 3 (Unlock returns; theme
+  switch crossfades via the engine-runners engine, synced from the server repo), sequences in On this
+  phone, R12/R15b/R16/R18/R19, Save-to-phone size, Google Cast to one speaker (`cast/`). Bug 2 (mixer on
+  the phone) waits on a Core refactor the server session does (to-server/24: a theme-edit module without
+  the web server + `Engine.reload_theme()`; Chris: no change to Core's functionality). Don't edit Core
+  files here; copy them when they land. Next: playlists on the phone (`start_playlist`), Cast testing on
+  the Office display, DLNA.
 - **alpha14** (~17:36 UTC, built from green `41fd030`): offline steps 2-4. Server session asked to validate
   in to-server/23. After it: `b1a7f85` (R13-R17 from to-app/39), `13eac2f` (player state follows every
   event; device test checks the player pulled the mix): green on API 35 and 26. Next: R12 field heights,
