@@ -145,7 +145,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                             value = query, onValueChange = { query = it }, singleLine = true,
                             placeholder = { Text("Search themes", color = Palette.textMuted) },
                             leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
-                            trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = 32, background = Palette.background, border = Palette.background) }) else null,
+                            trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = 40, background = Palette.background, border = Palette.background) }) else null,
                             modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search themes" },
                         )
                         Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -165,7 +165,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(SIcons.Search, null, tint = Palette.textMuted, modifier = Modifier.size(28.dp))
-                            Text("No themes match", color = Palette.text, fontSize = 15.sp, modifier = Modifier.padding(top = 8.dp))
+                            Text("No themes match", color = Palette.text, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
                             if (query.isNotBlank()) Text("“${query.trim()}”", color = Palette.textSecondary, fontSize = 14.sp)
                             OutlinedButton(onClick = { query = ""; chip = ThemeRules.ALL }, border = BorderStroke(1.dp, Palette.border), modifier = Modifier.padding(top = 8.dp)) {
                                 Text("Clear filters", color = Palette.text)
@@ -394,7 +394,7 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Categories", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                IconBox(SIcons.Close, "Close", onDismiss, size = 36, background = Palette.card, border = Palette.card)
+                IconBox(SIcons.Close, "Close", onDismiss, size = 40, background = Palette.card, border = Palette.card)
             }
         },
         text = {
@@ -419,7 +419,7 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
                             Text(c, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                             Badge(label)
                             Spacer(Modifier.width(6.dp))
-                            IconBox(SIcons.Trash, "Delete $c", { confirming = c }, size = 36)
+                            IconBox(SIcons.Trash, "Delete $c", { confirming = c }, size = 40)
                         }
                     }
                 }

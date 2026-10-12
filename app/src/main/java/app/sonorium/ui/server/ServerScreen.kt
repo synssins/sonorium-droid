@@ -350,7 +350,7 @@ private fun MenuRow(
     ) {
         Icon(icon, null, tint = if (selected) Palette.accent else Palette.textSecondary, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(14.dp))
-        Text(title, color = if (selected) Palette.accent else Palette.text, fontSize = 15.sp, modifier = Modifier.weight(1f))
+        Text(title, color = if (selected) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
         badge?.let { CountBadge(it) }
         trailing?.let { Icon(it, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) }
     }
@@ -410,7 +410,7 @@ private fun ChannelsPage(
             // Page header: Channels [count] + New Channel
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Channels", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Channels", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(8.dp))
                     CountBadge(state.sessions.size)
                     Spacer(Modifier.width(6.dp))
@@ -456,7 +456,7 @@ private fun ChannelsPage(
                     Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(SIcons.Music, null, tint = Palette.textMuted, modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(12.dp))
-                        Text("No channels yet", color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+                        Text("No channels yet", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         Text("Create a new channel to start playing ambient sounds", color = Palette.textSecondary, fontSize = 14.sp)
                     }
                 }

@@ -146,14 +146,14 @@ private fun GroupRow(
             IconBox(
                 if (expanded) SIcons.ChevronDown else SIcons.ChevronRight,
                 if (expanded) "Hide speakers in ${group.name}" else "Show speakers in ${group.name}",
-                onToggle, size = 36, background = Palette.background, border = Palette.background,
+                onToggle, size = 40, background = Palette.background, border = Palette.background,
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🔊", fontSize = 15.sp)
+                    Text("🔊", fontSize = 16.sp)
                     Spacer(Modifier.width(8.dp))
-                    Text(group.name, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(group.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     Spacer(Modifier.width(8.dp))
                     Text(GroupRules.plural(count, "speaker"), color = Palette.textSecondary, fontSize = 13.sp)
                 }
@@ -283,7 +283,7 @@ private fun GroupEditor(
         EditorSurface {
             Column(Modifier.safeDrawingPadding().imePadding().fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (edit == null) "Add group" else "Edit group", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Text(if (edit == null) "Add group" else "Edit group", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                     IconBox(SIcons.Close, "Close", onClose, size = 44)
                 }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {

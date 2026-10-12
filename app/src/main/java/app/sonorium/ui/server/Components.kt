@@ -155,20 +155,20 @@ fun IconBox(
     tint: Color = Palette.textSecondary,
     background: Color = Palette.backgroundSecondary,
     border: Color = Palette.border,
-    size: Int = 40,
+    size: Int = app.sonorium.ui.UiSize.SMALL,
     enabled: Boolean = true,
 ) {
     Surface(
         color = background,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(6.dp), // icon buttons: radius 6 (ui-standards)
         border = BorderStroke(1.dp, border),
         modifier = modifier
             .size(size.dp)
-            .alpha(if (enabled) 1f else 0.4f)
+            .alpha(if (enabled) 1f else app.sonorium.ui.UiSize.DISABLED_ALPHA)
             .semantics { contentDescription = description }
             .clickable(enabled = enabled, onClick = onClick),
     ) {
-        Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp)) }
+        Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint, modifier = Modifier.size((if (size >= app.sonorium.ui.UiSize.STANDARD) app.sonorium.ui.UiSize.GLYPH else app.sonorium.ui.UiSize.GLYPH_SMALL).dp)) }
     }
 }
 

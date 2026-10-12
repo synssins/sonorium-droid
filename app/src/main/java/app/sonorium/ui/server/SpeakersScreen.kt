@@ -132,7 +132,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Speakers", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Speakers", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(6.dp))
                     PageHelpButton("settings-speakers")
                     if (h != null) {
@@ -150,7 +150,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                         value = query, onValueChange = { query = it }, singleLine = true,
                         placeholder = { Text("Search speakers", color = Palette.textMuted) },
                         leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
-                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = 32, background = Palette.background, border = Palette.background) }) else null,
+                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear search", { query = "" }, size = 40, background = Palette.background, border = Palette.background) }) else null,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search speakers" },
                     )
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -210,7 +210,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                     sections.isEmpty() -> item {
                         Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(SIcons.Search, null, tint = Palette.textMuted, modifier = Modifier.size(28.dp))
-                            Text("No speakers match", color = Palette.text, fontSize = 15.sp, modifier = Modifier.padding(vertical = 8.dp))
+                            Text("No speakers match", color = Palette.text, fontSize = 16.sp, modifier = Modifier.padding(vertical = 8.dp))
                             OutlinedButton(onClick = { clearFilters() }, border = BorderStroke(1.dp, Palette.border)) { Text("Clear filters", color = Palette.text) }
                         }
                     }
@@ -293,7 +293,7 @@ private fun SpeakerRow(
                 }, modifier = Modifier.weight(1f))
             } else {
                 Text(
-                    s.name, color = if (s.online) Palette.text else Palette.textSecondary, fontSize = 15.sp, fontWeight = FontWeight.Medium,
+                    s.name, color = if (s.online) Palette.text else Palette.textSecondary, fontSize = 16.sp, fontWeight = FontWeight.Medium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false).semantics { contentDescription = "Rename ${s.name}" }.clickable { renaming = true },
                 )
@@ -379,7 +379,7 @@ private fun RenameField(s: Speaker, onDone: (String?) -> Unit, modifier: Modifie
         placeholder = { Text(s.originalName.orEmpty(), color = Palette.textMuted) },
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { finish(value.text) }),
-        trailingIcon = { IconBox(SIcons.Close, "Cancel rename", { finish(null) }, size = 32, background = Palette.background, border = Palette.background) },
+        trailingIcon = { IconBox(SIcons.Close, "Cancel rename", { finish(null) }, size = 40, background = Palette.background, border = Palette.background) },
         modifier = modifier.focusRequester(focus).semantics { contentDescription = "Name for ${s.name}" }.onFocusChanged {
             if (focused && !it.isFocused) finish(value.text)
             focused = it.isFocused

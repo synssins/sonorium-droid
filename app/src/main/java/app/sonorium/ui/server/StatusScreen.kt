@@ -164,7 +164,7 @@ fun StatusPage(state: ServerState, model: ServerViewModel) {
                             Text(ChannelRules.themeIcon(c.themeId, state.theme(c.themeId)), fontSize = 20.sp)
                             Spacer(Modifier.width(10.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(c.name, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(c.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(StatusRules.plays(c), color = Palette.textSecondary, fontSize = 13.sp, maxLines = 2)
                             }
                         }

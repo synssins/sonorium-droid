@@ -141,7 +141,7 @@ fun AudioPage(model: ServerViewModel) {
 private fun AudioRow(label: String, tip: String, defaultText: String, value: Float, range: ClosedFloatingPointRange<Float>, steps: Int, shown: String, changed: Boolean, onChange: (Float) -> Unit) {
     Column(Modifier.padding(vertical = 6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(label, color = Palette.text, fontSize = 15.sp, modifier = Modifier.semantics { contentDescription = "$label. $tip" })
+            Text(label, color = Palette.text, fontSize = 16.sp, modifier = Modifier.semantics { contentDescription = "$label. $tip" })
             if (changed) {
                 Spacer(Modifier.width(6.dp))
                 androidx.compose.foundation.layout.Box(Modifier.semantics { contentDescription = "Changed, not saved" }) { Dot(Palette.warning) }

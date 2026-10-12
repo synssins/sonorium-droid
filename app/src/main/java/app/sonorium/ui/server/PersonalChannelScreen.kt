@@ -56,7 +56,7 @@ fun PersonalChannelScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(SIcons.Headphones, null, tint = Palette.accent, modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("My channel", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text("My channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
             }
             if (channel == null) {
                 state.personalProblem?.let { Text(it, color = Palette.text) } ?: CircularProgressIndicator(color = Palette.accent)

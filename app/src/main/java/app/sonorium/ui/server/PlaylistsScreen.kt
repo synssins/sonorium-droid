@@ -183,14 +183,14 @@ private fun PlaylistRow(
             IconBox(
                 if (expanded) SIcons.ChevronDown else SIcons.ChevronRight,
                 if (expanded) "Hide entries of ${playlist.name}" else "Show entries of ${playlist.name}",
-                onToggle, size = 36, background = Palette.background, border = Palette.background,
+                onToggle, size = 40, background = Palette.background, border = Palette.background,
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(SIcons.Playlist, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text(playlist.name, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(playlist.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     if (playingOn.isNotEmpty()) {
                         Spacer(Modifier.width(8.dp))
                         Box(Modifier.semantics { contentDescription = "Playing on ${playingOn.joinToString(", ") { it.name }}" }) { Dot(Palette.accent) }
@@ -250,7 +250,7 @@ private fun EntryLine(index: Int, entry: PlaylistEntry, state: ServerState) {
             Text("Theme deleted", color = Palette.textMuted, fontSize = 14.sp)
             return@Row
         }
-        Text(ChannelRules.themeIcon(theme.id, theme), fontSize = 15.sp)
+        Text(ChannelRules.themeIcon(theme.id, theme), fontSize = 17.sp)
         Spacer(Modifier.width(8.dp))
         Text(theme.name, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
         Spacer(Modifier.width(12.dp))
@@ -343,7 +343,7 @@ private fun PlaylistEditor(
         EditorSurface {
             Column(Modifier.safeDrawingPadding().imePadding().fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(if (isNew) "Add playlist" else "Edit playlist", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                    Text(if (isNew) "Add playlist" else "Edit playlist", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                     if (!isNew) {
                         MoreMenu(
                             "Playlist menu",

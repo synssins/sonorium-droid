@@ -132,7 +132,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                         Block(changed = false) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text(texts.first, color = Palette.text, fontSize = 15.sp)
+                                    Text(texts.first, color = Palette.text, fontSize = 16.sp)
                                     Text("Default: Off", color = Palette.textMuted, fontSize = 12.sp)
                                 }
                                 if (running[key] != null && running[key] != on) {
@@ -162,7 +162,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                     Block(changed = on) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
-                                Text("Zones", color = if (on) Palette.accent else Palette.text, fontSize = 15.sp)
+                                Text("Zones", color = if (on) Palette.accent else Palette.text, fontSize = 16.sp)
                                 Text("Default: Off", color = Palette.textMuted, fontSize = 12.sp)
                             }
                             IconBox(SIcons.Refresh, "Zones: back to the default", {
@@ -171,7 +171,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                                         .onSuccess { zonesOn = false; model.afterPluginsChanged() }
                                         .onFailure { model.toast(model.messageOf(it, "Not saved"), error = true) }
                                 }
-                            }, size = 36, enabled = on)
+                            }, size = 40, enabled = on)
                             Spacer(Modifier.width(6.dp))
                             Switch(
                                 checked = on,
@@ -199,8 +199,8 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                             val texts = remember(values) { r.keys.map { AdvancedPageRules.shown(r, AdvancedPageRules.value(values, it)) }.toMutableList() }
                             Block(changed) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(r.name, color = if (changed) Palette.accent else Palette.text, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                                    IconBox(SIcons.Refresh, "${r.name}: back to the default", { saveValues(AdvancedPageRules.reset(r)) }, size = 36, enabled = changed)
+                                    Text(r.name, color = if (changed) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                                    IconBox(SIcons.Refresh, "${r.name}: back to the default", { saveValues(AdvancedPageRules.reset(r)) }, size = 40, enabled = changed)
                                 }
                                 Text(r.description, color = Palette.textSecondary, fontSize = 13.sp)
                                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
@@ -251,8 +251,8 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                     }
                     Block(saved.isNotEmpty()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Stream URL", color = if (saved.isNotEmpty()) Palette.accent else Palette.text, fontSize = 15.sp, modifier = Modifier.weight(1f))
-                            IconBox(SIcons.Refresh, "Stream URL: back to the default", { apply("") }, size = 36, enabled = saved.isNotEmpty())
+                            Text("Stream URL", color = if (saved.isNotEmpty()) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
+                            IconBox(SIcons.Refresh, "Stream URL: back to the default", { apply("") }, size = 40, enabled = saved.isNotEmpty())
                         }
                         Text("The address speakers are given to reach Sonorium.", color = Palette.textSecondary, fontSize = 13.sp)
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {

@@ -148,7 +148,7 @@ fun ChannelCard(
                     contentAlignment = Alignment.Center,
                 ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 20.sp) }
                 Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                    Text(session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     val zone = zones?.zones?.get(session.id)
                     val sub = speakerSummary(session) +
                         (if (zone?.kidMode == true) " · 🔒 Kid mode" else "") +
@@ -157,10 +157,10 @@ fun ChannelCard(
                 }
                 StateChip(playing)
                 Spacer(Modifier.width(8.dp))
-                IconBox(SIcons.Edit, "Edit", { actions.edit(session) }, size = 36)
+                IconBox(SIcons.Edit, "Edit", { actions.edit(session) }, size = 40)
                 Spacer(Modifier.width(6.dp))
                 Box {
-                    IconBox(SIcons.More, "More for ${session.name}", { menuOpen = true }, size = 36)
+                    IconBox(SIcons.More, "More for ${session.name}", { menuOpen = true }, size = 40)
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Palette.card) {
                         DropdownMenuItem(
                             text = { Text("Delete…", color = Palette.danger) },
@@ -213,7 +213,7 @@ fun ChannelCard(
                     { actions.toggleMuted(session) },
                     tint = when { muted -> Palette.danger; playing -> Palette.accent; else -> Palette.textSecondary },
                     border = if (muted) Palette.danger else Palette.border,
-                    size = 36,
+                    size = 40,
                 )
                 PercentSlider(session.volume, "Volume: ${session.name}", { actions.setVolume(session, it) }, Modifier.weight(1f).padding(start = 8.dp))
             }
@@ -225,7 +225,7 @@ fun ChannelCard(
                     tint = if (listening) Palette.bar else Palette.textSecondary,
                     background = if (listening) Palette.accent else Palette.backgroundSecondary,
                     border = if (listening) Palette.accent else Palette.border,
-                    size = 36,
+                    size = 40,
                 )
                 PercentSlider(listenVolume, "Volume on this device: ${session.name}", actions.setListenVolume, Modifier.weight(1f).padding(start = 8.dp), onChange = actions.setListenVolume)
             }

@@ -185,7 +185,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                                         MenuAction(if (advanced) "Advanced… (On)" else "Advanced…", SIcons.Settings, separatorBefore = true) { onAdvanced(i) },
                                         MenuAction("Remove", SIcons.Trash, danger = true, separatorBefore = true) { editor.editSequence { it.copy(steps = it.steps - id) } },
                                     ),
-                                    size = 36,
+                                    size = 40,
                                 )
                                 if (advanced) Box(Modifier.align(Alignment.TopEnd).padding(3.dp).semantics { contentDescription = "Advanced set" }) { Dot(Palette.accent, 6) }
                             }

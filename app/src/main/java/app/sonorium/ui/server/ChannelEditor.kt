@@ -118,7 +118,7 @@ fun ChannelEditor(
                 Column(Modifier.fillMaxSize()) {
                     Text(
                         if (edit == null) "New Channel" else "Edit Channel",
-                        color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
+                        color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 12.dp),
                     )
                     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {

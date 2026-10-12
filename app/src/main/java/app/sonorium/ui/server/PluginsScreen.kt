@@ -214,7 +214,7 @@ fun PluginsPage(model: ServerViewModel) {
     if (requirements) AlertDialog(
         onDismissRequest = { requirements = false },
         containerColor = Palette.card,
-        title = { Text("Plugin requirements", color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text("Plugin requirements", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column {
                 Text(REQUIREMENTS, color = Palette.text, fontFamily = FontFamily.Monospace, fontSize = 11.sp, modifier = Modifier.background(Palette.backgroundSecondary, RoundedCornerShape(6.dp)).padding(8.dp))
@@ -236,11 +236,11 @@ private fun PluginRow(p: Plugin, model: ServerViewModel, onToggle: (Boolean) -> 
             IconBox(
                 if (open) SIcons.ChevronDown else SIcons.ChevronRight,
                 if (!p.hasOptions) "No options" else if (!p.enabled) "Enable to use" else if (open) "Hide ${p.name}" else "Show ${p.name}",
-                { model.pluginOpen[p.id] = !open }, size = 36, enabled = p.enabled && p.hasOptions,
+                { model.pluginOpen[p.id] = !open }, size = 40, enabled = p.enabled && p.hasOptions,
             )
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f).alpha(if (p.enabled) 1f else 0.55f)) {
-                Text(p.name, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text(p.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("v${p.version}", color = Palette.textSecondary, fontSize = 12.sp)
                     if (p.builtin) {
@@ -255,7 +255,7 @@ private fun PluginRow(p: Plugin, model: ServerViewModel, onToggle: (Boolean) -> 
                 colors = SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
                 modifier = Modifier.semantics { contentDescription = if (p.enabled) "Enabled: ${p.name}" else "Disabled: ${p.name}" },
             )
-            MoreMenu("More for ${p.name}", listOf(MenuAction("Uninstall…", SIcons.Trash, danger = true) { onUninstall() }), size = 36)
+            MoreMenu("More for ${p.name}", listOf(MenuAction("Uninstall…", SIcons.Trash, danger = true) { onUninstall() }), size = 40)
         }
         if (p.description.isNotEmpty()) Text(p.description, color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.padding(start = 44.dp, top = 4.dp).alpha(if (p.enabled) 1f else 0.55f))
         if (open) PluginForm(p, model, onChanged)
@@ -348,7 +348,7 @@ private fun CatalogRow(r: JsonObject, installing: String?, onInstall: (String, S
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp).background(Palette.card, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp)).padding(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(s("name").ifEmpty { id }, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text(s("name").ifEmpty { id }, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("v${s("version")}", color = Palette.textSecondary, fontSize = 12.sp)
                     if (update) Text(

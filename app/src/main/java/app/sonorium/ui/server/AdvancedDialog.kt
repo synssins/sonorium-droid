@@ -188,7 +188,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                                 Column(Modifier.padding(top = 10.dp)) {
                                     Text("For this step only. Anything you don't change follows the preset, $name.", color = Palette.textSecondary, fontSize = 13.sp)
                                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                                        Text("Tracks", color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                        Text("Tracks", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                                         Spacer(Modifier.width(8.dp))
                                         CountBadge(cur.tracks.size)
                                         Spacer(Modifier.weight(1f))
@@ -265,7 +265,7 @@ private fun LazyListScope.whileSections(
             Column(Modifier.padding(top = 14.dp, bottom = 4.dp)) {
                 HorizontalDivider(color = Palette.border)
                 Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(section.label, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                    Text(section.label, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(8.dp))
                     CountBadge(keys.size)
                 }
@@ -306,7 +306,7 @@ private fun WhileTrack(key: String, section: Section, group: String?, w: While, 
             }
             IconBox(
                 if (muted) SIcons.Muted else SIcons.Volume, if (muted) "Unmute" else "Mute", { set("muted" to JsonPrimitive(!muted)) },
-                size = 36, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
+                size = 40, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
             )
             Spacer(Modifier.width(4.dp))
             WhileTrackMenu(key, section, group, w, onChange, editor)
@@ -345,7 +345,7 @@ private fun WhileTrackMenu(key: String, section: Section, group: String?, w: Whi
     val short = key.substringAfterLast('/')
     Box {
         Box {
-            IconBox(SIcons.More, "More for $short", { open = true }, size = 36)
+            IconBox(SIcons.More, "More for $short", { open = true }, size = 40)
             if (dot) Box(Modifier.align(Alignment.TopEnd).padding(3.dp)) { Dot(Palette.accent, 6) }
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 260.dp)) {
@@ -416,7 +416,7 @@ private fun WhileGroup(
         Modifier.fillMaxWidth().padding(top = 8.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp)).padding(8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBox(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand $name" else "Collapse $name", onFold, size = 36)
+            IconBox(if (collapsed) SIcons.ChevronRight else SIcons.ChevronDown, if (collapsed) "Expand $name" else "Collapse $name", onFold, size = 40)
             Spacer(Modifier.width(6.dp))
             Text(name, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
             Spacer(Modifier.width(6.dp))
@@ -424,11 +424,11 @@ private fun WhileGroup(
             Spacer(Modifier.weight(1f))
             IconBox(
                 if (muted) SIcons.Muted else SIcons.Volume, if (muted) "Unmute group" else "Mute group", { set("muted" to JsonPrimitive(!muted)) },
-                size = 36, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
+                size = 40, tint = if (changed("muted")) Palette.accent else if (muted) Palette.danger else Palette.textSecondary,
             )
             Spacer(Modifier.width(4.dp))
             Box {
-                IconBox(SIcons.More, "More for group $name", { open = true }, size = 36)
+                IconBox(SIcons.More, "More for group $name", { open = true }, size = 40)
                 DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 240.dp)) {
                     if (section == Section.EbbFlow) {
                         val rise = v["rise"]?.takeIf { it !is JsonNull }

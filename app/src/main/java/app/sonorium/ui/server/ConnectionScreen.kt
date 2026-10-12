@@ -149,7 +149,7 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(if (r.kind == "ha") SIcons.Server else if (r.kind == "mqtt") SIcons.Activity else SIcons.Layers, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(10.dp))
-                        Text(r.title, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                        Text(r.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         if (r.kind == "plugin") {
                             Spacer(Modifier.width(6.dp))
                             Text("Plugin", color = Palette.textSecondary, fontSize = 11.sp, modifier = Modifier.border(1.dp, Palette.border, RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 1.dp))
@@ -282,7 +282,7 @@ private fun ConnectionDialog(r: ConnRow, model: ServerViewModel, onClose: () -> 
     AlertDialog(
         onDismissRequest = onClose,
         containerColor = Palette.card,
-        title = { Text(r.title, color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text(r.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 r.fields.forEach { f ->

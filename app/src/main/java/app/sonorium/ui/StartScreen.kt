@@ -235,7 +235,7 @@ private fun ConfirmWords(s: LinkState.ConfirmWords, model: LinkViewModel) {
     var password by rememberSaveable { mutableStateOf("") }
     Text("Check that Sonorium shows the same words", color = Palette.textSecondary, fontSize = 14.sp)
     Spacer(Modifier.height(8.dp))
-    Text(s.words.joinToString("  "), color = Palette.accent, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+    Text(s.words.joinToString("  "), color = Palette.accent, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(16.dp))
     if (!s.hasUsers) {
         Text("This server has no user accounts. Link it with a Link App code.", color = Palette.text)

@@ -375,7 +375,7 @@ private fun CategoriesField(ui: EditorUi, editor: ThemeEditor, onPending: (Strin
 private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Unit, onPicker: () -> Unit, onReset: () -> Unit, onSequence: (String?) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Tracks", color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+            Text("Tracks", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.width(8.dp))
             CountBadge(ui.tracks.size)
         }
@@ -585,7 +585,7 @@ private fun PresetButton(ui: EditorUi, editor: ThemeEditor) {
             ui.presets.forEach { p ->
                 DropdownMenuItem(
                     text = { Text(p.name + (if (p.isDefault) " ★" else "") + (if (p.hasIntrusion) " ⚭" else ""), color = if (p.id == ui.selected) Palette.accent else Palette.text) },
-                    trailingIcon = if (!p.isDefault) ({ IconBox(SIcons.Star, "Set as default", { editor.setDefault(p) }, size = 32) }) else null,
+                    trailingIcon = if (!p.isDefault) ({ IconBox(SIcons.Star, "Set as default", { editor.setDefault(p) }, size = 40) }) else null,
                     onClick = { open = false; editor.loadPreset(p) },
                 )
             }
@@ -619,7 +619,7 @@ private fun NamePromptDialog(p: NamePrompt, onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
         containerColor = Palette.card,
-        title = { Text(p.title, color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text(p.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             OutlinedTextField(
                 text, { if (it.length <= 80) text = it }, singleLine = true, placeholder = { Text("Preset name") },
@@ -645,7 +645,7 @@ private fun ImportPresetDialog(editor: ThemeEditor, onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
         containerColor = Palette.card,
-        title = { Text("Import Preset", color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text("Import Preset", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column {
                 FieldLabel("Preset Name")
@@ -676,7 +676,7 @@ private fun ExportPresetDialog(text: String, model: ServerViewModel, onClose: ()
     AlertDialog(
         onDismissRequest = onClose,
         containerColor = Palette.card,
-        title = { Text("Export Preset", color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text("Export Preset", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column {
                 FieldLabel("Preset JSON")
@@ -736,7 +736,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                     OutlinedTextField(
                         query, { query = it }, singleLine = true, placeholder = { Text("Search themes") },
                         leadingIcon = { Icon(SIcons.Search, null, modifier = Modifier.size(16.dp)) },
-                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear", { query = "" }, size = 32) }) else null,
+                        trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear", { query = "" }, size = 40) }) else null,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search themes" },
                     )
                     val q = query.trim().lowercase()
@@ -751,7 +751,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                             ) {
                                 Text(ChannelRules.themeIcon(t.id, t), fontSize = 22.sp, modifier = Modifier.padding(end = 10.dp))
                                 Column(Modifier.weight(1f)) {
-                                    Text(t.name, color = Palette.text, fontSize = 15.sp)
+                                    Text(t.name, color = Palette.text, fontSize = 16.sp)
                                     val cats = t.categories.joinToString(", ")
                                     Text((if (cats.isNotEmpty()) "$cats · " else "") + "${t.totalTracks} track(s)", color = Palette.textSecondary, fontSize = 12.sp)
                                 }
@@ -788,7 +788,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                             val added = already(t.id)
                             val playing = ui.filePreview == "pk:${src.id}:${t.id}"
                             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-                                IconBox(if (playing) SIcons.Stop else SIcons.Play, if (playing) "Stop preview" else "Preview", { editor.toggleFilePreview("pk:${src.id}:${t.id}", t.previewUrl) }, size = 36)
+                                IconBox(if (playing) SIcons.Stop else SIcons.Play, if (playing) "Stop preview" else "Preview", { editor.toggleFilePreview("pk:${src.id}:${t.id}", t.previewUrl) }, size = 40)
                                 Spacer(Modifier.width(8.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(t.displayName.ifEmpty { t.name }, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

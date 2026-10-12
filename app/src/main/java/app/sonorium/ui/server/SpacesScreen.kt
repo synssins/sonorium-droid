@@ -137,7 +137,7 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
         AlertDialog(
             onDismissRequest = { confirm = null },
             containerColor = Palette.card,
-            text = { Text(text, color = Palette.text, fontSize = 15.sp) },
+            text = { Text(text, color = Palette.text, fontSize = 16.sp) },
             confirmButton = { TextButton(onClick = { confirm = null; action() }) { Text("OK", color = Palette.accent) } },
             dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel", color = Palette.textSecondary) } },
         )
@@ -168,7 +168,7 @@ private fun FloorBlock(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = 40.dp)) {
                 Icon(SIcons.Layers, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(title, color = Palette.text, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
+                Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
                 floor?.let { SourceBadges(it.source) }
                 Spacer(Modifier.weight(1f))
                 if (editable && floor != null) {

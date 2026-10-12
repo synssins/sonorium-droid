@@ -49,7 +49,7 @@ import app.sonorium.ui.Palette
 @Composable
 fun PageHeader(title: String, count: Int?, modifier: Modifier = Modifier, help: String? = null, actions: @Composable () -> Unit = {}) {
     Row(modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        Text(title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
         count?.let {
             Spacer(Modifier.width(8.dp))
             CountBadge(it)
@@ -128,7 +128,7 @@ fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Palette.card,
-        title = { Text(title, color = Palette.text, fontSize = 17.sp, fontWeight = FontWeight.SemiBold) },
+        title = { Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = sub?.let { { Text(it, color = Palette.textSecondary, fontSize = 14.sp) } },
         confirmButton = {
             Button(
@@ -158,7 +158,7 @@ fun PromptDialog(message: String, initial: String, onOk: (String) -> Unit, onDis
         containerColor = Palette.card,
         text = {
             Column {
-                Text(message, color = Palette.text, fontSize = 15.sp)
+                Text(message, color = Palette.text, fontSize = 16.sp)
                 Spacer(Modifier.size(12.dp))
                 OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true, modifier = Modifier.fillMaxWidth().focusRequester(focus))
             }

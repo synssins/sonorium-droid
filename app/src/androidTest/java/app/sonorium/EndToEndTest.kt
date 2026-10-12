@@ -302,6 +302,15 @@ class EndToEndTest {
      * Waits for [selector]; when the emulator shows "<app> isn't responding" (its launcher, under CI
      * load) over the app, taps Wait and looks again.
      */
+    /** Taps Wait on the emulator's "<app> isn't responding" dialog, if it shows. */
+    private fun dismissAnr() {
+        repeat(2) {
+            if (!device.hasObject(By.textContains("isn't responding"))) return
+            device.findObject(By.text("Wait"))?.click()
+            Thread.sleep(1_000)
+        }
+    }
+
     private fun waitPastAnr(selector: BySelector, timeoutMs: Long): UiObject2? {
         device.wait(Until.findObject(selector), timeoutMs)?.let { return it }
         repeat(2) {
@@ -339,6 +348,7 @@ class EndToEndTest {
     /** Android 8 opens the keyboard on the editor's first field; close it. */
     private fun hideKeyboard() {
         Thread.sleep(800)
+        dismissAnr()
         val imeShown = instrumentation.uiAutomation.windows.any { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }
         if (imeShown) {
             device.pressBack()
