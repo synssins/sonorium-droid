@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -89,7 +90,9 @@ fun PluginsPage(model: ServerViewModel) {
         catalog = null
         catalog = model.call { it.json("GET", "plugins/catalog") }
     }
-    LaunchedEffect(Unit) { load() }
+    val pluginsChanged by model.pluginsChanged.collectAsState()
+    val restarted by model.restarted.collectAsState()
+    LaunchedEffect(pluginsChanged, restarted) { load() }
     LaunchedEffect(model.pluginsCatalogTab) { if (model.pluginsCatalogTab && catalog == null) loadCatalog() }
 
     val pickZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->

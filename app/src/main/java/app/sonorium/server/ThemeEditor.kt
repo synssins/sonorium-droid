@@ -104,8 +104,18 @@ class ThemeEditor(
     private var player: ExoPlayer? = null
     private var mixRestart: Job? = null
 
+    /** Advanced's `group_crossfade_min`/`max` (1/60 until loaded). */
+    private var crossfadeRange = 1.0 to 60.0
+
     init {
         scope.launch { runCatching { api.categories() }.onSuccess { c -> _ui.update { it.copy(knownCategories = c) } } }
+        scope.launch {
+            runCatching { api.json("GET", "settings/playback-values")["values"] as? JsonObject }.getOrNull()?.let { v ->
+                val lo = ThemeEditorRules.num(v, "group_crossfade_min") ?: 1.0
+                val hi = ThemeEditorRules.num(v, "group_crossfade_max") ?: 60.0
+                crossfadeRange = lo to maxOf(lo, hi)
+            }
+        }
         loadPresets()
         scope.launch { loadTracks() }
     }
@@ -313,7 +323,7 @@ class ThemeEditor(
     }
 
     fun setCrossfade(g: TrackGroup, text: String) =
-        setGroup(g.name, obj("crossfade" to (ThemeEditorRules.crossfade(text)?.let { JsonPrimitive(it) } ?: JsonNull)))
+        setGroup(g.name, obj("crossfade" to (ThemeEditorRules.crossfade(text, crossfadeRange.first, crossfadeRange.second)?.let { JsonPrimitive(it) } ?: JsonNull)))
 
     fun toggleCollapsed(name: String) = _ui.update { u -> u.copy(collapsed = if (name in u.collapsed) u.collapsed - name else u.collapsed + name) }
 

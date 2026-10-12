@@ -80,7 +80,9 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
         cards = if (core != null) model.call { it.json("GET", "ha-cards") }.getOrNull() else null
         loaded = true
     }
-    LaunchedEffect(restarted) { load() }
+    val settingsChanged by model.settingsChanged.collectAsState()
+    val pluginsChanged by model.pluginsChanged.collectAsState()
+    LaunchedEffect(restarted, settingsChanged, pluginsChanged) { load() }
 
     val saveCards = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/javascript")) { uri ->
         val bytes = pendingCards

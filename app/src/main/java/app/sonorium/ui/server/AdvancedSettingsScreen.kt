@@ -50,6 +50,7 @@ import kotlinx.serialization.json.put
 fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
     val scope = rememberCoroutineScope()
     val restarted by model.restarted.collectAsState()
+    val settingsChanged by model.settingsChanged.collectAsState()
     var install by remember { mutableStateOf<JsonObject?>(null) }
     var values by remember { mutableStateOf<JsonObject?>(null) }
     var defaults by remember { mutableStateOf<JsonObject?>(null) }
@@ -61,9 +62,12 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
     var redraw by remember { mutableStateOf(0) }
     val perms = state.me?.perms.orEmpty().toSet()
 
-    LaunchedEffect(restarted) {
+    LaunchedEffect(restarted, settingsChanged) {
         restarting = false
-        if (restarted != 0L) model.advancedRunning = null
+        if (model.advancedRunningAfter != restarted) {
+            model.advancedRunning = null
+            model.advancedRunningAfter = restarted
+        }
         install = model.call { it.json("GET", "install") }.getOrNull()
         install?.let { i ->
             if (model.advancedRunning == null) model.advancedRunning = features(i).mapValues { it.value.second }

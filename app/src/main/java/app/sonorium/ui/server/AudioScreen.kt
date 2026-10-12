@@ -25,6 +25,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,7 +63,8 @@ fun AudioPage(model: ServerViewModel) {
     var ask by remember { mutableStateOf<Ask?>(null) }
     val saved = model.audioSaved
     val draft = model.audioDraft
-    LaunchedEffect(Unit) {
+    val settingsChanged by model.settingsChanged.collectAsState()
+    LaunchedEffect(settingsChanged) {
         model.call { it.json("GET", "settings") }.onSuccess { o ->
             fun n(k: String) = (o[k] as? JsonPrimitive)?.doubleOrNull
             val v = AudioValues(n("crossfade_duration") ?: 3.0, n("default_volume")?.roundToInt() ?: 60, n("master_gain")?.roundToInt() ?: 60)

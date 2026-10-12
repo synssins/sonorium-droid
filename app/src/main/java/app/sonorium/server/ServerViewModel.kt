@@ -267,6 +267,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             type == "sonorium.started" -> {
                 lastEventId = null
                 loadAll()
+                _restarted.value = System.nanoTime()
+            }
+            type.startsWith("plugin.") -> {
+                afterPluginsChanged()
+                _pluginsChanged.value = System.nanoTime()
             }
             type.startsWith("zone.") || type.startsWith("link.") -> {
                 refreshZones()
@@ -284,7 +289,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 refreshSpeakers()
                 if (_state.value.spaces != null) refreshSpaces()
             }
-            type.startsWith("speaker.") || type.startsWith("settings.") -> refreshSpeakers()
+            type.startsWith("speaker.") -> refreshSpeakers()
+            type.startsWith("settings.") -> {
+                refreshSpeakers()
+                _settingsChanged.value = System.nanoTime()
+            }
         }
     }
 
@@ -795,6 +804,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Settings › Advanced: the features as they ran at the first look after connect / restart (`advancedRunning`). */
     var advancedRunning: Map<String, Boolean>? = null
+    /** The restart the snapshot belongs to ([restarted]'s value). */
+    var advancedRunningAfter = 0L
 
     /** After Home Assistant is removed: speakers, groups, channels and network info change (`afterHomeAssistantRemoved`). */
     fun afterHomeAssistantRemoved() = viewModelScope.launch {
@@ -838,6 +849,14 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         }
         toast("Sonorium is taking a while to restart. Refresh the page in a moment.", error = true)
     }
+
+    private val _settingsChanged = MutableStateFlow(0L)
+    /** Changes on `settings.changed`: open settings pages refetch (a clean draft follows). */
+    val settingsChanged: StateFlow<Long> = _settingsChanged.asStateFlow()
+
+    private val _pluginsChanged = MutableStateFlow(0L)
+    /** Changes on `plugin.enabled` / `plugin.disabled`. */
+    val pluginsChanged: StateFlow<Long> = _pluginsChanged.asStateFlow()
 
     private val _restarted = MutableStateFlow(0L)
     /** Changes after a restart finished: pages refetch their own data. */
@@ -1105,6 +1124,6 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     private companion object {
         const val EVENT_TYPES =
-            "channel.*,sequence.*,playlist.*,theme.*,zone.*,link.*,group.*,spaces.*,settings.*,speaker.*,sonorium.started"
+            "channel.*,sequence.*,playlist.*,theme.*,zone.*,link.*,group.*,spaces.*,settings.*,speaker.*,plugin.*,sonorium.started"
     }
 }

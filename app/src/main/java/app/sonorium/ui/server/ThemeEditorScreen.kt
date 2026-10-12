@@ -161,9 +161,13 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
         EditorSurface {
             // Older Android focuses the first field of a new window (and opens the keyboard): not here
             val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
-            LaunchedEffect(Unit) {
-                kotlinx.coroutines.delay(150)
-                focusManager.clearFocus()
+            val childOpen = help || ask != null || prompt != null || importing || exported != null || picker || sequence != null
+            LaunchedEffect(childOpen) {
+                // also when a child dialog closes: the window gives focus back to its first field
+                if (!childOpen) {
+                    kotlinx.coroutines.delay(150)
+                    focusManager.clearFocus()
+                }
             }
             BackHandler { if (ui.renaming != null) editor.startRename(null) else if (deleting != null) deleting = null else cancel() }
             Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding()) {
