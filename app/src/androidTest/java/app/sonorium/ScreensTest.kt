@@ -26,6 +26,18 @@ class ScreensTest {
     private val profile = InstrumentationRegistry.getArguments().getString("profile") ?: "default"
     private val shots = File(instrumentation.targetContext.getExternalFilesDir(null), "e2e/$profile").apply { mkdirs() }
 
+    /**
+     * The CI emulator's launcher sometimes stops answering under load, and its "isn't responding"
+     * dialog covers the app (and its toasts). Hide such dialogs for the run (shell may set these).
+     */
+    @org.junit.Before
+    fun hideSystemErrorDialogs() {
+        listOf("settings put global hide_error_dialogs 1", "settings put secure anr_show_background 0").forEach { cmd ->
+            runCatching { instrumentation.uiAutomation.executeShellCommand(cmd).close() }
+        }
+        Thread.sleep(300)
+    }
+
     @Test
     fun mainScreens() {
         ActivityScenario.launch(MainActivity::class.java).use {
