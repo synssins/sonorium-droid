@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Base64
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.web.assertion.WebViewAssertions.webMatches
+import androidx.test.espresso.web.model.Atoms
 import androidx.test.espresso.web.sugar.Web.onWebView
 import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
 import androidx.test.espresso.web.webdriver.DriverAtoms.getText
@@ -73,6 +74,14 @@ class EndToEndTest {
             screenshot("03-channels-landscape")
             device.setOrientationNatural()
             Thread.sleep(2_000)
+
+            // 4. The menu's Servers item returns to the server list.
+            onWebView().perform(
+                Atoms.script("toggleSidebar(); document.querySelector('[data-host=\"servers\"]').click(); return true;"),
+            )
+            val list = device.wait(Until.findObject(By.text("Scan Link App code")), 15_000)
+            screenshot("04-servers")
+            assertNotNull("The Servers menu item didn't return to the server list", list)
         }
     }
 

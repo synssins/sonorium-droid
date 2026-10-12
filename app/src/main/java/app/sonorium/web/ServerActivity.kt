@@ -259,6 +259,8 @@ class ServerActivity : ComponentActivity() {
     private fun onPageMessage(raw: String) {
         val message = runCatching { Json.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return
         when ((message["type"] as? JsonPrimitive)?.content) {
+            // The page's Servers item: back to the server list.
+            "showServers" -> finish()
             "unlinked" -> lifecycleScope.launch {
                 val id = intent.getStringExtra(EXTRA_SERVER_ID) ?: return@launch
                 app.servers.find(id)?.let { unlinked(it) }
