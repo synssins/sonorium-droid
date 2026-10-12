@@ -103,6 +103,7 @@ fun ServerScreen(
     val listening by ListenController.state.collectAsState()
     val themeEditor by model.editor.collectAsState()
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
+    var themesOnPhone by rememberSaveable { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Session?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
     // Link channels (Zones, admin): null = closed; a link = change it; NEW_LINK = a new one
@@ -182,7 +183,17 @@ fun ServerScreen(
                             page == Page.Plugins -> PluginsPage(model)
                             page == Page.Logs -> LogsPage(model)
                             page == Page.Advanced -> AdvancedSettingsPage(state, model)
-                            page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
+                            // Themes: the server's, or the ones on this phone (the only ones without a server)
+                            page == Page.Themes && state.record == null -> LocalThemesPage(model)
+                            page == Page.Themes -> Column(Modifier.fillMaxSize()) {
+                                Segmented(
+                                    listOf("On ${state.record?.displayName.orEmpty()}", "On this phone"),
+                                    if (themesOnPhone) 1 else 0,
+                                    { themesOnPhone = it == 1 },
+                                    Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
+                                )
+                                if (themesOnPhone) LocalThemesPage(model) else ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
+                            }
                             else -> ChannelsPage(
                                 state = state,
                                 model = model,

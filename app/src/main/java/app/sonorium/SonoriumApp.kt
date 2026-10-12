@@ -13,6 +13,10 @@ class SonoriumApp : Application() {
     val baseClient: OkHttpClient by lazy { PinnedTls.baseClient() }
     val servers: ServerStore by lazy { ServerStore(this) }
     val linker: Linker by lazy { Linker(baseClient, deviceInfo()) }
+    /** Themes kept on this phone (a folder the user picked). */
+    val themeStore: app.sonorium.local.ThemeStore by lazy { app.sonorium.local.ThemeStore(this) }
+    /** The paid features; test builds grant them locally. */
+    val entitlement: app.sonorium.local.ProEntitlement by lazy { app.sonorium.local.LocalProEntitlement(this) }
 
     override fun onCreate() {
         super.onCreate()

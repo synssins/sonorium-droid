@@ -7,6 +7,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.sonorium.SonoriumApp
+import app.sonorium.local.LocalTheme
+import app.sonorium.local.ThemeStore
 import app.sonorium.data.ServerRecord
 import app.sonorium.listen.ListenController
 import app.sonorium.net.ApiException
@@ -773,6 +775,38 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         previewPlayer?.stop()
         previewPlayer?.clearMediaItems()
         _preview.value = null
+    }
+
+    // ---------- Themes on this phone (offline playback) ----------
+
+    val themeStore get() = app.themeStore
+    val entitlement get() = app.entitlement
+    private val _localThemes = MutableStateFlow<List<LocalTheme>?>(null)
+    /** The themes on this phone; null until first read. */
+    val localThemes: StateFlow<List<LocalTheme>?> = _localThemes.asStateFlow()
+
+    fun refreshLocalThemes() = viewModelScope.launch {
+        _localThemes.value = runCatching { app.themeStore.list() }.getOrDefault(emptyList())
+    }
+
+    /** Imports a theme zip (the server's Export) into the themes folder. */
+    fun importLocalTheme(uri: android.net.Uri, fileName: String) = viewModelScope.launch {
+        try {
+            val name = getApplication<Application>().contentResolver.openInputStream(uri)?.use { app.themeStore.importZip(it, fileName) }
+                ?: throw ThemeStore.ImportProblem("Couldn't open the file")
+            toast("Imported “$name”", error = false)
+        } catch (e: ThemeStore.ImportProblem) {
+            toast(e.message ?: "Import failed", error = true)
+        } catch (e: Exception) {
+            toast("Import failed: ${e.message ?: e.javaClass.simpleName}", error = true)
+        }
+        refreshLocalThemes()
+    }
+
+    fun removeLocalTheme(theme: LocalTheme) = viewModelScope.launch {
+        if (app.themeStore.remove(theme)) toast("Removed “${theme.name}” from this phone", error = false)
+        else toast("Couldn't remove “${theme.name}”", error = true)
+        refreshLocalThemes()
     }
 
     // ---------- Phase 3 Settings pages ----------
