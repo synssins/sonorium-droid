@@ -44,7 +44,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -277,7 +276,7 @@ private fun DetailsBlock(ui: EditorUi, editor: ThemeEditor, onPending: (String) 
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 FieldLabel("Name")
-                OutlinedTextField(
+                SField(
                     ui.name, editor::setName, singleLine = true,
                     modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Name" },
                 )
@@ -285,7 +284,7 @@ private fun DetailsBlock(ui: EditorUi, editor: ThemeEditor, onPending: (String) 
         }
         Spacer(Modifier.height(8.dp))
         FieldLabel("Description")
-        OutlinedTextField(
+        SField(
             ui.description, editor::setDescription, maxLines = 2, placeholder = { Text("Optional") },
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Description" },
         )
@@ -621,7 +620,7 @@ private fun NamePromptDialog(p: NamePrompt, onClose: () -> Unit) {
         containerColor = Palette.card,
         title = { Text(p.title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold) },
         text = {
-            OutlinedTextField(
+            SField(
                 text, { if (it.length <= 80) text = it }, singleLine = true, placeholder = { Text("Preset name") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { ok() }),
                 modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = "Preset name" },
@@ -649,10 +648,10 @@ private fun ImportPresetDialog(editor: ThemeEditor, onClose: () -> Unit) {
         text = {
             Column {
                 FieldLabel("Preset Name")
-                OutlinedTextField(name, { name = it }, singleLine = true, placeholder = { Text("e.g., Sleep Mode, Focus Mix...") }, modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Preset Name" })
+                SField(name, { name = it }, singleLine = true, placeholder = { Text("e.g., Sleep Mode, Focus Mix...") }, modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Preset Name" })
                 Spacer(Modifier.height(8.dp))
                 FieldLabel("Preset JSON *")
-                OutlinedTextField(
+                SField(
                     json, { json = it }, minLines = 5, maxLines = 10,
                     placeholder = { Text("{\"name\": \"My Preset\", \"tracks\": {...}}") },
                     textStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
@@ -733,7 +732,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                 Spacer(Modifier.height(8.dp))
                 val src = source
                 if (src == null) {
-                    OutlinedTextField(
+                    SField(
                         query, { query = it }, singleLine = true, placeholder = { Text("Search themes") },
                         leadingIcon = { Icon(SIcons.Search, null, modifier = Modifier.size(16.dp)) },
                         trailingIcon = if (query.isNotEmpty()) ({ IconBox(SIcons.Close, "Clear", { query = "" }, size = app.sonorium.ui.UiSize.SMALL) }) else null,

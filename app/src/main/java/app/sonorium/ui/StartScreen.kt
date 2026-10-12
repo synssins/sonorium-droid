@@ -1,6 +1,7 @@
 package app.sonorium.ui
 
 import androidx.compose.foundation.BorderStroke
+import app.sonorium.ui.server.SField
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,7 +24,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -161,7 +161,7 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
             containerColor = Palette.card,
             title = { Text("Rename", color = Palette.text) },
             text = {
-                OutlinedTextField(
+                SField(
                     value = name,
                     onValueChange = { name = it.take(40) },
                     singleLine = true,
@@ -225,7 +225,7 @@ private fun LinkButtons(model: LinkViewModel, onType: () -> Unit) {
 @Composable
 private fun TypeAddress(onConnect: (String) -> Unit, onCancel: () -> Unit) {
     var address by rememberSaveable { mutableStateOf("") }
-    OutlinedTextField(
+    SField(
         value = address,
         onValueChange = { address = it },
         label = { Text("Address") },
@@ -254,9 +254,9 @@ private fun ConfirmWords(s: LinkState.ConfirmWords, model: LinkViewModel) {
         SecondaryButton("OK") { model.reset() }
         return
     }
-    OutlinedTextField(username, { username = it }, label = { Text("Username") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+    SField(username, { username = it }, label = { Text("Username") }, singleLine = true, modifier = Modifier.fillMaxWidth())
     Spacer(Modifier.height(8.dp))
-    OutlinedTextField(
+    SField(
         password, { password = it },
         label = { Text("Password") },
         singleLine = true,

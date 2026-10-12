@@ -22,7 +22,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,7 +86,7 @@ fun LinkChannelsDialog(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     FieldLabel("Name")
-                    OutlinedTextField(
+                    SField(
                         value = name, onValueChange = { if (it.length <= 40) name = it }, singleLine = true,
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Name" },
                     )

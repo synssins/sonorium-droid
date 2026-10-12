@@ -21,7 +21,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -160,7 +159,7 @@ fun PromptDialog(message: String, initial: String, onOk: (String) -> Unit, onDis
             Column {
                 Text(message, color = Palette.text, fontSize = 16.sp)
                 Spacer(Modifier.size(12.dp))
-                OutlinedTextField(value = text, onValueChange = { text = it }, singleLine = true, modifier = Modifier.fillMaxWidth().focusRequester(focus))
+                SField(value = text, onValueChange = { text = it }, singleLine = true, modifier = Modifier.fillMaxWidth().focusRequester(focus))
             }
         },
         confirmButton = {

@@ -39,7 +39,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -164,7 +163,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                                 MenuAction("Refresh", SIcons.Refresh, separatorBefore = true) { model.refreshThemesNow() },
                             ), size = app.sonorium.ui.UiSize.STANDARD)
                         }
-                        OutlinedTextField(
+                        SField(
                             value = query, onValueChange = { query = it }, singleLine = true,
                             placeholder = { Text("Search themes", color = Palette.textMuted) },
                             leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
@@ -403,7 +402,7 @@ private fun CreateThemeDialog(onCreate: (String, () -> Unit) -> Unit, onDismiss:
         containerColor = Palette.card,
         title = { Text("New theme", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = {
-            OutlinedTextField(
+            SField(
                 value = name, onValueChange = { if (it.length <= 80) name = it }, singleLine = true,
                 placeholder = { Text("Theme name", color = Palette.textMuted) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { go() }),
@@ -473,7 +472,7 @@ private fun CategoriesDialog(state: ServerState, model: ServerViewModel, onClose
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
-                    OutlinedTextField(
+                    SField(
                         value = text, onValueChange = { if (it.length <= 60) text = it }, singleLine = true,
                         placeholder = { Text("New category", color = Palette.textMuted) },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { add() }),

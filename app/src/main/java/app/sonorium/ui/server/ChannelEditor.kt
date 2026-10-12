@@ -28,7 +28,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -129,7 +128,7 @@ fun ChannelEditor(
                             val left: @Composable () -> Unit = {
                                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                     FieldLabel("Channel Name")
-                                    OutlinedTextField(
+                                    SField(
                                         value = name, onValueChange = { name = it }, singleLine = true,
                                         placeholder = { Text("Leave empty to auto-generate from selection", color = Palette.textMuted) },
                                         modifier = Modifier.fillMaxWidth(),
@@ -165,7 +164,7 @@ fun ChannelEditor(
                                         }
                                     } else {
                                         FieldLabel("Theme · ${state.theme(themeId)?.name ?: "None"}")
-                                        OutlinedTextField(
+                                        SField(
                                             value = themeSearch, onValueChange = { themeSearch = it }, singleLine = true,
                                             placeholder = { Text("Search themes", color = Palette.textMuted) },
                                             leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textMuted, modifier = Modifier.size(16.dp)) },
@@ -223,12 +222,12 @@ fun ChannelEditor(
                                             Text("Only an admin can change the speakers of ${edit.name}.", color = Palette.textSecondary, fontSize = 12.sp)
                                             FieldLabel("Hours")
                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                OutlinedTextField(
+                                                SField(
                                                     hoursFrom, { hoursFrom = it.take(5) }, enabled = zones.admin, singleLine = true,
                                                     placeholder = { Text("07:00", color = Palette.textMuted) }, modifier = Modifier.weight(1f),
                                                 )
                                                 Text("  to  ", color = Palette.textSecondary)
-                                                OutlinedTextField(
+                                                SField(
                                                     hoursTo, { hoursTo = it.take(5) }, enabled = zones.admin, singleLine = true,
                                                     placeholder = { Text("20:00", color = Palette.textMuted) }, modifier = Modifier.weight(1f),
                                                 )
@@ -380,7 +379,7 @@ private fun SpeakersField(
             return@Column
         }
         var search by rememberSaveable { mutableStateOf("") }
-        OutlinedTextField(
+        SField(
             value = search, onValueChange = { search = it }, singleLine = true,
             placeholder = { Text("Search speakers", color = Palette.textMuted) },
             leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textMuted, modifier = Modifier.size(16.dp)) },

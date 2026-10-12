@@ -34,7 +34,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -146,7 +145,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                 }
                 // Toolbar
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {
-                    OutlinedTextField(
+                    SField(
                         value = query, onValueChange = { query = it }, singleLine = true,
                         placeholder = { Text("Search speakers", color = Palette.textMuted) },
                         leadingIcon = { Icon(SIcons.Search, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
@@ -372,7 +371,7 @@ private fun RenameField(s: Speaker, onDone: (String?) -> Unit, modifier: Modifie
         finished = true
         onDone(text)
     }
-    OutlinedTextField(
+    SField(
         value = value,
         onValueChange = { if (it.text.length <= 100) value = it },
         singleLine = true,
@@ -477,7 +476,7 @@ private fun AddSpeakerDialog(state: ServerState, model: ServerViewModel, onClose
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FieldLabel("Address")
-                OutlinedTextField(
+                SField(
                     value = address, onValueChange = { address = it }, singleLine = true,
                     placeholder = { Text("192.168.1.50 or speaker.local", color = Palette.textMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done),
@@ -485,7 +484,7 @@ private fun AddSpeakerDialog(state: ServerState, model: ServerViewModel, onClose
                     modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = "IP address or network name of the speaker" },
                 )
                 FieldLabel("Port")
-                OutlinedTextField(
+                SField(
                     value = port, onValueChange = { port = it }, singleLine = true,
                     placeholder = { Text("Auto", color = Palette.textMuted) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -497,7 +496,7 @@ private fun AddSpeakerDialog(state: ServerState, model: ServerViewModel, onClose
                 val areas = state.hierarchy?.let { h -> h.floors.flatMap { it.areas } + h.unassignedAreas }.orEmpty()
                 PickerField("Area", listOf(PickOption("", "No area")) + areas.map { PickOption(it.areaId, it.name) }, room, { room = it.value })
                 FieldLabel("Name")
-                OutlinedTextField(
+                SField(
                     value = name, onValueChange = { if (it.length <= 100) name = it }, singleLine = true,
                     placeholder = { Text("Speaker's own name", color = Palette.textMuted) },
                     modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Name" },

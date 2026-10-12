@@ -23,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -198,7 +197,7 @@ private fun AreaRow(area: SpaceArea, floorId: String, spaces: Spaces, editable: 
                 fun commit() {
                     if (text != area.name) model.changeSpaces { it.updateArea(area.localId!!, buildJsonObject { put("name", text) }) }
                 }
-                OutlinedTextField(
+                SField(
                     value = text,
                     onValueChange = { if (it.length <= 60) text = it },
                     singleLine = true,
@@ -261,7 +260,7 @@ private fun AddSpaceDialog(kind: String, spaces: Spaces?, onAdd: (String, String
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FieldLabel("Name")
-                OutlinedTextField(
+                SField(
                     value = name, onValueChange = { if (it.length <= 60) name = it }, singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { go() }),
                     modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = "Name" },

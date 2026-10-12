@@ -23,7 +23,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -152,7 +151,7 @@ fun LogsPage(model: ServerViewModel) {
                     modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                 ) { Text("Download", fontSize = 13.sp) }
             }
-            OutlinedTextField(
+            SField(
                 logs.search, { logs.search = it }, singleLine = true, placeholder = { Text("Search logs") },
                 leadingIcon = { Icon(SIcons.Search, null, modifier = Modifier.size(16.dp)) },
                 modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Search logs" },

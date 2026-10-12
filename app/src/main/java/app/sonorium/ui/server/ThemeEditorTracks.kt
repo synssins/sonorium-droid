@@ -457,11 +457,14 @@ fun NumberBox(initial: String, placeholder: String, enabled: Boolean, descriptio
             .onFocusChanged { if (focused && !it.isFocused) commit(); focused = it.isFocused }
             .semantics { contentDescription = description },
         decorationBox = { inner ->
+            // Field Small: 44 dp (ui-standards `.sp-inp.sm`)
             Box(
                 Modifier
+                    .heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
                     .background(Palette.backgroundSecondary, RoundedCornerShape(6.dp))
                     .border(1.dp, if (error) Palette.danger else Palette.border, RoundedCornerShape(6.dp))
                     .padding(horizontal = 8.dp, vertical = 8.dp),
+                contentAlignment = Alignment.CenterStart,
             ) {
                 if (text.isEmpty()) Text(placeholder, color = Palette.textMuted, fontSize = 14.sp)
                 inner()

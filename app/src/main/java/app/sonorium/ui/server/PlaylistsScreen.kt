@@ -31,7 +31,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -368,7 +367,7 @@ private fun PlaylistEditor(
                     item {
                         Column(Modifier.widthIn(max = 720.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                             FieldLabel("Name")
-                            OutlinedTextField(
+                            SField(
                                 value = name,
                                 onValueChange = { if (it.length <= 100) name = it; nameError = false },
                                 singleLine = true,
@@ -453,7 +452,7 @@ private fun PlaylistEditor(
 
 @Composable
 private fun NumberField(value: String, description: String, error: Boolean, onChange: (String) -> Unit) {
-    OutlinedTextField(
+    SField(
         value = value,
         onValueChange = onChange,
         singleLine = true,

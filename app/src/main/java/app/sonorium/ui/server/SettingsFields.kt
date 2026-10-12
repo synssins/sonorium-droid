@@ -12,7 +12,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -80,7 +79,7 @@ fun SettingsField(
         }
         else -> Column(modifier) {
             FieldLabel(label)
-            OutlinedTextField(
+            SField(
                 text, onText,
                 singleLine = f.type != "textarea",
                 minLines = if (f.type == "textarea") 2 else 1,

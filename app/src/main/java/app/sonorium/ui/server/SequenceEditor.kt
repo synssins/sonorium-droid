@@ -33,7 +33,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -109,7 +108,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                     item(key = "fields") {
                         Column(Modifier.padding(top = 8.dp)) {
                             FieldLabel("Name")
-                            OutlinedTextField(
+                            SField(
                                 d.name, { v -> if (v.length <= 100) editor.editSequence { it.copy(name = v, bad = it.bad - "name") } },
                                 singleLine = true, isError = "name" in d.bad, placeholder = { Text("Sequence name") },
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { save() }),
@@ -218,7 +217,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
 
 @Composable
 private fun SmallField(value: String, placeholder: String, error: Boolean, description: String, onChange: (String) -> Unit) {
-    OutlinedTextField(
+    SField(
         value, onChange, singleLine = true, isError = error,
         placeholder = { Text(placeholder, color = Palette.textMuted) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
