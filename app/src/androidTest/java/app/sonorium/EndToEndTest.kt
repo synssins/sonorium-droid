@@ -152,6 +152,21 @@ class EndToEndTest {
             need(By.text("Saved"), 10_000, "27-preset-saved", "No toast after New preset")
             need(By.desc("Preset: CI preset"), 10_000, "27-preset-selected", "The new preset isn't selected")
             screenshot("27-theme-editor-preset")
+            // Sequences › Add sequence…: a name and no presets → the web UI's refusal
+            find(By.desc("Sequences"), "No Sequences button").click()
+            find(By.text("Add sequence…"), "No Add sequence in the Sequences menu").click()
+            need(By.text("Add sequence"), 10_000, "28-sequence-editor", "The sequence editor didn't open")
+            typeInto(find(By.desc("Sequence name"), "No sequence name field"), "CI sequence")
+            hideKeyboard()
+            screenshot("28-sequence-editor")
+            find(By.text("Save"), "No Save in the sequence editor").click()
+            // the summary line says it too; the toast makes a second one
+            if (!waitFor(10_000) { device.findObjects(By.text("Add at least 2 presets")).size >= 2 }) {
+                screenshot("99-28-sequence-refused")
+                throw AssertionError("No toast for a sequence without presets; see 99-28-sequence-refused.png")
+            }
+            find(By.text("Cancel"), "No Cancel in the sequence editor").click()
+            need(By.text("Edit theme"), 10_000, "28-sequence-closed", "The sequence editor didn't close")
             find(By.text("Cancel"), "No Cancel in the Theme Editor").click()
             need(By.textContains("A Rainy Day"), 15_000, "27-editor-closed", "The Theme Editor didn't close")
 

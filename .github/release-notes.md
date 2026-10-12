@@ -7,7 +7,8 @@
   - **Preview mix** (the whole theme on this phone), **Upload** (pick audio files), **Add from another theme**, **Reset all**, ⋯ › **Export theme**, **?** help.
   - Presets: pick one to load it, Reload, **New**, **Save preset**, ⋯ › Rename, Set as default, Import, Export, Delete. Sequences menu with the Theme defaults.
   - **Save theme** keeps everything; **Cancel** (or Back) puts the mix back as it was.
-- Editing a **sequence** (Sequences › a sequence, or Edit) still opens the web Theme Editor.
+- **Sequences are native too:** Sequences › a sequence (or pick it in the preset field, then **Edit**), or **Add sequence…**: name, time on each preset, ramp, At the end, the presets in order (⋯ to move, remove, or open **Advanced…**), ⋯ › Duplicate / Delete sequence….
+  - A step's **Advanced…**: **While playing** (this step's own volumes, intervals, mutes, gaps; changed values show green; Revert changes) and **Coming in / Leaving** (Gusts, Swell, Build, Distance, Start fresh, with their settings and Pre-fade). Save saves the sequence.
 
 ## Please test
 
@@ -18,9 +19,10 @@
 5. Presets: **New** "Test", pick another preset (it loads), ⋯ › Delete "Test".
 6. Rename the theme or add a category, Save theme: the Themes page shows it.
 7. **Add from another theme**: link one file, then its ⋯ › Remove link….
+8. On a theme with two presets: Sequences › **Add sequence…**, add both presets, Save; open it again, ⋯ on a step › **Advanced…**, change a volume under While playing and turn on Swell under Coming in, Save.
 
 ## Not built yet
 
-- The sequence editor and a step's Advanced dialog (they open in the web view).
+- The ▶ preview of a single transition in Advanced (the web UI's Web Audio preview).
 - Settings › Connection, Audio, Plugins, Logs, Advanced (web view).
 - Cast to speakers, finding servers on the network.

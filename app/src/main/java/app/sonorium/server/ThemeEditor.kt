@@ -110,6 +110,9 @@ class ThemeEditor(
         scope.launch { loadTracks() }
     }
 
+    /** A success toast from a dialog's own action (`teFlash`). */
+    fun toastInfo(text: String) = toast(text, false)
+
     // ---------- Loading ----------
 
     suspend fun loadTracks(afterUpload: Boolean = false) {
@@ -560,6 +563,120 @@ class ThemeEditor(
             loadPresets()
         }
         return emptySet()
+    }
+
+    // ---------- Sequence editor (`#sq-modal`) ----------
+
+    /** An open sequence: [id] null = new. Times are the fields' text (empty = theme default). */
+    data class SeqDraft(
+        val id: String?,
+        val name: String = "",
+        val min: String = "",
+        val max: String = "",
+        val ramp: String = "",
+        val atEnd: String = "reverse",
+        val steps: List<String> = emptyList(),
+        val transitions: JsonObject = JsonObject(emptyMap()),
+        /** Unsaved While-playing layers from Advanced, by step. */
+        val layers: Map<String, JsonObject> = emptyMap(),
+        val whileSteps: Set<String> = emptySet(),
+        val bad: Set<String> = emptySet(),
+    )
+
+    private val _seq = MutableStateFlow<SeqDraft?>(null)
+    val seq: StateFlow<SeqDraft?> = _seq.asStateFlow()
+
+    /** `sqOpen`: [id] null = Add sequence. */
+    fun openSequence(id: String?) {
+        val s = id?.let { i -> _ui.value.sequences.firstOrNull { it.id == i } }
+        if (id != null && s == null) return toast("Sequence not found", true)
+        val presets = _ui.value.presets.map { it.id }.toSet()
+        _seq.value = if (s == null) SeqDraft(null) else SeqDraft(
+            id = s.id, name = s.name,
+            min = SequenceRules.minutes(s.holdMin), max = SequenceRules.minutes(s.holdMax), ramp = SequenceRules.plain(s.ramp),
+            atEnd = s.atEnd.ifEmpty { "reverse" }, steps = s.presets.filter { it in presets },
+            transitions = s.transitions, whileSteps = s.whileSteps.toSet(),
+        )
+    }
+
+    fun editSequence(change: (SeqDraft) -> SeqDraft) = _seq.update { it?.let(change) }
+
+    fun closeSequence() {
+        _seq.value = null
+    }
+
+    /** ⋯ › Duplicate: a new unsaved copy. */
+    fun duplicateSequence() = _seq.update { it?.copy(id = null, name = "${it.name} (copy)", bad = emptySet()) }
+
+    fun deleteSequence() = scope.launch {
+        val d = _seq.value ?: return@launch
+        val id = d.id ?: return@launch
+        val name = _ui.value.sequences.firstOrNull { it.id == id }?.name ?: d.name
+        try {
+            api.deleteSequence(themeId, id)
+            if (_ui.value.selected == "seq:$id") _ui.update { it.copy(selected = "") }
+            _seq.value = null
+            toast("Deleted “$name”", false)
+        } catch (e: Exception) {
+            toast(message(e, "Failed to delete the sequence"), true)
+        }
+        loadPresets()
+    }
+
+    /** `sqSave`: [keepOpen] when saved from Advanced. True when saved. */
+    suspend fun saveSequence(keepOpen: Boolean = false, quiet: Boolean = false): Boolean {
+        val d = _seq.value ?: return false
+        val t = SequenceRules.timing(d.min, d.max, d.ramp, _ui.value.defaults)
+        SequenceRules.check(d.name, d.id, _ui.value.sequences, t, d.steps.size)?.let { (text, bad) ->
+            _seq.update { it?.copy(bad = bad) }
+            toast(text, true)
+            return false
+        }
+        val name = d.name.trim()
+        return try {
+            val saved = api.saveSequence(themeId, d.id, SequenceRules.body(name, d.steps, d.atEnd, t, d.transitions))
+            val id = saved.id.ifEmpty { d.id.orEmpty() }
+            var whileSteps = d.whileSteps
+            d.layers.forEach { (preset, layer) ->
+                if (preset in d.steps) {
+                    api.setWhileLayer(themeId, id, preset, layer)
+                    val empty = (layer["tracks"] as? JsonObject).isNullOrEmpty() && (layer["groups"] as? JsonObject).isNullOrEmpty()
+                    whileSteps = if (empty) whileSteps - preset else whileSteps + preset
+                }
+            }
+            if (keepOpen) {
+                _seq.update { it?.copy(id = id, transitions = saved.transitions, layers = emptyMap(), whileSteps = whileSteps, bad = emptySet()) }
+                if (!quiet) toast("Saved “$name”", false)
+            } else {
+                _seq.value = null
+                toast("Saved “$name”", false)
+            }
+            loadPresets()
+            true
+        } catch (e: Exception) {
+            toast(message(e, "Failed to save the sequence"), true)
+            false
+        }
+    }
+
+    /** Advanced's data: transition tracks, the preset's values, and the step's saved While-playing layer. */
+    suspend fun advancedData(step: String, prev: String?, next: String?): Result<Triple<JsonObject, JsonObject, JsonObject?>> = runCatching {
+        val d = _seq.value
+        val layer = d?.layers?.get(step) ?: d?.id?.let { id ->
+            val saved = _ui.value.sequences.firstOrNull { it.id == id }
+            if (saved != null && step in saved.presets) api.whileLayer(themeId, id, step) else null
+        }
+        Triple(api.transitionTracks(themeId, step, prev, next), api.presetValues(themeId, step), layer)
+    }.onFailure { e -> toast(message(e as? Exception ?: Exception(e), "Failed to load the tracks"), true) }
+
+    /** Advanced › Save: into the draft, then the whole sequence is saved (the editor stays open). */
+    suspend fun saveAdvanced(step: String, transitions: JsonObject?, layer: JsonObject?, presetName: String) {
+        editSequence { d ->
+            val tr = d.transitions.toMutableMap()
+            if (transitions != null) tr[step] = transitions else tr.remove(step)
+            d.copy(transitions = JsonObject(tr), layers = if (layer != null) d.layers + (step to layer) else d.layers)
+        }
+        if (saveSequence(keepOpen = true, quiet = true)) toast("Saved “$presetName”", false)
     }
 
     // ---------- Previews (this phone only) ----------

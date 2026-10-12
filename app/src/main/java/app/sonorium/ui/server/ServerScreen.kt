@@ -110,8 +110,7 @@ fun ServerScreen(
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast) {
-    // Sequences stay in the web UI's Theme Editor until the native sequence editor lands
-    themeEditor?.let { ThemeEditorScreen(it, model, state, onWebSequences = { onWebPage("themes") }) }
+    themeEditor?.let { ThemeEditorScreen(it, model, state) }
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Tablets in landscape keep the menu open as a sidebar; everything else slides it in

@@ -103,12 +103,13 @@ private val THEME_ICONS = listOf(
 
 /**
  * The Theme Editor (native-api.md Phase 3): full screen over Themes. Every control saves as it
- * changes; Save theme keeps it all, Cancel / × / Back put the mix back. [onWebSequences] opens the
- * web UI's editor for sequences until the native sequence editor lands.
+ * changes; Save theme keeps it all, Cancel / × / Back put the mix back.
  */
 @Composable
-fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: ServerState, onWebSequences: () -> Unit) {
+fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: ServerState) {
     val ui by editor.ui.collectAsState()
+    val sequence by editor.seq.collectAsState()
+    var advanced by remember { mutableStateOf<Int?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var help by remember { mutableStateOf(false) }
@@ -183,10 +184,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                     item(key = "toolbar") {
                         Toolbar(ui, editor, onUpload = ::upload, onPicker = { picker = true }, onReset = {
                             ask = Ask("Reset all tracks and groups to defaults?", null, "Reset") { editor.resetAll() }
-                        }, onSequence = { id ->
-                            if (id != null) editor.selectSequence(id)
-                            onWebSequences()
-                        })
+                        }, onSequence = { id -> editor.openSequence(id) })
                     }
                     when {
                         ui.loading -> item { Text("Loading tracks…", color = Palette.textSecondary, modifier = Modifier.padding(16.dp)) }
@@ -201,7 +199,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                     onAsk = { ask = it },
                     onImport = { importing = true },
                     onExport = { scope.launch { editor.exportPreset()?.let { exported = it } } },
-                    onEditSequence = onWebSequences,
+                    onEditSequence = { ui.selectedSequence?.let { editor.openSequence(it.id) } },
                     onSave = { scope.launch { if (editor.saveTheme(quiet = false, pending = pendingCategory)) model.closeThemeEditor() } },
                     onCancel = { cancel() },
                 )
@@ -214,6 +212,8 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
     prompt?.let { p -> NamePromptDialog(p) { prompt = null } }
     if (importing) ImportPresetDialog(editor) { importing = false }
     exported?.let { text -> ExportPresetDialog(text, model) { exported = null } }
+    if (sequence != null) SequenceEditorScreen(editor, ui, onAdvanced = { advanced = it })
+    advanced?.let { i -> if (sequence != null) AdvancedDialog(editor, ui, i) { advanced = null } else advanced = null }
     if (picker) LinkPicker(state.themes.filter { it.id != editor.themeId }, ui, editor) { picker = false }
 }
 
