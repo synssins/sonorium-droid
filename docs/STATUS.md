@@ -42,7 +42,7 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
 - Mirror init script (recreate in your scratchpad, pass with `-I`): in `settingsEvaluated` and
   `allprojects`, every MavenArtifactRepository whose url starts with `https://repo.maven.apache.org`
   gets url `https://maven-central.storage-download.googleapis.com/maven2/`.
-- The handoff repo is attached read-only but pushing notes to its `main` works. Release notes come from `.github/release-notes.md` (keep it
+- The handoff repo is attached read-only but pushing notes to its `main` works. Release notes come from `.github/release-notes.md` (describes alpha10 now) (keep it
   current: what's new, please test, not built yet).
 - Signing key and secrets are set up by Chris; package `app.sonorium` (debug `app.sonorium.debug`).
 
@@ -76,14 +76,13 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
 - Still in the web view: Users & devices and Keys (never native), plugin-framework pages.
 
 ## State at hand-over
-- Releases: alpha8, alpha9 earlier tonight. This session pushed Phase 3; CI of `90e17fa` failed on two
-  test steps (fixed in `7578a74`: the notification shade's stray Back; Android 8 focusing the editor's
-  Name field). `a7306dc` (all of Phase 3) was in CI at hand-over: check e2e-results; when green, release
-  **v0.1.0-alpha10** and post the note in `to-server/` (see below if not done).
-- Mailbox: no replies from the server session yet (last to-app is 10). Our notes: to-server/04, 05,
-  and this session's 06 (if posted).
-- Open questions: Status `This phone` vs `This browser`; playlist reorder via menu. The `?` texts question
-  is answered (taken from the web UI).
+- **v0.1.0-alpha10 released** (dispatched ~08:35 UTC) from `ac99860`: all of Phase 3 native. Both emulators
+  green on `ac99860`. Getting there took several device-test fixes (keyboard covering buttons, typing into
+  focused fields, the notification shade, the emulator's "Pixel Launcher isn't responding" dialog).
+- Mailbox: to-server/06 posted (Phase 3, alpha10, what to validate). **Still no replies** from the server
+  session (last to-app is 10) as of 08:35 UTC.
+- Open questions: Status `This phone` vs `This browser`; playlist reorder via ⋯ (no drag).
+- Known: on Android 8 a dialog's first text field takes focus (keyboard opens) when it appears.
 
 ## Next, in order
 1. CI green on the latest commit → release, note in `to-server/` with the screenshot links.
