@@ -293,13 +293,28 @@ class EndToEndTest {
     }
 
     private fun find(selector: BySelector, message: String): UiObject2 =
-        device.wait(Until.findObject(selector), 10_000) ?: run {
+        waitPastAnr(selector, 10_000) ?: run {
             screenshot("99-missing")
             throw AssertionError(message)
         }
 
+    /**
+     * Waits for [selector]; when the emulator shows "<app> isn't responding" (its launcher, under CI
+     * load) over the app, taps Wait and looks again.
+     */
+    private fun waitPastAnr(selector: BySelector, timeoutMs: Long): UiObject2? {
+        device.wait(Until.findObject(selector), timeoutMs)?.let { return it }
+        repeat(2) {
+            if (!device.hasObject(By.textContains("isn't responding"))) return null
+            device.findObject(By.text("Wait"))?.click()
+            Thread.sleep(1_000)
+            device.wait(Until.findObject(selector), 10_000)?.let { return it }
+        }
+        return null
+    }
+
     private fun need(selector: BySelector, timeoutMs: Long, shot: String, message: String): UiObject2 =
-        device.wait(Until.findObject(selector), timeoutMs) ?: run {
+        waitPastAnr(selector, timeoutMs) ?: run {
             screenshot("99-$shot")
             throw AssertionError("$message; see 99-$shot.png")
         }
