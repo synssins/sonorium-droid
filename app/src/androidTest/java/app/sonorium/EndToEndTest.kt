@@ -131,8 +131,13 @@ class EndToEndTest {
             openPage("Themes")
             need(By.textContains("A Rainy Day"), 15_000, "22-themes", "No theme cards")
             screenshot("22-themes")
-            find(By.desc("Add to favorites"), "No favorite button").click()
-            need(By.text("Added to favorites"), 10_000, "22-favorite", "No toast after a favorite")
+            // ★ toggles; the CI themes may start as favorites, so flip it and flip it back
+            val add = device.findObject(By.desc("Add to favorites"))
+            (add ?: find(By.desc("Remove from favorites"), "No favorite button")).click()
+            need(By.text(if (add != null) "Added to favorites" else "Removed from favorites"), 10_000, "22-favorite", "No toast after ★")
+            Thread.sleep(3_500)
+            find(By.desc(if (add != null) "Remove from favorites" else "Add to favorites"), "The ★ didn't change").click()
+            need(By.text(if (add != null) "Removed from favorites" else "Added to favorites"), 10_000, "22-favorite-back", "No toast after the second ★")
 
             // Settings › Speakers
             openPage("Speakers", settings = true)
