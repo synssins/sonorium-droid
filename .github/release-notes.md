@@ -1,15 +1,23 @@
 ## What's new in this build
 
-- **Themes on this phone, played on this phone, no server needed:**
-  - The app opens without a server (a Connect button on Channels; the headphone button explains what it needs).
-  - **Themes › On this phone:** pick a folder for themes once (Music/Sonorium suggested; you can see and copy the theme folders in the Files app), then **Import theme** (a .zip from the server's Export), or **Remove from phone**.
-  - **Save to phone** (server Themes › ⋯ on a theme): downloads the theme, checks every file, resumes after a dropped connection, keeps the server's playback settings. **Update on phone** shows when the server's copy changed.
-  - **The headphone button › On this phone:** pick a theme and preset, volume, **Play**. The same engine as the server mixes it on the phone; it keeps playing with the screen off (media notification).
+- **Fixes from your test of alpha14:**
+  - After unlocking, the app carries on with what you were doing (Save to phone or Import), instead of staying on the unlock screen.
+  - **Picking another theme while playing on the phone now switches to it**, with a crossfade. When stopped, the next Play uses it.
+  - Presets show as soon as you pick a theme (before the first Play).
+- **Sequences on the phone:** the preset field also lists the theme's sequences. While one plays: the step, the time to the next one, and **Next**.
+- **Cast to a speaker:** in the headphone button's On this phone view, **Cast…** lists Google Cast speakers (Nest, Chromecast). Pick one: the phone mixes, the speaker plays. Pick another to move it; **Stop casting** ends it. One speaker at a time.
+- **Save to phone** shows the theme's size; Themes › ⋯ › Refresh also updates the phone's copies.
+- **When the server can't be reached:** the "Can't reach" line now clears by itself when the network comes back; Themes opens on the themes on this phone; Create theme, Add playlist, New Channel and Add group say the server can't be reached instead of opening.
+- Text fields are a little shorter (48 dp, the shared size standard); number fields 44 dp.
 
 ## Please test
 
-- With no server reachable (Wi-Fi off): open the app, ☰ › Themes › On this phone › Import theme (a zip exported from your server), then the headphone button › On this phone › pick it › Play.
-- With your server: Themes › ⋯ › **Save to phone** on a theme; it appears under On this phone and plays from there.
+- Headphone › On this phone: play a theme, then pick another theme: it crossfades to it. Pick a sequence (if the theme has one): the step and Next show.
+- Cast… › your Nest or Chromecast (low volume): it plays there; Stop casting.
+- Save to phone on a server theme you haven't saved yet: after unlocking, it goes straight on to the folder / download.
+
+### Earlier (alpha14)
+- Themes on this phone (Import, Save to phone, Update on phone), played on this phone with no server; the app opens without a server.
 
 ### Earlier (alpha13)
 - **Touch sizes: 48 dp** (your decision): buttons and icon buttons are 48 dp (small ones 44 dp), the top bar's buttons are all the same 48 dp, collapsed channel rows are 56 dp tall.
