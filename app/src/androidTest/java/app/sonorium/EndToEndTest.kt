@@ -206,6 +206,11 @@ class EndToEndTest {
             need(By.desc("Broker"), 10_000, "29-connection-edit", "The MQTT dialog didn't open")
             screenshot("29-connection-edit")
             find(By.text("Cancel"), "No Cancel in the MQTT dialog").click()
+
+            // Settings › Audio Settings: a slider makes a draft; Cancel puts it back
+            openPage("Audio Settings", settings = true)
+            need(By.text("Master output gain"), 15_000, "30-audio", "The Audio Settings page didn't open")
+            screenshot("30-audio")
             openPage("Channels")
             need(By.text(channelName), 15_000, "26-back", "Channels didn't come back")
 

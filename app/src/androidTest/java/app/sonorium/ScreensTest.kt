@@ -113,8 +113,8 @@ class ScreensTest {
     }
 
     private companion object {
-        val WEB_VIEWS = listOf("settings-audio")
-        val NATIVE_PAGES = listOf("Playlists", "Themes", "Speakers", "Speaker Groups", "Floors & Areas", "Status", "Connection")
-        val SETTINGS_PAGES = setOf("Speakers", "Speaker Groups", "Floors & Areas", "Connection")
+        val WEB_VIEWS = listOf("settings-logs")
+        val NATIVE_PAGES = listOf("Playlists", "Themes", "Speakers", "Speaker Groups", "Floors & Areas", "Status", "Connection", "Audio Settings")
+        val SETTINGS_PAGES = setOf("Speakers", "Speaker Groups", "Floors & Areas", "Connection", "Audio Settings")
     }
 }

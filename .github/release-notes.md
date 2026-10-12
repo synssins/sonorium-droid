@@ -10,6 +10,7 @@
 - **Sequences are native too:** Sequences › a sequence (or pick it in the preset field, then **Edit**), or **Add sequence…**: name, time on each preset, ramp, At the end, the presets in order (⋯ to move, remove, or open **Advanced…**), ⋯ › Duplicate / Delete sequence….
   - A step's **Advanced…**: **While playing** (this step's own volumes, intervals, mutes, gaps; changed values show green; Revert changes) and **Coming in / Leaving** (Gusts, Swell, Build, Distance, Start fresh, with their settings and Pre-fade). Save saves the sequence.
 - **Settings › Connection is native:** Home Assistant, MQTT and plugin connections with their status, **Test**, **Edit** (Save restarts Sonorium for HA/MQTT, after asking), ⋯ › Remove…, and the dashboard-cards line. The Settings menu now follows the web UI's order.
+- **Settings › Audio Settings is native:** Crossfade, Default volume, Master output gain as a draft; **Save settings** / **Cancel**; ⋯ › Reset to defaults….
 - Each page's **?** button shows its help (the web UI's texts): Channels, Playlists, Themes, Speakers, Speaker Groups, Floors & Areas, Status.
 
 ## Please test
@@ -23,9 +24,10 @@
 7. **Add from another theme**: link one file, then its ⋯ › Remove link….
 8. On a theme with two presets: Sequences › **Add sequence…**, add both presets, Save; open it again, ⋯ on a step › **Advanced…**, change a volume under While playing and turn on Swell under Coming in, Save.
 9. Settings › **Connection**: Test on MQTT; Edit MQTT and Cancel (Save restarts Sonorium).
+10. Settings › **Audio Settings**: move Crossfade, Cancel; move it again, Save settings.
 
 ## Not built yet
 
 - The ▶ preview of a single transition in Advanced (the web UI's Web Audio preview).
-- Settings › Audio, Plugins, Logs, Advanced (web view).
+- Settings › Plugins, Logs, Advanced (web view).
 - Cast to speakers, finding servers on the network.

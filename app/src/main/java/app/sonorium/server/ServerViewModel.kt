@@ -2,6 +2,8 @@ package app.sonorium.server
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.sonorium.SonoriumApp
@@ -759,6 +761,10 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _state.update { it.copy(connectionPage = core || plugins) }
     }
 
+
+    /** Settings › Audio Settings: saved values and the unsaved draft, kept while the app runs. */
+    var audioSaved by androidx.compose.runtime.mutableStateOf<app.sonorium.ui.server.AudioValues?>(null)
+    var audioDraft by androidx.compose.runtime.mutableStateOf<app.sonorium.ui.server.AudioValues?>(null)
 
     /** After Home Assistant is removed: speakers, groups, channels and network info change (`afterHomeAssistantRemoved`). */
     fun afterHomeAssistantRemoved() = viewModelScope.launch {
