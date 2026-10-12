@@ -213,7 +213,7 @@ class ListenService : MediaSessionService() {
                 api(c.serverId)?.let { if (c.personal) it.listenMyChannel() else it.listen(c.sessionId) }
             }.getOrNull()
             if (current?.sessionId != c.sessionId || pausedByUser) return@launch
-            val url = slot?.let { "${c.streamBase}${it.streamPath}?local=1" } ?: c.url
+            val url = slot?.let { "${c.streamBase}${it.playPath}" } ?: c.url
             current = c.copy(url = url)
             play(url)
         }

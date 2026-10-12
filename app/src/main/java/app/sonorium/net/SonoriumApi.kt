@@ -73,6 +73,26 @@ class SonoriumApi(
         execute(request("sessions/$id/next").post(EMPTY).build())
     }
 
+    // ---------- Zones (Users plugin; 404 without it) ----------
+
+    suspend fun zones(): ZonesView = get("zones")
+
+    suspend fun leaveLink(linkId: String, channelId: String) {
+        sendRaw("POST", "links/$linkId/leave", buildJsonObject { put("channel_id", channelId) })
+    }
+
+    suspend fun rejoinLink(linkId: String, channelId: String) {
+        sendRaw("POST", "links/$linkId/rejoin", buildJsonObject { put("channel_id", channelId) })
+    }
+
+    suspend fun updateZone(channelId: String, body: JsonObject) {
+        sendRaw("PUT", "zones/$channelId", body)
+    }
+
+    suspend fun removeLink(linkId: String) {
+        execute(request("links/$linkId").delete().build())
+    }
+
     // ---------- Themes, playlists, speakers ----------
 
     suspend fun themes(): List<ThemeSummary> = get("themes")

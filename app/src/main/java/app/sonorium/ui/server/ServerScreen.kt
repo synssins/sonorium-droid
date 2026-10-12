@@ -57,6 +57,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.withStyle
 import app.sonorium.R
 import app.sonorium.listen.ListenController
 import app.sonorium.net.Session
@@ -178,8 +179,8 @@ fun ServerScreen(
             state = state,
             onLoadPresets = { id -> scope.launch { model.loadPresets(id) } },
             onError = { model.toast(it, error = true) },
-            onSave = { body, playlistId, clearFirst ->
-                model.saveChannel(editing, body, playlistId, clearFirst) { creating = false; editing = null }
+            onSave = { body, playlistId, clearFirst, zoneChanges ->
+                model.saveChannel(editing, body, playlistId, clearFirst, zoneChanges) { creating = false; editing = null }
             },
             onClose = { creating = false; editing = null },
         )
@@ -331,6 +332,7 @@ private fun ChannelsPage(
     onEdit: (Session) -> Unit,
 ) {
     val listening by ListenController.state.collectAsState()
+    val expanded by model.expanded.collectAsState()
     val scope = rememberCoroutineScope()
     val actions = remember(model) {
         CardActions(
@@ -348,10 +350,14 @@ private fun ChannelsPage(
             edit = onEdit,
             delete = model::delete,
             stopCasting = model::stopCasting,
+            leaveLink = model::leaveLink,
+            rejoinLink = model::rejoinLink,
         )
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val side = if (maxWidth < 600.dp) 12.dp else 24.dp
+        // Phones: every channel collapsed until opened; wide screens: open until collapsed
+        val openByDefault = maxWidth >= 840.dp
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 340.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = side, end = side, bottom = 24.dp),
@@ -378,6 +384,12 @@ private fun ChannelsPage(
                     }
                 }
             }
+            // Link bars (Zones): one per link, above the cards (1.6)
+            state.zones?.links?.forEach { link ->
+                item(span = { GridItemSpan(maxLineSpan) }, key = "link-${link.id}") {
+                    LinkBar(state, link, admin = state.zones.admin, onUnlink = { model.unlink(link.id) })
+                }
+            }
             if (state.sessionsLoaded && state.sessions.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -389,7 +401,18 @@ private fun ChannelsPage(
                 }
             }
             items(state.sessions, key = { it.id }) { session ->
+                val open = expanded[session.id] ?: openByDefault
                 Box(contentAlignment = Alignment.TopCenter) {
+                    if (!open) {
+                        ChannelRow(
+                            session = session,
+                            state = state,
+                            onExpand = { model.setExpanded(session.id, true) },
+                            onTogglePlay = { model.togglePlay(session) },
+                            modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth(),
+                        )
+                        return@Box
+                    }
                     ChannelCard(
                         session = session,
                         state = state,
@@ -398,8 +421,34 @@ private fun ChannelsPage(
                         actions = actions,
                         onCountdownZero = { scope.launch { model.refreshSessions() } },
                         modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth(),
+                        onCollapse = { model.setExpanded(session.id, false) },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LinkBar(state: ServerState, link: app.sonorium.net.ChannelLink, admin: Boolean, onUnlink: () -> Unit) {
+    val plays = link.playlistId?.let { state.playlist(it)?.name ?: "Playlist" } ?: state.theme(link.themeId)?.name.orEmpty()
+    fun names(ids: List<String>) = ids.mapNotNull { id -> state.sessions.firstOrNull { it.id == id }?.name }.joinToString(", ")
+    Surface(color = Palette.accentSecondary.copy(alpha = 0.1f), shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, Palette.accentSecondary.copy(alpha = 0.5f))) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(SIcons.Link, null, tint = Palette.accentSecondary, modifier = Modifier.size(18.dp))
+            Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                Text(
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.SemiBold)) { append(link.name) }
+                        if (plays.isNotEmpty()) append(" · $plays")
+                    },
+                    color = Palette.text, fontSize = 14.sp,
+                )
+                val left = names(link.left)
+                Text(names(link.channels) + if (left.isNotEmpty()) " · $left left" else "", color = Palette.textSecondary, fontSize = 12.sp)
+            }
+            if (admin) {
+                androidx.compose.material3.TextButton(onClick = onUnlink) { Text("Unlink", color = Palette.text) }
             }
         }
     }

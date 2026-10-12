@@ -75,9 +75,14 @@ data class Me(
 /** `POST /api/sessions/{id}/listen`. */
 @Serializable
 data class ListenSlot(
-    @SerialName("channel_id") val channelId: Int,
+    @SerialName("channel_id") val channelId: Int? = null,
     @SerialName("stream_path") val streamPath: String,
-)
+    /** This device's own stream (`...?local=1&listener=<tag>`); newer servers send it. */
+    @SerialName("listen_path") val listenPath: String? = null,
+) {
+    /** The path to play: the device's tagged path when given, else the stream with ?local=1. */
+    val playPath: String get() = listenPath ?: "$streamPath?local=1"
+}
 
 // ---------- Channels (sessions), APP_API.md 7.1 ----------
 
@@ -142,6 +147,8 @@ data class Session(
     val announcements: Boolean = true,
     val personal: Boolean = false,
     val outputs: List<CastOutput> = emptyList(),
+    /** Personal channel: how many of the account's devices listen. */
+    val devices: Int = 0,
 ) {
     /** What the preset field shows: "seq:<id>" while a sequence is set, else the preset; "" = default settings. */
     val choice: String get() = presetChoice ?: presetId ?: ""
@@ -256,3 +263,46 @@ data class ServerStatus(val version: String = "")
 
 @Serializable
 data class InstallInfo(val label: String = "", val version: String = "")
+
+// ---------- Zones (Users plugin; native-api.md 1.6) ----------
+
+@Serializable
+data class ZoneSchedule(val start: String = "", val end: String = "")
+
+@Serializable
+data class Zone(
+    val owner: String? = null,
+    @SerialName("owner_name") val ownerName: String? = null,
+    @SerialName("kid_mode") val kidMode: Boolean = false,
+    val schedule: ZoneSchedule? = null,
+)
+
+@Serializable
+data class ChannelLink(
+    val id: String,
+    val name: String = "",
+    val channels: List<String> = emptyList(),
+    val left: List<String> = emptyList(),
+    @SerialName("theme_id") val themeId: String? = null,
+    @SerialName("preset_id") val presetId: String? = null,
+    @SerialName("playlist_id") val playlistId: String? = null,
+)
+
+@Serializable
+data class ZoneUser(val id: String, val username: String = "", val role: String = "")
+
+@Serializable
+data class ZonesView(
+    val on: Boolean = false,
+    val admin: Boolean = false,
+    val me: String? = null,
+    @SerialName("can_leave_link") val canLeaveLink: Boolean = false,
+    val zones: Map<String, Zone> = emptyMap(),
+    val links: List<ChannelLink> = emptyList(),
+    val users: List<ZoneUser> = emptyList(),
+) {
+    fun linkOf(channelId: String) = links.firstOrNull { channelId in it.channels || channelId in it.left }
+
+    /** Leave/Rejoin: an admin, or the channel's owner when they may leave links. */
+    fun mayLeave(channelId: String) = admin || (zones[channelId]?.owner != null && zones[channelId]?.owner == me && canLeaveLink)
+}

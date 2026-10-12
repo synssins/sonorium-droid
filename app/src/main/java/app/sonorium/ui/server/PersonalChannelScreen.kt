@@ -59,7 +59,7 @@ fun PersonalChannelScreen(
                 Text("My channel", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
             }
             if (channel == null) {
-                CircularProgressIndicator(color = Palette.accent)
+                state.personalProblem?.let { Text(it, color = Palette.text) } ?: CircularProgressIndicator(color = Palette.accent)
                 return@Column
             }
             val on = listening?.let { it.personal && it.playing && it.serverId == state.record?.id } == true
@@ -107,8 +107,11 @@ fun PersonalChannelScreen(
                             colors = SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
                         )
                     }
+                    // A new personal channel has no theme yet: listening needs one
+                    if (channel.themeId == null) Text("Choose a theme", color = Palette.textSecondary, fontSize = 13.sp)
                     Button(
                         onClick = { model.toggleListen(channel, personal = true) },
+                        enabled = on || channel.themeId != null,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (on) Palette.danger else Palette.accent,

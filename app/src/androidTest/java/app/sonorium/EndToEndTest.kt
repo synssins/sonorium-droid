@@ -53,9 +53,17 @@ class EndToEndTest {
             val oldWebView = WebViewSupport.outdated(instrumentation.targetContext)
             open.click()
 
-            // 2. The native Channels screen shows the server's channel.
+            // 2. The native Channels screen shows the server's channel, collapsed on a phone
+            //    (approved design): its small Play does what the card's big Play does.
             need(By.text(channelName), 60_000, "02-channels", "The channel didn't appear")
             Thread.sleep(1_500)
+            screenshot("02-channels-collapsed")
+            find(By.desc("Play $channelName"), "No small Play button on the collapsed row").click()
+            need(By.text("No speakers selected"), 10_000, "02-row-play", "No error toast for the row's Play without speakers")
+            Thread.sleep(3_500) // let the toast go
+            find(By.desc("Open $channelName"), "No chevron to open the channel").click()
+            need(By.desc("Collapse $channelName"), 10_000, "02-open", "The card didn't open")
+            Thread.sleep(800)
             screenshot("02-channels-portrait")
 
             // 3. Preset: pick Default settings → the web UI's toast text.
@@ -65,6 +73,7 @@ class EndToEndTest {
             screenshot("03-preset")
 
             // 4. Play with no speakers: the server's refusal shows as a toast, verbatim.
+            Thread.sleep(3_500)
             find(By.text("Play"), "No Play button").click()
             need(By.text("No speakers selected"), 10_000, "04-play-refused", "No error toast for Play without speakers")
 
@@ -75,8 +84,7 @@ class EndToEndTest {
             device.openNotification()
             val notification = device.wait(Until.findObject(By.textContains(channelName)), 10_000)
             screenshot("06-notification")
-            device.pressBack()
-            Thread.sleep(1_000)
+            closeNotificationShade()
             assertNotNull("No playback notification for $channelName", notification)
             find(By.desc("Listen on this device"), "No listen button").click()
             assertTrue("The native player didn't stop", waitFor(15_000) { ListenController.state.value?.playing != true })
@@ -90,7 +98,8 @@ class EndToEndTest {
             // 7. A new channel: pick a theme, create → toast and a second card.
             find(By.text("New Channel"), "No New Channel button").click()
             need(By.text("New Channel"), 10_000, "08-new", "The new channel editor didn't open")
-            device.wait(Until.findObject(By.text("A Rainy Day")), 10_000)?.click()
+            hideKeyboard()
+            device.wait(Until.findObject(By.textStartsWith("A Rainy Day")), 10_000)?.click()
             Thread.sleep(500)
             screenshot("08-new-channel")
             find(By.text("Create Channel"), "No Create Channel button").click()
@@ -123,6 +132,26 @@ class EndToEndTest {
             screenshot("99-$shot")
             throw AssertionError("$message; see 99-$shot.png")
         }
+
+    /** Back doesn't always close the shade on newer Android; swipe it up too. */
+    private fun closeNotificationShade() {
+        device.pressBack()
+        Thread.sleep(800)
+        if (device.hasObject(By.text("Manage")) || device.hasObject(By.res("com.android.systemui:id/notification_stack_scroller"))) {
+            device.swipe(device.displayWidth / 2, device.displayHeight - 50, device.displayWidth / 2, 50, 12)
+            Thread.sleep(800)
+        }
+    }
+
+    /** Android 8 opens the keyboard on the editor's first field; close it. */
+    private fun hideKeyboard() {
+        Thread.sleep(800)
+        val imeShown = instrumentation.uiAutomation.windows.any { it.type == android.view.accessibility.AccessibilityWindowInfo.TYPE_INPUT_METHOD }
+        if (imeShown) {
+            device.pressBack()
+            Thread.sleep(500)
+        }
+    }
 
     private fun waitFor(timeoutMs: Long, condition: () -> Boolean): Boolean {
         val end = System.currentTimeMillis() + timeoutMs

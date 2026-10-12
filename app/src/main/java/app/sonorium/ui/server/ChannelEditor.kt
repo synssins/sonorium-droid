@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
@@ -75,7 +76,7 @@ fun ChannelEditor(
     state: ServerState,
     onLoadPresets: (String) -> Unit,
     onError: (String) -> Unit,
-    onSave: (body: JsonObject, playlistId: String?, clearPlaylistFirst: Boolean) -> Unit,
+    onSave: (body: JsonObject, playlistId: String?, clearPlaylistFirst: Boolean, zoneChanges: JsonObject?) -> Unit,
     onClose: () -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf(edit?.name ?: "") }
@@ -94,10 +95,18 @@ fun ChannelEditor(
         state.hierarchy?.let { ChannelRules.Picker(it, state.enabledSpeakers) }
     }
     var selected by remember(picker) { mutableStateOf(picker?.effective(edit?.adhocSelection) ?: emptySet()) }
+    // Zones (1.6): owner, Kid mode and hours; admins change them, others see them read-only
+    val zones = state.zones
+    val zone = edit?.let { zones?.zones?.get(it.id) }
+    var owner by rememberSaveable { mutableStateOf(zone?.owner) }
+    var kidMode by rememberSaveable { mutableStateOf(zone?.kidMode == true) }
+    var hoursFrom by rememberSaveable { mutableStateOf(zone?.schedule?.start ?: "") }
+    var hoursTo by rememberSaveable { mutableStateOf(zone?.schedule?.end ?: "") }
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
-            BoxWithConstraints(Modifier.safeDrawingPadding()) {
+            // imePadding: the footer (Create/Save, Cancel) stays above the keyboard
+            BoxWithConstraints(Modifier.safeDrawingPadding().imePadding()) {
                 val wide = maxWidth >= 720.dp
                 Column(Modifier.fillMaxSize()) {
                     Text(
@@ -118,6 +127,20 @@ fun ChannelEditor(
                                         placeholder = { Text("Leave empty to auto-generate from selection", color = Palette.textMuted) },
                                         modifier = Modifier.fillMaxWidth(),
                                     )
+                                    if (zones != null && edit != null) {
+                                        if (zones.admin) {
+                                            FieldLabel("Owner")
+                                            PickerField(
+                                                label = "Owner",
+                                                options = listOf(PickOption("", "No one")) + zones.users.sortedBy { it.username.lowercase() }.map { PickOption(it.id, it.username) },
+                                                current = owner ?: "",
+                                                onPick = { owner = it.value.ifEmpty { null } },
+                                            )
+                                        } else if (zone?.ownerName != null) {
+                                            FieldLabel("Owner")
+                                            PickerField("Owner", listOf(PickOption("o", zone.ownerName)), "o", {}, enabled = false)
+                                        }
+                                    }
                                     FieldLabel("Plays")
                                     Segmented(listOf("Theme", "Playlist"), if (playlistMode) 1 else 0) { playlistMode = it == 1 }
                                     if (playlistMode) {
@@ -181,6 +204,30 @@ fun ChannelEditor(
                                             colors = SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
                                         )
                                     }
+                                    if (zones != null && edit != null && (zones.admin || kidMode)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text("Kid mode", color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                            Switch(
+                                                checked = kidMode, onCheckedChange = { kidMode = it }, enabled = zones.admin,
+                                                colors = SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
+                                            )
+                                        }
+                                        if (kidMode) {
+                                            Text("Only an admin can change the speakers of ${edit.name}.", color = Palette.textSecondary, fontSize = 12.sp)
+                                            FieldLabel("Hours")
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                OutlinedTextField(
+                                                    hoursFrom, { hoursFrom = it.take(5) }, enabled = zones.admin, singleLine = true,
+                                                    placeholder = { Text("07:00", color = Palette.textMuted) }, modifier = Modifier.weight(1f),
+                                                )
+                                                Text("  to  ", color = Palette.textSecondary)
+                                                OutlinedTextField(
+                                                    hoursTo, { hoursTo = it.take(5) }, enabled = zones.admin, singleLine = true,
+                                                    placeholder = { Text("20:00", color = Palette.textMuted) }, modifier = Modifier.weight(1f),
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             val right: @Composable () -> Unit = {
@@ -234,7 +281,18 @@ fun ChannelEditor(
                                     }
                                     name.trim().takeIf { it.isNotEmpty() }?.let { put("custom_name", it) }
                                 }
-                                onSave(body, if (playlistMode) playlistId else null, !playlistMode && edit?.playlistId != null)
+                                // Zones (admin): only what changed; hours only when both are set, else none
+                                val zoneChanges = if (zones?.admin == true && edit != null) buildJsonObject {
+                                    if (owner != zone?.owner) owner?.let { put("owner", it) } ?: put("owner", JsonNull)
+                                    if (kidMode != (zone?.kidMode == true)) put("kid_mode", kidMode)
+                                    val schedule = if (hoursFrom.isNotBlank() && hoursTo.isNotBlank()) hoursFrom.trim() to hoursTo.trim() else null
+                                    val before = zone?.schedule?.let { it.start to it.end }
+                                    if (schedule != before) {
+                                        if (schedule == null) put("schedule", JsonNull)
+                                        else putJsonObject("schedule") { put("start", schedule.first); put("end", schedule.second) }
+                                    }
+                                } else null
+                                onSave(body, if (playlistMode) playlistId else null, !playlistMode && edit?.playlistId != null, zoneChanges)
                             },
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),

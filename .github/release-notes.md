@@ -3,6 +3,7 @@
 - **The app is native.** Tapping a server opens Sonorium's own Android screens, not the web page:
   - **Top bar:** ☰ menu, the Sonorium logo, the green **server button** (the server's name, or its address when unnamed; tap it for the server list) and, when the server supports it, the **headphone button** for your personal channel.
   - **Menu:** a side panel (Playback, Configuration, Settings, System). On large tablets in landscape it stays open as a sidebar.
+  - **Collapsed channels (phones):** each channel is one row: › to open it, the theme icon, name with Playing/Stopped, what's playing (Theme · Preset), and a small Play/Stop on the right. Opening a row shows the full card with ⌄ to close it. Each channel remembers whether it's open. Tablets and wide screens start with the cards open.
   - **Channels:** every card control works natively: Play/Stop, Theme, Preset/sequence, playlist mode, Next with the countdown, speaker volume and mute, Listen here with this phone's volume, Recent changes, Edit, Delete. Wide screens show several cards side by side.
   - **Channel editor:** name, Theme or Playlist, preset, volume, Announcements, and the speakers (group, or the floor › area › speaker picker with search).
   - **Live updates:** changes made elsewhere (web UI, Home Assistant, another phone) appear within a second or two.
@@ -23,5 +24,5 @@
 ## Not built yet
 
 - Native Playlists, Themes, Speakers, Groups, Floors & Areas and Status (next), then the Theme Editor and Settings.
-- Zones on cards (owners, Kid mode, linked channels) when Zones are switched on.
+- The Link channels dialog (Zones); link strips, Leave/Rejoin, Unlink, owner and Kid mode are in.
 - Cast to speakers, finding servers on the network, downloads and uploads from the phone.

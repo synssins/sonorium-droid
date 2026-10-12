@@ -35,6 +35,12 @@ class ScreensTest {
                 device.wait(Until.findObject(By.text("New Channel")), 60_000)
                 Thread.sleep(1_000)
                 shot("$orientation-1-channels")
+                // A collapsed row opened (phones collapse by default; wide screens may already be open)
+                device.findObject(By.descStartsWith("Open "))?.let {
+                    it.click()
+                    Thread.sleep(1_000)
+                    shot("$orientation-1b-channel-open")
+                }
                 // The menu (a side panel; a permanent sidebar on large screens)
                 device.findObject(By.desc("Menu"))?.let {
                     it.click()

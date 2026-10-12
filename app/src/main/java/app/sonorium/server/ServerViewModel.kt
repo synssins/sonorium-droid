@@ -57,6 +57,9 @@ data class ServerState(
     val version: String = "",
     val installLabel: String = "",
     val personal: Session? = null,
+    /** Why the personal channel isn't available (e.g. 401 "Sign in to use your personal channel"). */
+    val personalProblem: String? = null,
+    val zones: app.sonorium.net.ZonesView? = null,
     /** Channels switched to playlist mode on their card, until a playlist is picked (1.5.2). */
     val playlistMode: Set<String> = emptySet(),
 ) {
@@ -95,6 +98,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     fun open(id: String) {
         if (serverId == id && api != null) return
         serverId = id
+        loadExpanded()
         connect()
     }
 
@@ -149,6 +153,14 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { guard { api.status() }?.let { s -> _state.update { it.copy(version = s.version) } } }
         viewModelScope.launch { guard { api.install() }?.let { i -> _state.update { it.copy(installLabel = i.label) } } }
         if (_state.value.personalChannel) viewModelScope.launch { refreshPersonal() }
+        viewModelScope.launch { refreshZones() }
+    }
+
+    /** Zones: only with the Users plugin (404 otherwise, which means "off"). */
+    suspend fun refreshZones() {
+        val api = api ?: return
+        val zones = guard { api.zones() }
+        _state.update { it.copy(zones = zones?.takeIf { z -> z.on }) }
     }
 
     suspend fun refreshSessions() {
@@ -167,9 +179,13 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     suspend fun refreshPersonal() {
         val api = api ?: return
-        guard { api.myChannel() }?.let { p ->
-            _state.update { it.copy(personal = p) }
+        try {
+            val p = api.myChannel()
+            _state.update { it.copy(personal = p, personalProblem = null) }
             p.themeId?.takeIf { it !in _state.value.presets }?.let { loadPresets(it) }
+        } catch (e: ApiException) {
+            if (e.unlinked) markUnlinked() else _state.update { it.copy(personalProblem = e.detail) }
+        } catch (_: Exception) {
         }
     }
 
@@ -235,8 +251,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 lastEventId = null
                 loadAll()
             }
-            type.startsWith("channel.") || type.startsWith("sequence.") || type == "playlist.entry" ||
-                type.startsWith("zone.") || type.startsWith("link.") -> refreshSessionsSoon()
+            type.startsWith("zone.") || type.startsWith("link.") -> {
+                refreshZones()
+                refreshSessionsSoon()
+            }
+            type.startsWith("channel.") || type.startsWith("sequence.") || type == "playlist.entry" -> refreshSessionsSoon()
             type == "theme.changed" -> {
                 field("theme_id")?.let { id -> _state.update { it.copy(presets = it.presets - id) }; loadPresets(id) }
                 api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t) } } }
@@ -254,7 +273,10 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         poll = viewModelScope.launch {
             while (isActive) {
                 delay(15_000)
-                if (visible) refreshSessions()
+                if (visible) {
+                    refreshSessions()
+                    if (_state.value.zones != null) refreshZones()
+                }
             }
         }
     }
@@ -365,13 +387,38 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         refreshSessions()
     }
 
+    fun leaveLink(session: Session, linkId: String) = act {
+        it.leaveLink(linkId, session.id)
+        refreshZones()
+        refreshSessions()
+    }
+
+    fun rejoinLink(session: Session, linkId: String) = act {
+        it.rejoinLink(linkId, session.id)
+        refreshZones()
+        refreshSessions()
+    }
+
+    fun unlink(linkId: String) = act {
+        it.removeLink(linkId)
+        refreshZones()
+        refreshSessions()
+    }
+
     fun stopCasting(session: Session, outputId: String) = act {
         it.stopOutput(session.id, outputId)
         refreshSessions()
     }
 
     /** Create or edit from the channel editor; [onDone] closes it (1.4). */
-    fun saveChannel(edit: Session?, body: JsonObject, playlistId: String?, clearPlaylistFirst: Boolean, onDone: () -> Unit) {
+    fun saveChannel(
+        edit: Session?,
+        body: JsonObject,
+        playlistId: String?,
+        clearPlaylistFirst: Boolean,
+        zoneChanges: JsonObject? = null,
+        onDone: () -> Unit,
+    ) {
         viewModelScope.launch {
             val api = api ?: return@launch
             try {
@@ -383,6 +430,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                     api.createSession(body).id
                 }
                 if (playlistId != null && playlistId != edit?.playlistId) api.setPlaylist(id, playlistId)
+                // Zones (admin): the changed owner / Kid mode / hours only (1.4)
+                if (zoneChanges != null && zoneChanges.isNotEmpty()) {
+                    api.updateZone(id, zoneChanges)
+                    refreshZones()
+                }
                 toast(if (edit != null) "Channel updated" else "Channel created", error = false)
                 onDone()
                 refreshSessions()
@@ -410,10 +462,15 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
             stopListening()
-            val slot = runCatching { if (personal) api.listenMyChannel() else api.listen(session.id) }.getOrNull()
-                ?: return@launch // on failure the button just stays off (1.1)
+            val slot = try {
+                if (personal) api.listenMyChannel() else api.listen(session.id)
+            } catch (e: Exception) {
+                // A channel's button just stays off (1.1); the personal channel says why (e.g. no theme)
+                if (personal) fail(e)
+                return@launch
+            }
             val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort ?: return@launch
-            val url = "http://${host ?: return@launch}:$port${slot.streamPath}?local=1"
+            val url = "http://${host ?: return@launch}:$port${slot.playPath}"
             ListenController.listen(
                 context, serverId ?: return@launch, session.id, url,
                 name = if (personal) "My channel" else session.name,
@@ -430,6 +487,24 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         ListenController.stop(getApplication(), current.sessionId)
         val api = api ?: return
         runCatching { if (current.personal) api.stopListeningMyChannel() else api.stopListening(current.sessionId) }
+    }
+
+    // ---------- Collapsed cards: each channel's open/closed state, kept on the device ----------
+
+    private val _expanded = MutableStateFlow<Map<String, Boolean>>(emptyMap())
+    val expanded: StateFlow<Map<String, Boolean>> = _expanded.asStateFlow()
+
+    private fun expandedKey() = "expanded:${serverId.orEmpty()}"
+
+    private fun loadExpanded() {
+        val stored = prefs.getStringSet(expandedKey(), null) ?: emptySet()
+        // "id=1" open, "id=0" closed; channels never toggled follow the screen's default
+        _expanded.value = stored.mapNotNull { e -> e.split('=').takeIf { it.size == 2 }?.let { it[0] to (it[1] == "1") } }.toMap()
+    }
+
+    fun setExpanded(sessionId: String, open: Boolean) {
+        _expanded.update { it + (sessionId to open) }
+        prefs.edit().putStringSet(expandedKey(), _expanded.value.map { (id, o) -> "$id=${if (o) 1 else 0}" }.toSet()).apply()
     }
 
     fun setListenVolume(volume: Int) {

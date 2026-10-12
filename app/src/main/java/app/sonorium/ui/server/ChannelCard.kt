@@ -32,6 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +64,8 @@ class CardActions(
     val edit: (Session) -> Unit,
     val delete: (Session) -> Unit,
     val stopCasting: (Session, String) -> Unit,
+    val leaveLink: (Session, String) -> Unit = { _, _ -> },
+    val rejoinLink: (Session, String) -> Unit = { _, _ -> },
 )
 
 /** The preset menu (1.2): Default settings, presets, a separator, then sequences. */
@@ -95,28 +100,60 @@ fun ChannelCard(
     actions: CardActions,
     onCountdownZero: () -> Unit,
     modifier: Modifier = Modifier,
+    onCollapse: (() -> Unit)? = null,
 ) {
     val playing = session.isPlaying
     val playlistMode = session.playlistId != null || session.id in state.playlistMode
+    val zones = state.zones
+    val link = zones?.linkOf(session.id)
+    val linked = link != null && session.id in link.channels
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
 
     Surface(
         color = Palette.card,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, if (playing) Palette.accent else Palette.border),
+        border = BorderStroke(1.dp, when { linked -> Palette.accentSecondary; playing -> Palette.accent; else -> Palette.border }),
         modifier = modifier,
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Link strip (Zones): Linked · <name> + Leave, or Left the link + Rejoin (1.2)
+            if (link != null) {
+                Row(
+                    Modifier.fillMaxWidth().background(Palette.accentSecondary.copy(alpha = 0.12f), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(SIcons.Link, null, tint = Palette.accentSecondary, modifier = Modifier.size(14.dp))
+                    Text(
+                        if (linked) "Linked · ${link.name}" else "Left the link",
+                        color = Palette.text, fontSize = 12.sp, modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    )
+                    if (zones.mayLeave(session.id)) {
+                        TextButton(onClick = { if (linked) actions.leaveLink(session, link.id) else actions.rejoinLink(session, link.id) }) {
+                            Text(if (linked) "Leave" else "Rejoin", color = Palette.text, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
             // Head: icon, name + speakers, state chip, Edit, ⋯
             Row(verticalAlignment = Alignment.CenterVertically) {
+                onCollapse?.let {
+                    Box(
+                        Modifier.size(44.dp).semantics { contentDescription = "Collapse ${session.name}" }.clickable(onClick = it),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp)) }
+                }
                 Box(
                     Modifier.size(40.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center,
                 ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 20.sp) }
                 Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                     Text(session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(speakerSummary(session), color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val zone = zones?.zones?.get(session.id)
+                    val sub = speakerSummary(session) +
+                        (if (zone?.kidMode == true) " · 🔒 Kid mode" else "") +
+                        (zone?.ownerName?.let { " · 👤 $it" } ?: "")
+                    Text(sub, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 StateChip(playing)
                 Spacer(Modifier.width(8.dp))
@@ -199,9 +236,10 @@ fun ChannelCard(
                 onClick = { actions.togglePlay(session) },
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (playing) Palette.danger else Palette.accent,
-                    contentColor = if (playing) Palette.text else Palette.bar,
+                    containerColor = if (playing) Palette.danger.copy(alpha = 0.22f) else Palette.accent,
+                    contentColor = if (playing) Palette.danger else Palette.bar,
                 ),
+                border = if (playing) BorderStroke(1.dp, Palette.danger.copy(alpha = 0.5f)) else null,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp),
             ) {
                 Icon(if (playing) SIcons.Stop else SIcons.Play, null, modifier = Modifier.size(16.dp))
@@ -231,6 +269,79 @@ fun ChannelCard(
 /** Sub line: the server's summary, else "No speakers selected" / "N speaker(s)" (1.2). */
 private fun speakerSummary(session: Session): String = session.speakerSummary?.takeIf { it.isNotBlank() }
     ?: if (session.speakers.isEmpty()) "No speakers selected" else "${session.speakers.size} speaker${if (session.speakers.size != 1) "s" else ""}"
+
+/** "Theme · Preset" (or the sequence), "Choose a theme" without one; playlists show their name. */
+fun nowPlayingLine(session: Session, state: ServerState): String {
+    if (session.playlistId != null) {
+        val playlist = session.playlist?.name ?: state.playlist(session.playlistId)?.name ?: "Playlist"
+        val theme = state.theme(session.playlist?.themeId ?: session.themeId)?.name
+        return listOfNotNull(playlist, theme).joinToString(" · ")
+    }
+    val theme = state.theme(session.themeId)?.name ?: return "Choose a theme"
+    val presets = state.presets[session.themeId]
+    val choice = session.choice
+    val what = when {
+        choice.startsWith("seq:") -> presets?.sequences?.firstOrNull { it.id == choice.removePrefix("seq:") }?.name
+        choice.isNotEmpty() -> presets?.presets?.firstOrNull { it.id == choice }?.name
+        else -> "Default settings"
+    }
+    return listOfNotNull(theme, what).joinToString(" · ")
+}
+
+/**
+ * A collapsed channel (approved design, to-app/2026-10-12-10): chevron, theme icon, name + state pill,
+ * what's playing, and a small Play/Stop doing exactly what the card's big button does.
+ */
+@Composable
+fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTogglePlay: () -> Unit, modifier: Modifier = Modifier) {
+    val playing = session.isPlaying
+    val zones = state.zones
+    val linked = zones?.linkOf(session.id)?.let { session.id in it.channels } == true
+    Surface(
+        color = Palette.card,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, when { linked -> Palette.accentSecondary; playing -> Palette.accent; else -> Palette.border }),
+        modifier = modifier.clickable(onClick = onExpand),
+    ) {
+        Row(Modifier.padding(start = 4.dp, end = 12.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(44.dp).semantics { contentDescription = "Open ${session.name}" }.clickable(onClick = onExpand),
+                contentAlignment = Alignment.Center,
+            ) { Icon(SIcons.ChevronRight, null, tint = Palette.textSecondary, modifier = Modifier.size(18.dp)) }
+            Box(
+                Modifier.size(44.dp).background(Palette.backgroundSecondary, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center,
+            ) { Text(ChannelRules.themeIcon(session.themeId, state.theme(session.themeId)), fontSize = 22.sp) }
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    StateChip(playing)
+                }
+                val line = nowPlayingLine(session, state)
+                Text(
+                    line, color = if (session.themeId == null && session.playlistId == null) Palette.textMuted else Palette.textSecondary,
+                    fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Surface(
+                color = if (playing) Palette.danger.copy(alpha = 0.22f) else Palette.accent,
+                shape = RoundedCornerShape(8.dp),
+                border = if (playing) BorderStroke(1.dp, Palette.danger.copy(alpha = 0.5f)) else null,
+                modifier = Modifier.size(48.dp)
+                    .semantics { contentDescription = if (playing) "Stop ${session.name}" else "Play ${session.name}" }
+                    .clickable(onClick = onTogglePlay),
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(if (playing) SIcons.Stop else SIcons.Play, null, tint = if (playing) Palette.danger else Palette.bar, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun StateChip(playing: Boolean) {
