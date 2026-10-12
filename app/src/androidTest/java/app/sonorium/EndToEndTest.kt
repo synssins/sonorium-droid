@@ -250,7 +250,12 @@ class EndToEndTest {
 
     /** Types into a Compose text field: focus it first, then set the text; checks it arrived. */
     private fun typeInto(field: UiObject2, text: String) {
-        runCatching { field.click() }
+        // A dialog that focuses its own field needs no click (a click on a wrapper node can land
+        // outside a popover and dismiss it)
+        Thread.sleep(300)
+        val focused = device.findObject(By.clazz("android.widget.EditText").focused(true))
+        val inside = focused != null && runCatching { android.graphics.Rect.intersects(focused.visibleBounds, field.visibleBounds) }.getOrDefault(false)
+        if (!inside) runCatching { field.click() }
         Thread.sleep(400)
         // A labelled Compose field can match a wrapper node: type into the focused EditText.
         // A field that recomposes (focus arriving) goes stale: find it again.
