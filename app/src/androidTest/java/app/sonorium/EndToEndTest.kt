@@ -271,7 +271,8 @@ class EndToEndTest {
     private fun openPage(title: String, settings: Boolean = false) {
         device.findObject(By.desc("Menu"))?.click()
         Thread.sleep(1_200)
-        if (settings && !device.hasObject(By.text("Speaker Groups"))) {
+        // "Servers" is listed only while Settings is open (a page title can't fool this check)
+        if (settings && !device.hasObject(By.text("Servers"))) {
             find(By.text("Settings"), "No Settings in the menu").click()
             Thread.sleep(600)
         }
