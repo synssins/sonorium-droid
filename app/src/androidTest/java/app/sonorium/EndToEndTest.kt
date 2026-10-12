@@ -284,11 +284,11 @@ class EndToEndTest {
         device.findObject(By.desc("Menu"))?.click()
         Thread.sleep(1_200)
         // Open the Settings group only when the item isn't listed (page texts behind the menu fooled other checks)
-        if (settings && !device.hasObject(By.text(title))) {
-            find(By.text("Settings"), "No Settings in the menu").click()
+        if (settings && !device.hasObject(By.res("menu:$title"))) {
+            find(By.res("menu:Settings"), "No Settings in the menu").click()
             Thread.sleep(600)
         }
-        find(By.text(title), "No $title in the menu").click()
+        find(By.res("menu:$title"), "No $title in the menu").click()
         Thread.sleep(1_200)
     }
 

@@ -48,6 +48,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -268,7 +270,7 @@ private fun TopBar(
 private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: (Page) -> Unit, onServers: () -> Unit) {
     val perms = state.me?.perms.orEmpty().toSet()
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
-    Column(Modifier.fillMaxHeight().verticalScroll(rememberScrollState()).padding(vertical = 12.dp)) {
+    Column(Modifier.fillMaxHeight().semantics { testTagsAsResourceId = true }.verticalScroll(rememberScrollState()).padding(vertical = 12.dp)) {
         if (permanent) {
             Image(
                 painterResource(R.drawable.sonorium_logo), contentDescription = "Sonorium",
@@ -330,6 +332,7 @@ private fun MenuRow(
     Row(
         Modifier
             .fillMaxWidth()
+            .testTag("menu:$title") // device tests find menu items by this (page text behind the menu has the same words)
             .heightIn(min = 48.dp)
             .background(if (selected) Palette.card else Palette.bar)
             .clickable(onClick = onClick)

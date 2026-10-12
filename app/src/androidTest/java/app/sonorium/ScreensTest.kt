@@ -69,11 +69,11 @@ class ScreensTest {
             for ((i, page) in NATIVE_PAGES.withIndex()) {
                 device.findObject(By.desc("Menu"))?.click()
                 Thread.sleep(1_200)
-                if (page in SETTINGS_PAGES && !device.hasObject(By.text(page))) {
-                    device.findObject(By.text("Settings"))?.click()
+                if (page in SETTINGS_PAGES && !device.hasObject(By.res("menu:$page"))) {
+                    device.findObject(By.res("menu:Settings"))?.click()
                     Thread.sleep(600)
                 }
-                val item = device.findObject(By.text(page)) ?: continue
+                val item = device.findObject(By.res("menu:$page")) ?: continue
                 item.click()
                 Thread.sleep(2_500)
                 shot("portrait-4-${i + 1}-${page.lowercase().replace(Regex("[^a-z]+"), "-")}")
