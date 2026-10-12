@@ -25,8 +25,8 @@
 5. Leave the app and come back: the page is still there and up to date.
 6. Tablet: open a server and check both orientations.
 7. ☰ › **Servers**: the server list opens; tap another server to switch.
-9. Servers screen: **Rename** a server, then open it; **Remove** one (you'll need a new code to link it again). Removed phones disappear from Settings › Users & devices on the server.
 8. Listen: tap 🎧 on a channel. Sound plays on the phone. Turn the screen off: it keeps playing. Use Pause and Play on the lock screen: the card's button follows. Change the listen slider. Walk out of Wi-Fi range and back: it reconnects.
+9. Servers screen: **Rename** a server, then open it; **Remove** one (you'll need a new code to link it again). Removed phones disappear from Settings › Users & devices on the server.
 
 ## Not built yet
 
