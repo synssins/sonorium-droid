@@ -64,29 +64,34 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
   client-side rules in `server/{Playlist,Group,Speaker,Status,Theme}Rules.kt`, each unit-tested.
   **Link channels** dialog: `ui/server/LinkChannelsDialog.kt` (header button + Change on link bars).
   Full-screen editors use `EditorSurface` so toasts show above them.
-- Pages not native yet (Phase 3: Theme Editor, Connection, Audio, Plugins, Logs, Advanced) open the
-  server's web UI in `web/ServerActivity.kt` (loopback proxy) at that page.
+- **Phase 3 (native)**, commits `90e17fa`..`a7306dc`: Theme Editor (`server/ThemeEditor.kt` state + calls,
+  `ui/server/ThemeEditorScreen.kt`, `ThemeEditorTracks.kt`), sequence editor (`SequenceEditor.kt`) and a
+  step's Advanced dialog (`AdvancedDialog.kt`; no ▶ transition preview), Settings › Connection, Audio
+  Settings, Plugins, Logs, Advanced (`ConnectionScreen.kt`, `AudioScreen.kt`, `PluginsScreen.kt`,
+  `LogsScreen.kt`, `AdvancedSettingsScreen.kt`; shared field editor `SettingsFields.kt`). Rules, unit-tested:
+  `server/{ThemeEditor,Sequence,Advanced,Connection,Plugin,Logs,AdvancedPage}Rules.kt`. Page help `?` on every
+  native page (`HelpTexts.kt`, texts generated verbatim from the web UI's `PAGE_HELP`, `#te-help`, `#tx-help`).
+  Generic `SonoriumApi.json(method, path, body)` (2xx `{"error"}` = failure) + `ServerViewModel.call {}`,
+  `messageOf`, `waitForRestart` for Phase 3 pages. Settings menu in the web UI's order.
+- Still in the web view: Users & devices and Keys (never native), plugin-framework pages.
 
 ## State at hand-over
-- **alpha9 released** from `0ae78df`: Phase 2 native (Playlists, Themes, Speakers, Speaker Groups,
-  Floors & Areas, Status) + Link channels. Both emulators green; the device test drives every new
-  page (`EndToEndTest` steps 20-26) and `PcmDecoderTest`; `ScreensTest` captures `portrait-4-*` per
-  profile (on some profiles a menu item below the fold is skipped: the menu needs a scroll there).
-- Mailbox: `to-server/04` (validate Channels/alpha8 + questions), `to-server/05` (Phase 2 green,
-  alpha9, engine lab). **No replies yet** from the server session as of 05:20 UTC.
-- Open questions (to the server session / Chris): Status label `This phone` vs `This browser`;
-  the PAGE_HELP texts for the `?` buttons (not built); playlist entry reorder via ⋯ (no drag).
-- **Engine lab** (`enginelab/`, see its README): built and on ci-latest; needs Chris to run the
-  benchmarks/battery plan on the S25 Ultra. Engine files copied from `engine-core` `5a637af`.
+- Releases: alpha8, alpha9 earlier tonight. This session pushed Phase 3; CI of `90e17fa` failed on two
+  test steps (fixed in `7578a74`: the notification shade's stray Back; Android 8 focusing the editor's
+  Name field). `a7306dc` (all of Phase 3) was in CI at hand-over: check e2e-results; when green, release
+  **v0.1.0-alpha10** and post the note in `to-server/` (see below if not done).
+- Mailbox: no replies from the server session yet (last to-app is 10). Our notes: to-server/04, 05,
+  and this session's 06 (if posted).
+- Open questions: Status `This phone` vs `This browser`; playlist reorder via menu. The `?` texts question
+  is answered (taken from the web UI).
 
 ## Next, in order
-1. Check `to-app/` for replies; fix anything Rejected (CI can't show speakers/groups/HA areas:
-   the server session's validation on real servers is what counts there).
-2. **Phase 3** (native-api.md "## Phase 3", read its "Conventions" first): Theme Editor (biggest,
-   ~420 lines of contract), then Settings › Connection, Audio Settings, Plugins, Logs, Advanced.
-   Users & devices and Keys never go in the app. Move each from `webView` to native in the `Page`
-   enum (ServerScreen.kt); add device-test steps and ScreensTest captures like Phase 2.
-3. Engine: act on Chris's lab numbers; re-copy the engine if `engine-core` changes.
+1. CI green on the latest commit → release, note in `to-server/` with the screenshot links.
+2. Act on `to-app/` replies (Rejected → fix). CI can't see real speakers/HA: the server session validates.
+3. Polish found by the screenshots (small phones, tablets); Theme Editor: Merry-go-round crossfade range
+   from playback values (now fixed 1–60), long-press drag (only ⋯ › Move to now), Advanced ▶ preview.
+4. `settings.changed` / `plugin.*` SSE: refetch the open settings page (not wired yet).
+5. Engine: act on Chris's lab numbers.
 
 ## Rules that matter
 - Behave exactly like the web UI (toasts, texts, order) per native-api.md; Chris's wording verbatim.

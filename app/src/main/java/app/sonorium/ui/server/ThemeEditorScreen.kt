@@ -58,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -601,6 +602,8 @@ private fun NamePromptDialog(p: NamePrompt, onClose: () -> Unit) {
     var text by remember { mutableStateOf(p.initial) }
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     fun ok() {
         if (text.isBlank() || busy) return
         busy = true
@@ -617,7 +620,7 @@ private fun NamePromptDialog(p: NamePrompt, onClose: () -> Unit) {
             OutlinedTextField(
                 text, { if (it.length <= 80) text = it }, singleLine = true, placeholder = { Text("Preset name") },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { ok() }),
-                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Preset name" },
+                modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = "Preset name" },
             )
         },
         confirmButton = {

@@ -93,6 +93,7 @@ class EndToEndTest {
             find(By.desc("Edit"), "No Edit button").click()
             need(By.text("Edit Channel"), 10_000, "07-editor", "The editor didn't open")
             screenshot("07-editor")
+            hideKeyboard() // Android 8 focuses the name field; its keyboard (and pop-ups) can cover Cancel
             find(By.text("Cancel"), "No Cancel").click()
 
             // 7. A new channel: pick a theme, create → toast and a second card.
@@ -250,7 +251,9 @@ class EndToEndTest {
     private fun typeInto(field: UiObject2, text: String) {
         field.click()
         Thread.sleep(400)
-        field.text = text
+        // A labelled Compose field can match a wrapper node: type into the focused EditText
+        val target = device.findObject(By.clazz("android.widget.EditText").focused(true)) ?: field
+        target.text = text
         Thread.sleep(400)
         if (device.findObject(By.text(text)) == null) {
             screenshot("99-typing")
