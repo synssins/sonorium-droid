@@ -51,6 +51,39 @@ class PackageRulesTest {
         assertEquals("Update on phone", PackageRules.action(pkg, listOf(saved.copy(contentHash = "sha256:bb"))))
     }
 
+    @Test fun licenceRestrictedThemesSayWhy() {
+        val pkg = PackageSummary("t1", "Tavern", "sha256:aa", redistributable = false)
+        assertEquals(PackageRules.LICENCE_BLOCKED, PackageRules.blocked(pkg, emptyList()))
+        assertNull(PackageRules.blocked(pkg.copy(redistributable = true), emptyList()))
+        assertNull(PackageRules.blocked(pkg.copy(redistributable = null), emptyList()))
+        assertNull(PackageRules.blocked(null, emptyList()))
+        // Already on the phone (e.g. imported): nothing to explain
+        assertNull(PackageRules.blocked(pkg, listOf(LocalTheme("d", "Tavern", "Tavern", metaId = "t1"))))
+    }
+
+    @Test fun anImportedExportCountsAsOnThePhone() {
+        val pkg = PackageSummary("t1", "Tavern", "sha256:aa", redistributable = true)
+        val imported = LocalTheme("d", "Tavern", "Tavern", metaId = "t1")
+        assertEquals(PackageRules.OnPhone.SAVED, PackageRules.onPhone(pkg, listOf(imported)))
+        assertNull(PackageRules.action(pkg, listOf(imported)))
+        assertEquals(imported, PackageRules.localCopy("t1", listOf(imported)))
+        // A copy saved from the server wins over an imported one
+        val saved = LocalTheme("e", "Tavern (2)", "Tavern", themeId = "t1", contentHash = "sha256:aa")
+        assertEquals(saved, PackageRules.localCopy("t1", listOf(imported, saved)))
+        // Another theme's metadata id, or a saved theme's own metadata id, doesn't match
+        assertNull(PackageRules.localCopy("t1", listOf(LocalTheme("f", "Rain", "Rain", metaId = "t2"))))
+        assertNull(PackageRules.localCopy("t1", listOf(LocalTheme("g", "Rain", "Rain", themeId = "t9", metaId = "t1"))))
+        assertNull(PackageRules.localCopy("", listOf(imported)))
+    }
+
+    @Test fun versionChangesWithTheFiles() {
+        val t = LocalTheme("d", "Tavern", "Tavern", tracks = 3, bytes = 100, themeId = "t1", contentHash = "sha256:aa")
+        assertEquals(t.version, t.copy(name = "Renamed").version)
+        assertTrue(t.version != t.copy(contentHash = "sha256:bb").version)
+        assertTrue(t.version != t.copy(docId = "e").version)
+        assertTrue(t.version != t.copy(bytes = 101).version)
+    }
+
     @Test fun folderNames() {
         assertEquals("Tavern", PackageRules.folderName("Tavern", setOf("rain")))
         assertEquals("Tavern (2)", PackageRules.folderName("Tavern", setOf("tavern")))

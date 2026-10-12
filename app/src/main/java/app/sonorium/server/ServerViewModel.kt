@@ -899,28 +899,79 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val _localThemes = MutableStateFlow<List<LocalTheme>?>(null)
     /** The themes on this phone; null until first read. */
     val localThemes: StateFlow<List<LocalTheme>?> = _localThemes.asStateFlow()
+    private val _localFolder = MutableStateFlow(ThemeStore.FolderState.NONE)
+    /** The themes folder: not picked yet, there, or picked but gone (moved, deleted, access revoked). */
+    val localFolder: StateFlow<ThemeStore.FolderState> = _localFolder.asStateFlow()
+    private val _importing = MutableStateFlow<String?>(null)
+    /** The zip being imported now (its file name), or null. */
+    val importing: StateFlow<String?> = _importing.asStateFlow()
 
     fun refreshLocalThemes() = viewModelScope.launch {
-        _localThemes.value = runCatching { app.themeStore.list() }.getOrDefault(emptyList())
+        val store = app.themeStore
+        var folder = store.folderState()
+        val list = if (folder == ThemeStore.FolderState.OK) {
+            runCatching { store.list() }
+                .onFailure { android.util.Log.w("LocalThemes", "Couldn't read the themes folder", it); folder = ThemeStore.FolderState.MISSING }
+                .getOrDefault(emptyList())
+        } else emptyList()
+        _localFolder.value = folder
+        _localThemes.value = list
+        // The theme chosen to play on the phone follows its folder (updated, removed, folder gone)
+        if (folder != ThemeStore.FolderState.NONE) PhoneThemeActions.synced(app, list)
+    }
+
+    /**
+     * The user picked a themes folder ([changing]: from "Change themes folder…"). Returns false when it
+     * can't be used.
+     */
+    fun useThemesFolder(uri: android.net.Uri, changing: Boolean): Boolean {
+        val changed = runCatching { app.themeStore.setRoot(uri) }
+            .onFailure { android.util.Log.w("LocalThemes", "Couldn't keep the folder", it) }
+            .getOrElse {
+                toast("Sonorium can't use that folder. Choose another one, such as Music › Sonorium.", error = true)
+                return false
+            }
+        if (changed) {
+            // Nothing prepared from the old folder applies any more
+            viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
+            if (changing) toast("Themes folder changed. Themes in the old folder weren't moved; they're still there.", error = false)
+        }
+        refreshLocalThemes()
+        return true
     }
 
     /** Imports a theme zip (the server's Export) into the themes folder. */
-    fun importLocalTheme(uri: android.net.Uri, fileName: String) = viewModelScope.launch {
-        try {
-            val name = getApplication<Application>().contentResolver.openInputStream(uri)?.use { app.themeStore.importZip(it, fileName) }
-                ?: throw ThemeStore.ImportProblem("Couldn't open the file")
-            toast("Imported “$name”", error = false)
-        } catch (e: ThemeStore.ImportProblem) {
-            toast(e.message ?: "Import failed", error = true)
-        } catch (e: Exception) {
-            toast("Import failed: ${e.message ?: e.javaClass.simpleName}", error = true)
+    fun importLocalTheme(uri: android.net.Uri, fileName: String) {
+        if (_importing.value != null) return
+        _importing.value = fileName
+        viewModelScope.launch {
+            try {
+                val plan = getApplication<Application>().contentResolver.openInputStream(uri)?.use { app.themeStore.importZip(it, fileName) }
+                    ?: throw ThemeStore.ImportProblem("Couldn't open that file")
+                toast(PhoneThemeActions.importedText(plan), error = false)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: ThemeStore.ImportProblem) {
+                toast(e.message ?: "Couldn't import that file", error = true)
+            } catch (e: Exception) {
+                android.util.Log.w("LocalThemes", "Import of $fileName failed", e)
+                toast("Couldn't import that file. Check that it's a theme zip and that this phone has free space.", error = true)
+            } finally {
+                _importing.value = null
+            }
+            refreshLocalThemes()
         }
-        refreshLocalThemes()
     }
 
+    /** Removes a theme from the phone: stops it first if it's playing, and deletes its decoded copy. */
     fun removeLocalTheme(theme: LocalTheme) = viewModelScope.launch {
-        if (app.themeStore.remove(theme)) toast("Removed “${theme.name}” from this phone", error = false)
-        else toast("Couldn't remove “${theme.name}”", error = true)
+        PhoneThemeActions.removing(app, theme)
+        if (app.themeStore.remove(theme)) {
+            PhoneThemeActions.removed(app, theme)
+            toast("Removed “${theme.name}” from this phone", error = false)
+        } else {
+            toast("Couldn't remove “${theme.name}”. Check that your themes folder is still there.", error = true)
+        }
         refreshLocalThemes()
     }
 
@@ -931,6 +982,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val _downloads = MutableStateFlow<Map<String, Float>>(emptyMap())
     /** Themes being saved to this phone: theme id → 0..1. */
     val downloads: StateFlow<Map<String, Float>> = _downloads.asStateFlow()
+    private val downloadJobs = mutableMapOf<String, Job>()
 
     fun refreshPackages() = viewModelScope.launch {
         val api = api ?: return@launch
@@ -939,37 +991,69 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             .onFailure { if (it is ApiException && it.status == 404) _packages.value = null }
     }
 
+    /** A server theme's name for messages. */
+    private fun phoneThemeName(themeId: String): String =
+        _state.value.themes.firstOrNull { it.id == themeId }?.name ?: _packages.value?.get(themeId)?.name?.ifBlank { null } ?: "the theme"
+
     /** Saves (or updates) a server theme on this phone; needs the themes folder picked first. */
-    fun saveThemeToPhone(themeId: String) = viewModelScope.launch {
-        val api = api ?: return@launch
-        if (themeId in _downloads.value) return@launch
+    fun saveThemeToPhone(themeId: String) {
+        if (themeId in _downloads.value) return
+        // Says why when the server can't be reached (never a silent no-op)
+        if (!reachableOrSay()) return
+        val api = api ?: return
+        val name = phoneThemeName(themeId)
         _downloads.update { it + (themeId to 0f) }
-        try {
-            val local = _localThemes.value ?: app.themeStore.list()
-            val replacing = local.firstOrNull { it.themeId == themeId }
-            var last = 0L
-            val folder = downloader.download(api, themeId, replacing) { done, total ->
-                val now = android.os.SystemClock.elapsedRealtime()
-                if (now - last > 200 || done == total) {
-                    last = now
-                    _downloads.update { it + (themeId to if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else 1f) }
+        downloadJobs[themeId] = viewModelScope.launch {
+            try {
+                when (app.themeStore.folderState()) {
+                    ThemeStore.FolderState.OK -> {}
+                    ThemeStore.FolderState.MISSING -> {
+                        _localFolder.value = ThemeStore.FolderState.MISSING
+                        toast("Your themes folder can't be found. Choose it again in Themes › On this phone.", error = true)
+                        return@launch
+                    }
+                    ThemeStore.FolderState.NONE -> {
+                        toast("Choose a folder for themes first", error = true)
+                        return@launch
+                    }
                 }
+                runCatching { downloader.cleanStale(_downloads.value.keys) }
+                val local = _localThemes.value ?: app.themeStore.list()
+                val replacing = PhoneThemeActions.localCopy(themeId, local)
+                var last = 0L
+                val saved = downloader.download(api, themeId, replacing) { done, total ->
+                    val now = android.os.SystemClock.elapsedRealtime()
+                    if (now - last > 200 || done == total) {
+                        last = now
+                        _downloads.update { if (themeId in it) it + (themeId to if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else 1f) else it }
+                    }
+                }
+                toast(if (replacing != null) "Updated “${saved.name}” on this phone" else "Saved “${saved.name}” to this phone", error = false)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.w("LocalThemes", "Save to phone failed for $themeId", e)
+                toast(
+                    when (e) {
+                        is ThemeDownloader.Problem, is ThemeStore.ImportProblem -> e.message ?: "Couldn't save “$name” to this phone"
+                        is ApiException -> messageOf(e, "Couldn't save “$name” to this phone")
+                        else -> "Couldn't save “$name” to this phone. Check the connection and try again."
+                    },
+                    error = true,
+                )
+            } finally {
+                _downloads.update { it - themeId }
+                downloadJobs.remove(themeId)
             }
-            toast(if (replacing != null) "Updated “$folder” on this phone" else "Saved “$folder” to this phone", error = false)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            toast(
-                when (e) {
-                    is ThemeDownloader.Problem, is ThemeStore.ImportProblem -> e.message ?: "Download failed"
-                    else -> "Download failed: ${messageOf(e, e.message ?: e.javaClass.simpleName)}"
-                },
-                error = true,
-            )
-        } finally {
-            _downloads.update { it - themeId }
+            refreshLocalThemes()
         }
-        refreshLocalThemes()
+    }
+
+    /** Stops saving a theme; the files downloaded so far are kept, so saving it again carries on from there. */
+    fun cancelSaveToPhone(themeId: String) {
+        val job = downloadJobs[themeId] ?: return
+        job.cancel()
+        toast("Stopped saving “${phoneThemeName(themeId)}”. Save it again to carry on from there.", error = false)
     }
 
     // ---------- Phase 3 Settings pages ----------

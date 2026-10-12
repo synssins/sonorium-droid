@@ -13,9 +13,13 @@ import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import app.sonorium.MainActivity
 import app.sonorium.R
+import app.sonorium.engine.OpenApp
 import app.sonorium.engine.PhoneEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import java.net.InetAddress
 
 /**
@@ -25,13 +29,17 @@ import java.net.InetAddress
 class CastService : Service() {
     private var server: StreamServer? = null
     private var wake: PowerManager.WakeLock? = null
+    private var address = ""
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> {
-                stopEverything()
+                // "Stop casting" in the notification
+                CastController.stopFromNotification()
+                stopSelf()
                 return START_NOT_STICKY
             }
             else -> {
@@ -42,12 +50,19 @@ class CastService : Service() {
                     if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0,
                 )
                 if (server == null) {
-                    val address = intent?.getStringExtra(EXTRA_ADDRESS)?.let { runCatching { InetAddress.getByName(it) }.getOrNull() }
-                    server = StreamServer(render = { buf -> PhoneEngine.render(buf, 0, buf.size) }, bind = address)
+                    address = intent?.getStringExtra(EXTRA_ADDRESS).orEmpty()
+                    val bind = address.takeIf { it.isNotEmpty() }?.let { runCatching { InetAddress.getByName(it) }.getOrNull() }
+                    server = runCatching { StreamServer(render = { buf -> PhoneEngine.render(buf, 0, buf.size) }, bind = bind) }
+                        .onFailure { android.util.Log.w("CastService", "Couldn't open the stream", it) }.getOrNull()
+                    if (server == null) {
+                        CastController.onStreamFailed()
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
                     wake = (getSystemService(Context.POWER_SERVICE) as PowerManager)
                         .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "sonorium:cast").apply { acquire(12 * 60 * 60 * 1000L) }
                 }
-                CastController.onServing(server!!.port)
+                server?.let { CastController.onServing(it.port, address) }
             }
         }
         return START_NOT_STICKY
@@ -55,10 +70,12 @@ class CastService : Service() {
 
     private fun notification(title: String, speaker: String): Notification {
         val manager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= 26 && manager.getNotificationChannel(CHANNEL) == null) {
+        if (manager.getNotificationChannel(CHANNEL) == null) {
             manager.createNotificationChannel(NotificationChannel(CHANNEL, "Casting", NotificationManager.IMPORTANCE_LOW))
         }
-        val open = PendingIntent.getActivity(this, 2, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        // Tapping it: back to the main screen already open (not a second one)
+        val open = OpenApp.pendingIntent(this, OPEN_REQUEST)
+        OpenApp.addLastServer(this, OPEN_REQUEST, scope)
         val stop = PendingIntent.getService(this, 3, Intent(this, CastService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE)
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
@@ -70,17 +87,13 @@ class CastService : Service() {
             .build()
     }
 
-    private fun stopEverything() {
-        CastController.stop()
-        stopSelf()
-    }
-
     override fun onDestroy() {
         server?.close()
         server = null
         wake?.let { if (it.isHeld) it.release() }
         wake = null
-        CastController.onServing(null)
+        scope.cancel()
+        CastController.onServiceStopped()
         super.onDestroy()
     }
 
@@ -91,5 +104,6 @@ class CastService : Service() {
         const val EXTRA_ADDRESS = "address"
         private const val CHANNEL = "cast"
         private const val NOTIFICATION_ID = 1101
+        private const val OPEN_REQUEST = 2
     }
 }
