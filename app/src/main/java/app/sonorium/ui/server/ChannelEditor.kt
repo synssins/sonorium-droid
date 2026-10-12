@@ -87,6 +87,13 @@ fun ChannelEditor(
     // The preset: a channel's current choice; new or unset → the theme's default preset (★)
     fun defaultPreset(theme: String?) = theme?.let { state.presets[it] }?.presets?.firstOrNull { it.isDefault }?.id ?: ""
     var preset by rememberSaveable { mutableStateOf(edit?.choice?.takeIf { it.isNotEmpty() } ?: defaultPreset(edit?.themeId)) }
+    // A theme picked before its presets were loaded: preselect its ★ preset once they arrive (1.4 item 6)
+    val loadedPresets = themeId?.let { state.presets[it] }
+    androidx.compose.runtime.LaunchedEffect(loadedPresets) {
+        if (loadedPresets != null && preset.isEmpty() && (edit == null || edit.themeId != themeId || edit.choice.isEmpty())) {
+            preset = defaultPreset(themeId)
+        }
+    }
     var presetTouched by rememberSaveable { mutableStateOf(false) }
     var volume by rememberSaveable { mutableStateOf(edit?.volume ?: 60) }
     var announcements by rememberSaveable { mutableStateOf(edit?.announcements != false) }
@@ -260,7 +267,9 @@ fun ChannelEditor(
                                     put("volume", volume)
                                     put("announcements", announcements)
                                     if (!playlistMode) {
-                                        themeId?.let { put("theme_id", it) } ?: put("theme_id", JsonNull)
+                                        // (not `?.let { put } ?: put(null)`: put answers the old value, null, so the theme was always cleared)
+                                        val theme = themeId
+                                        if (theme != null) put("theme_id", theme) else put("theme_id", JsonNull)
                                         // Editing without touching the preset sends none, so a running sequence isn't restarted
                                         if (edit == null || presetTouched) put("preset_id", preset)
                                     }

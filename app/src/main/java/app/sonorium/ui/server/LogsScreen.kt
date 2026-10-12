@@ -173,7 +173,7 @@ fun LogsPage(model: ServerViewModel) {
                         else -> Palette.text
                     }
                     Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                        Text(e.time, color = Palette.textMuted, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(if (narrow) 74.dp else 96.dp))
+                        Text(e.time, color = Palette.textMuted, fontSize = if (narrow) 10.sp else 11.sp, fontFamily = FontFamily.Monospace, maxLines = 1, softWrap = false, modifier = Modifier.width(if (narrow) 84.dp else 100.dp))
                         Text(e.level, color = color, fontSize = 11.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.width(if (narrow) 58.dp else 72.dp))
                         Text(e.message, color = color, fontSize = 12.sp, fontFamily = FontFamily.Monospace, modifier = Modifier.weight(1f))
                     }

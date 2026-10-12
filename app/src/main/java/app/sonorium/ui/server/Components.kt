@@ -99,16 +99,19 @@ fun PickerField(
                 .clickable(enabled = enabled) { open = true },
         ) {
             Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    selected?.label ?: placeholder,
-                    color = if (selected != null) Palette.text else Palette.textMuted,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                selected?.let { Marks(it) }
-                Spacer(Modifier.weight(1f))
+                // The text gets all the width up to the marks and chevron (two weights halved it: R7)
+                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        selected?.label ?: placeholder,
+                        color = if (selected != null) Palette.text else Palette.textMuted,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    selected?.let { Marks(it) }
+                }
+                Spacer(Modifier.width(6.dp))
                 Icon(SIcons.ChevronDown, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
             }
         }

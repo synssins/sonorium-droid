@@ -112,6 +112,8 @@ fun ServerScreen(
         if (p.webView != null) onWebPage(p.webView) else page = p
     }
 
+    // Back from any other page returns to Channels (R6), not to the Servers list
+    androidx.activity.compose.BackHandler(enabled = page != Page.Channels) { page = Page.Channels }
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {

@@ -230,8 +230,9 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         onClick = {
                             val transitions = AdvancedRules.stepTransitions(rows.getValue("in"), rows.getValue("out"), keep.getValue("in"), keep.getValue("out"))
                             val layer = w?.takeIf { AdvancedRules.unsaved(it) }?.let { AdvancedRules.layer(it) }
+                            // in the editor's scope: this dialog's own scope ends when it closes
+                            editor.saveAdvanced(step, transitions, layer, name)
                             onClose()
-                            scope.launch { editor.saveAdvanced(step, transitions, layer, name) }
                         },
                         enabled = !loading,
                         shape = RoundedCornerShape(8.dp),

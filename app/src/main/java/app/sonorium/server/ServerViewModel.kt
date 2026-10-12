@@ -163,7 +163,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val api = api ?: return
         viewModelScope.launch { guard { api.me() }?.let { me -> _state.update { it.copy(me = me) } } }
         viewModelScope.launch { refreshSessions() }
-        viewModelScope.launch { guard { api.themes() }?.let { t -> _state.update { it.copy(themes = t) } } }
+        viewModelScope.launch { guard { api.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } } }
         viewModelScope.launch { guard { api.playlists() }?.let { p -> _state.update { it.copy(playlists = p) } } }
         viewModelScope.launch { guard { api.groups() }?.let { g -> _state.update { it.copy(groups = g) } } }
         viewModelScope.launch { refreshSpeakers() }
@@ -285,9 +285,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             type.startsWith("channel.") || type.startsWith("sequence.") || type == "playlist.entry" -> refreshSessionsSoon()
             type == "theme.changed" -> {
                 field("theme_id")?.let { id -> _state.update { it.copy(presets = it.presets - id) }; loadPresets(id) }
-                api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t) } } }
+                api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } } }
             }
-            type.startsWith("theme.") -> api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t) } } }
+            type.startsWith("theme.") -> api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } } }
             type.startsWith("playlist.") -> api?.let { a -> guard { a.playlists() }?.let { p -> _state.update { it.copy(playlists = p) } } }
             type.startsWith("group.") -> api?.let { a -> guard { a.groups() }?.let { g -> _state.update { it.copy(groups = g) } } }
             type.startsWith("spaces.") -> {
@@ -609,7 +609,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     suspend fun refreshThemeList() {
         val api = api ?: return
-        guard { api.themes() }?.let { t -> _state.update { it.copy(themes = t) } }
+        guard { api.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } }
     }
 
     suspend fun refreshCategories() {
@@ -645,11 +645,15 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** Themes deleted here: a list fetched before the server's rebuild still has them (R5). */
+    private val deletedThemes = mutableSetOf<String>()
+
     fun deleteTheme(theme: ThemeSummary) = viewModelScope.launch {
         val api = api ?: return@launch
         try {
             api.deleteTheme(theme.id)
             if (_preview.value?.themeId == theme.id) closePreview()
+            deletedThemes += theme.id
             _state.update { s -> s.copy(themes = s.themes.filter { it.id != theme.id }) }
             toast("Theme \"${theme.name}\" deleted", error = false)
         } catch (e: Exception) {

@@ -680,7 +680,7 @@ class ThemeEditor(
     }.onFailure { e -> toast(message(e as? Exception ?: Exception(e), "Failed to load the tracks"), true) }
 
     /** Advanced › Save: into the draft, then the whole sequence is saved (the editor stays open). */
-    suspend fun saveAdvanced(step: String, transitions: JsonObject?, layer: JsonObject?, presetName: String) {
+    fun saveAdvanced(step: String, transitions: JsonObject?, layer: JsonObject?, presetName: String) = scope.launch {
         editSequence { d ->
             val tr = d.transitions.toMutableMap()
             if (transitions != null) tr[step] = transitions else tr.remove(step)
