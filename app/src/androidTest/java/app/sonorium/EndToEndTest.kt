@@ -206,6 +206,7 @@ class EndToEndTest {
             device.findObjects(By.text("Edit")).getOrNull(1)?.click() ?: throw AssertionError("No Edit on the MQTT row")
             need(By.desc("Broker"), 10_000, "29-connection-edit", "The MQTT dialog didn't open")
             screenshot("29-connection-edit")
+            hideKeyboard() // older Android focuses the first field
             find(By.text("Cancel"), "No Cancel in the MQTT dialog").click()
 
             // Settings › Audio Settings: a slider makes a draft; Cancel puts it back
@@ -259,6 +260,7 @@ class EndToEndTest {
             screenshot("99-typing")
             throw AssertionError("Couldn't type \"$text\"; see 99-typing.png")
         }
+        hideKeyboard() // the keyboard covers the buttons below the field
     }
 
     /** Opens a page from the menu (side panel on phones); Settings items open the Settings group first. */
