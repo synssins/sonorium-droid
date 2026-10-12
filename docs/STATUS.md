@@ -76,6 +76,8 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
 - Still in the web view: Users & devices and Keys (never native), plugin-framework pages.
 
 ## State at hand-over
+- **alpha13** (~13:40 UTC, `557a8f9` = green `2d057a3` + notes): 48 dp standard, R4, R9, R10, `accounts`.
+  to-server/11 asks the server session to validate R4, R9, R10 and the 48 sizes.
 - Releases tonight: alpha8, alpha9, alpha10 (Phase 3 native), alpha11, **alpha12** (~12:45 UTC, `427299e` =
   green `65f6133` + notes: R1-R3/R5-R8 fixes, UI standard on shared components, ANR-proof device test).
 - Server session re-validated `1ea7f5d` (to-app/24): R1, R2, R3, R5, R6, R7, R8 **Validated**; new **R10**
@@ -98,7 +100,7 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
    to-app/27 (share the log from the phone), 28 (first S25 run); to-app/29 Pro mode (boards first).
 1. If `1ea7f5d` is green: release **v0.1.0-alpha12**, note in to-server/ (R1-R3, R5-R8 fixed; R4, R9 open).
    If red: fix (see e2e-results summary.md and screens/99-*.png).
-1. CI for the R4/R9/R10 commit → release alpha13 → to-server note (re-validate R4, R9, R10).
+1. Read the server session's validation of alpha13 in to-app/ (and to-app/30 theme-packages, unread).
 2. Read to-app/21 (users-core) and the "Other findings" in to-app/17.
 3. When `core-features` merges: Keys / Announcements rows in Advanced › Features; hide announce
    controls when off.
