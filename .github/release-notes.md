@@ -1,5 +1,17 @@
 ## What's new in this build
 
+- **Themes on this phone, played on this phone, no server needed:**
+  - The app opens without a server (a Connect button on Channels; the headphone button explains what it needs).
+  - **Themes › On this phone:** pick a folder for themes once (Music/Sonorium suggested; you can see and copy the theme folders in the Files app), then **Import theme** (a .zip from the server's Export), or **Remove from phone**.
+  - **Save to phone** (server Themes › ⋯ on a theme): downloads the theme, checks every file, resumes after a dropped connection, keeps the server's playback settings. **Update on phone** shows when the server's copy changed.
+  - **The headphone button › On this phone:** pick a theme and preset, volume, **Play**. The same engine as the server mixes it on the phone; it keeps playing with the screen off (media notification).
+
+## Please test
+
+- With no server reachable (Wi-Fi off): open the app, ☰ › Themes › On this phone › Import theme (a zip exported from your server), then the headphone button › On this phone › pick it › Play.
+- With your server: Themes › ⋯ › **Save to phone** on a theme; it appears under On this phone and plays from there.
+
+### Earlier (alpha13)
 - **Touch sizes: 48 dp** (your decision): buttons and icon buttons are 48 dp (small ones 44 dp), the top bar's buttons are all the same 48 dp, collapsed channel rows are 56 dp tall.
 - **Leave on a linked channel** now shows "Left the link" with **Rejoin**.
 - **Play a playlist** opens the playlist menu at once.
@@ -29,7 +41,7 @@
 - **Settings › Advanced is native:** Features (with Restart now), every playback value with its default, reset and unusual-value warnings, the Zones switch, and Network › Stream URL (standalone).
 - Each page's **?** button shows its help (the web UI's texts): Channels, Playlists, Themes, Speakers, Speaker Groups, Floors & Areas, Status.
 
-## Please test
+### Tested in alpha13
 
 - Top bar: the menu, server and headphone buttons are the same height. Leave/Rejoin a link (Zones). Play a playlist on a card: the menu opens. Open the ☰ menu, press Back: only the menu closes.
 
