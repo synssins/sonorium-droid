@@ -95,6 +95,7 @@ fun ServerScreen(
     val toast by model.toasts.collectAsState()
     val listenVolume by model.listenVolume.collectAsState()
     val listening by ListenController.state.collectAsState()
+    val themeEditor by model.editor.collectAsState()
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
     var editing by remember { mutableStateOf<Session?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
@@ -109,6 +110,8 @@ fun ServerScreen(
     }
 
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast) {
+    // Sequences stay in the web UI's Theme Editor until the native sequence editor lands
+    themeEditor?.let { ThemeEditorScreen(it, model, state, onWebSequences = { onWebPage("themes") }) }
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Tablets in landscape keep the menu open as a sidebar; everything else slides it in
@@ -152,8 +155,7 @@ fun ServerScreen(
                             page == Page.Speakers -> SpeakersPage(state, model)
                             page == Page.Spaces -> SpacesPage(state, model)
                             page == Page.Status -> StatusPage(state, model)
-                            // The Theme Editor is Phase 3: Edit opens the web UI's Themes page for now
-                            page == Page.Themes -> ThemesPage(state, model, onEdit = { onWebPage("themes") })
+                            page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                             else -> ChannelsPage(
                                 state = state,
                                 model = model,

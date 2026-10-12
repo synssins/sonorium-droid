@@ -224,6 +224,154 @@ class SonoriumApi(
     /** Speaker ids (`media_player.x`, `net:cast:…`) are single path segments; OkHttp encodes the rest. */
     private fun seg(id: String): String = id
 
+    // ---------- Theme Editor (native-api.md Phase 3); track keys and group names are single path segments ----------
+
+    suspend fun editorTracks(themeId: String): List<EditorTrack> = decode<EditorTracks>(strict(theme(themeId, "tracks").get().build())).tracks
+
+    suspend fun trackGroups(themeId: String): List<TrackGroup> = decode<TrackGroups>(strict(theme(themeId, "groups").get().build())).groups
+
+    /** `PUT .../tracks/{key}/{setting}` (volume, presence, muted, playback_mode, seamless_loop, exclusive, fades, ebb). */
+    suspend fun setTrack(themeId: String, key: String, setting: String, body: JsonObject) {
+        strict(theme(themeId, "tracks", key, setting).put(body.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun resetTracks(themeId: String) {
+        strict(theme(themeId, "tracks", "reset").post(EMPTY).build())
+    }
+
+    suspend fun moveTrack(themeId: String, key: String, group: String?): MovedTrack =
+        decode(strict(theme(themeId, "tracks", key, "move").post(buildJsonObject { put("group", group) }.toString().toRequestBody(JSON)).build()))
+
+    suspend fun createTrackGroup(themeId: String, name: String) {
+        strict(theme(themeId, "groups").post(buildJsonObject { put("name", name) }.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun updateTrackGroup(themeId: String, name: String, body: JsonObject): GroupSaved =
+        decode(strict(theme(themeId, "groups", name).put(body.toString().toRequestBody(JSON)).build()))
+
+    suspend fun renameTrackGroup(themeId: String, name: String, newName: String) {
+        strict(theme(themeId, "groups", name, "rename").post(buildJsonObject { put("name", newName) }.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun deleteTrackGroup(themeId: String, name: String) {
+        strict(theme(themeId, "groups", name).delete().build())
+    }
+
+    suspend fun sourceTracks(themeId: String, sourceId: String): SourceTracks =
+        decode(strict(theme(themeId, "links", "source", sourceId).get().build()))
+
+    suspend fun addLinks(themeId: String, sourceId: String, keys: List<String>) {
+        val body = buildJsonObject {
+            put("theme", sourceId)
+            put("tracks", kotlinx.serialization.json.JsonArray(keys.map { JsonPrimitive(it) }))
+            put("group", kotlinx.serialization.json.JsonNull)
+        }
+        strict(theme(themeId, "links").post(body.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun removeTrackLink(themeId: String, key: String) {
+        strict(theme(themeId, "links", key).delete().build())
+    }
+
+    /** One audio file; [group] null = the theme (Unassigned). */
+    suspend fun uploadTrack(themeId: String, fileName: String, bytes: ByteArray, group: String?) {
+        val body = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("file", fileName, bytes.toRequestBody("application/octet-stream".toMediaType()))
+            .apply { group?.let { addFormDataPart("group", it) } }
+            .build()
+        val builder = theme(themeId, "upload")
+        group?.let { g -> builder.url(themeUrl(themeId, "upload").newBuilder().addQueryParameter("group", g).build()) }
+        strict(builder.post(body).build())
+    }
+
+    suspend fun renameTheme(themeId: String, name: String) {
+        strict(theme(themeId, "rename").put(buildJsonObject { put("name", name) }.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun setThemeMetadata(themeId: String, description: String, icon: String) {
+        val body = buildJsonObject { put("description", description); put("icon", icon) }
+        strict(theme(themeId, "metadata").put(body.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun editorPresets(themeId: String): EditorPresets = decode(strict(theme(themeId, "presets").get().build()))
+
+    suspend fun presetValues(themeId: String, presetId: String): JsonObject = decode(strict(theme(themeId, "presets", presetId).get().build()))
+
+    suspend fun createPreset(themeId: String, name: String): PresetCreated =
+        decode(strict(theme(themeId, "presets").post(buildJsonObject { put("name", name) }.toString().toRequestBody(JSON)).build()))
+
+    suspend fun loadPreset(themeId: String, presetId: String) {
+        strict(theme(themeId, "presets", presetId, "load").post(EMPTY).build())
+    }
+
+    suspend fun savePreset(themeId: String, presetId: String) {
+        strict(theme(themeId, "presets", presetId).put(EMPTY).build())
+    }
+
+    suspend fun setDefaultPreset(themeId: String, presetId: String) {
+        strict(theme(themeId, "presets", presetId, "default").put(EMPTY).build())
+    }
+
+    suspend fun renamePreset(themeId: String, presetId: String, name: String) {
+        strict(theme(themeId, "presets", presetId, "rename").put(buildJsonObject { put("name", name) }.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun deletePreset(themeId: String, presetId: String) {
+        strict(theme(themeId, "presets", presetId).delete().build())
+    }
+
+    suspend fun importPreset(themeId: String, json: String, name: String?): PresetImported {
+        val body = buildJsonObject { put("preset_json", json); put("name", name) }
+        return decode(strict(theme(themeId, "presets", "import").post(body.toString().toRequestBody(JSON)).build()))
+    }
+
+    /** The preset as the server exports it (raw JSON text, pretty-printed by the caller). */
+    suspend fun exportPreset(themeId: String, presetId: String): String = strict(theme(themeId, "presets", presetId, "export").get().build())
+
+    suspend fun sequenceDefaults(themeId: String): SequenceDefaults = decode(strict(theme(themeId, "sequence_defaults").get().build()))
+
+    suspend fun setSequenceDefaults(themeId: String, body: JsonObject) {
+        strict(theme(themeId, "sequence_defaults").put(body.toString().toRequestBody(JSON)).build())
+    }
+
+    /** Saves a sequence: POST when [sequenceId] is null (new), else PUT. */
+    suspend fun saveSequence(themeId: String, sequenceId: String?, body: JsonObject): EditorSequence {
+        val b = body.toString().toRequestBody(JSON)
+        val req = if (sequenceId == null) theme(themeId, "sequences").post(b) else theme(themeId, "sequences", sequenceId).put(b)
+        return decode(execute(req.build()))
+    }
+
+    suspend fun deleteSequence(themeId: String, sequenceId: String) {
+        strict(theme(themeId, "sequences", sequenceId).delete().build())
+    }
+
+    suspend fun whileLayer(themeId: String, sequenceId: String, presetId: String): JsonObject =
+        decode(strict(theme(themeId, "sequences", sequenceId, "while", presetId).get().build()))
+
+    suspend fun setWhileLayer(themeId: String, sequenceId: String, presetId: String, layer: JsonObject) {
+        strict(theme(themeId, "sequences", sequenceId, "while", presetId).put(layer.toString().toRequestBody(JSON)).build())
+    }
+
+    suspend fun transitionTracks(themeId: String, preset: String, prev: String?, next: String?): JsonObject {
+        val url = themeUrl(themeId, "transition_tracks").newBuilder().addQueryParameter("preset", preset)
+            .apply { prev?.let { addQueryParameter("prev", it) }; next?.let { addQueryParameter("next", it) } }.build()
+        return decode(strict(request("themes").url(url).get().build()))
+    }
+
+    /** `/api/themes/{id}/tracks/{key}/audio` (needs [authorization]). */
+    fun trackAudioUrl(themeId: String, key: String): HttpUrl = themeUrl(themeId, "tracks", key, "audio")
+
+    /** A server path such as a picker row's `preview_url`, on this server. */
+    fun absolute(path: String): HttpUrl? = baseUrl.resolve(path)
+
+    val authorization: String? get() = token?.let { "Bearer $it" }
+
+    private fun themeUrl(themeId: String, vararg segments: String): HttpUrl =
+        baseUrl.newBuilder().addPathSegment("api").addPathSegment("themes").addPathSegment(themeId)
+            .apply { segments.forEach { addPathSegment(it) } }.build()
+
+    private fun theme(themeId: String, vararg segments: String): Request.Builder = request("themes").url(themeUrl(themeId, *segments))
+
     // ---------- The personal channel (planned: /api/info.personal_channel) ----------
 
     suspend fun myChannel(): Session = get("me/channel")
@@ -296,6 +444,13 @@ class SonoriumApi(
         }
     }
 
+    /** [execute], and a 2xx body with an `error` string fails too (Phase 3 conventions). */
+    private suspend fun strict(request: Request): String {
+        val body = execute(request)
+        ApiException.legacyError(body)?.let { throw ApiException(200, it, false, false, null) }
+        return body
+    }
+
     private inline fun <reified T> decode(body: String): T = json.decodeFromString(body)
 
     companion object {
@@ -323,8 +478,17 @@ class ApiException(
     val unlinked: Boolean,
     val starting: Boolean,
     val retryAfterSeconds: Int?,
+    /** A 422's `detail[0].msg` (Phase 3 screens show it instead of the list). */
+    val firstMessage: String? = null,
 ) : Exception("HTTP $status: $detail") {
     companion object {
+        /** A 2xx JSON object with an `error` string is still a failure (the older `api.py` routes). */
+        fun legacyError(body: String): String? {
+            if (!body.trimStart().startsWith("{") || !body.contains("\"error\"")) return null
+            val obj = runCatching { SonoriumApi.json.parseToJsonElement(body) as? JsonObject }.getOrNull() ?: return null
+            return (obj["error"] as? JsonPrimitive)?.takeIf { it.isString }?.content
+        }
+
         fun from(status: Int, body: String, retryAfter: String?): ApiException {
             val obj = runCatching { SonoriumApi.json.parseToJsonElement(body) as? JsonObject }.getOrNull()
             val detail = (obj?.get("detail") as? JsonPrimitive)?.content ?: body.take(200)
@@ -335,6 +499,8 @@ class ApiException(
                 unlinked = status == 401 && flag("pair"),
                 starting = status == 503 && flag("starting"),
                 retryAfterSeconds = retryAfter?.toIntOrNull(),
+                firstMessage = ((obj?.get("detail") as? kotlinx.serialization.json.JsonArray)?.firstOrNull() as? JsonObject)
+                    ?.let { (it["msg"] as? JsonPrimitive)?.content },
             )
         }
     }

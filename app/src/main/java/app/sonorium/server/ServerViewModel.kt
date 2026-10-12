@@ -747,6 +747,36 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _preview.value = null
     }
 
+    // ---------- Theme Editor (Phase 3) ----------
+
+    private val _editor = MutableStateFlow<ThemeEditor?>(null)
+    val editor: StateFlow<ThemeEditor?> = _editor.asStateFlow()
+
+    fun openThemeEditor(theme: ThemeSummary) {
+        val api = api ?: return
+        val client = client ?: return
+        closePreview()
+        _editor.value?.close()
+        val fresh = _state.value.theme(theme.id) ?: theme
+        _editor.value = ThemeEditor(
+            fresh, api, viewModelScope, getApplication(), client,
+            mixUrl = { id ->
+                val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort
+                host?.let { h -> port?.let { "http://$h:$it/stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}" } }
+            },
+            toast = { text, error -> toast(text, error) },
+            onThemeSaved = { viewModelScope.launch { refreshThemeList() } },
+        )
+    }
+
+    /** Closes the editor; channel cards on the theme refetch its presets (`refreshSessionPresets`). */
+    fun closeThemeEditor() {
+        val e = _editor.value ?: return
+        e.close()
+        _editor.value = null
+        if (_state.value.presets.containsKey(e.themeId) || _state.value.sessions.any { it.themeId == e.themeId }) loadPresetsAsync(e.themeId)
+    }
+
     // ---------- Status ----------
 
     /** One `GET /now-playing`; errors are ignored (the page simply polls again). */
@@ -970,6 +1000,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     override fun onCleared() {
+        _editor.value?.close()
         previewPlayer?.release()
         previewPlayer = null
         events?.cancel()

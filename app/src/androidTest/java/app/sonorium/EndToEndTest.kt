@@ -139,6 +139,22 @@ class EndToEndTest {
             find(By.desc(if (add != null) "Remove from favorites" else "Add to favorites"), "The ★ didn't change").click()
             need(By.text(if (add != null) "Removed from favorites" else "Added to favorites"), 10_000, "22-favorite-back", "No toast after the second ★")
 
+            // Theme Editor (Phase 3): open it, a new preset → "Saved", the preset is selected, Cancel
+            Thread.sleep(3_500)
+            find(By.text("Edit"), "No Edit on a theme card").click()
+            need(By.text("Edit theme"), 15_000, "27-theme-editor", "The Theme Editor didn't open")
+            need(By.text("Background"), 15_000, "27-theme-sections", "No sections in the Theme Editor")
+            Thread.sleep(1_000)
+            screenshot("27-theme-editor")
+            find(By.text("New"), "No New preset button").click()
+            typeInto(need(By.desc("Preset name"), 10_000, "27-new-preset", "The New preset popover didn't open"), "CI preset")
+            find(By.text("OK"), "No OK in the New preset popover").click()
+            need(By.text("Saved"), 10_000, "27-preset-saved", "No toast after New preset")
+            need(By.desc("Preset: CI preset"), 10_000, "27-preset-selected", "The new preset isn't selected")
+            screenshot("27-theme-editor-preset")
+            find(By.text("Cancel"), "No Cancel in the Theme Editor").click()
+            need(By.textContains("A Rainy Day"), 15_000, "27-editor-closed", "The Theme Editor didn't close")
+
             // Settings › Speakers
             openPage("Speakers", settings = true)
             need(By.text("Hide offline"), 15_000, "23-speakers", "The Speakers page didn't open")

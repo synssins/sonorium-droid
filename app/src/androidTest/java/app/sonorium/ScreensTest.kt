@@ -77,6 +77,22 @@ class ScreensTest {
                 item.click()
                 Thread.sleep(2_500)
                 shot("portrait-4-${i + 1}-${page.lowercase().replace(Regex("[^a-z]+"), "-")}")
+                // The Theme Editor (Phase 3), from a theme's Edit
+                if (page == "Themes") device.findObject(By.text("Edit"))?.let {
+                    it.click()
+                    device.wait(Until.findObject(By.text("Edit theme")), 15_000)
+                    Thread.sleep(2_000)
+                    shot("portrait-5-theme-editor")
+                    device.findObject(By.desc("Sequences"))?.let { s ->
+                        s.click()
+                        Thread.sleep(800)
+                        shot("portrait-5-theme-editor-sequences")
+                        device.pressBack()
+                        Thread.sleep(600)
+                    }
+                    device.findObject(By.text("Cancel"))?.click()
+                    Thread.sleep(1_500)
+                }
             }
         }
 

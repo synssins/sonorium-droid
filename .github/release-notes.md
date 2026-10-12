@@ -1,28 +1,26 @@
 ## What's new in this build
 
-- **Every Phase 2 page is native now** (☰ menu):
-  - **Playlists:** the list with entries, order, play time and repeat; ▸ shows each playlist's entries; a green dot when a channel plays it. **Add playlist** / **Edit**: name, play time per entry, In order / Shuffle, Repeat, Fit sequences, and the entries (theme + preset or sequence; ⋯ to move, duplicate or remove). ⋯ › Duplicate and Delete….
-  - **Themes:** cards with search, Sort (Name / Most tracks), category chips with counts, ★ favorites, the "playing on" badge, **Preview** on this phone (bar with pause, volume and close), **Create theme**, ⋯ › Export (save the .zip) and Delete…, page ⋯ › Import theme…, Manage categories…, Refresh. **Edit** still opens the web Theme Editor (it's Phase 3).
-  - **Settings › Speakers:** sections by floor and area, search, source filter, Hide offline, Rescan; per speaker: rename (tap the name), area, volume offset, Test, Use, and ⋯ (Reset name, Play via, Remove). **Add speaker** on standalone servers.
-  - **Settings › Speaker Groups:** groups with their chips and members; **Add group** / **Edit** with the floor › area › speaker tree.
-  - **Settings › Floors & Areas:** add, rename, move and delete floors and areas (when Sonorium manages them).
-  - **Status:** what each channel plays right now, track by track, with Server / As heard timing.
-- **Link channels** (Zones, admins): the header button and **Change** on a link bar open the dialog: name, channels, a theme + preset or a playlist, **Link and play**.
-- Error messages now show on top of the editors too (they were hidden behind them).
+- **The Theme Editor is native** (Themes › **Edit**, and right after Create theme):
+  - Details: icon (tap the tile), Name, Description, Categories (type to search or create; tap × to remove).
+  - Tracks in their four sections (Unassigned, Background, Intermittent, Ebb & Flow) with groups. Per track: ▶ preview on this phone, Mode, Volume (Ebb & Flow: low and high), Interval / Duration, Mute, and ⋯ (Fade in / out, Rise, Pause between plays, Pause, Gapless, Move to, New group, Reset track, Remove link).
+  - Groups: collapse, Gap / Crossfade / Pause between plays, group Volume, Interval / Duration, Mute, ⋯ (Same Rise for every file, Rename…, Upload into, Delete group…). Tap and hold a group's name to rename it.
+  - **Preview mix** (the whole theme on this phone), **Upload** (pick audio files), **Add from another theme**, **Reset all**, ⋯ › **Export theme**, **?** help.
+  - Presets: pick one to load it, Reload, **New**, **Save preset**, ⋯ › Rename, Set as default, Import, Export, Delete. Sequences menu with the Theme defaults.
+  - **Save theme** keeps everything; **Cancel** (or Back) puts the mix back as it was.
+- Editing a **sequence** (Sequences › a sequence, or Edit) still opens the web Theme Editor.
 
 ## Please test
 
 1. Install over the previous build. Your servers are still linked.
-2. ☰ › **Playlists**: add a playlist with two entries, save; open it with ▸; Edit it; ⋯ › Duplicate; delete the copy.
-3. ☰ › **Themes**: search, pick a category chip, ★ a theme, **Preview** one (it plays on the phone only), then close the preview bar.
-4. ☰ › Settings › **Speakers**: rename a speaker and reset the name; change its area; **Test** (Office_C97A or the Office display, please).
-5. Settings › **Speaker Groups**: add a group with one area, open it with ▸, delete it.
-6. Settings › **Floors & Areas**: add a floor, rename it, delete it.
-7. ☰ › **Status** while a channel plays: rows update; switch Server / As heard.
-8. With Zones on: **Link channels** on Channels, link two channels, then Unlink.
+2. ☰ › Themes › **Edit** on a theme you can change. Move a Volume slider, mute a track, then **Cancel**; open it again: the old values are back.
+3. Change a Volume, a group's Gap, a track's Fade in; **Save theme**; open it again: the new values stay.
+4. **Preview mix** (plays on the phone only), ▶ on one file.
+5. Presets: **New** "Test", pick another preset (it loads), ⋯ › Delete "Test".
+6. Rename the theme or add a category, Save theme: the Themes page shows it.
+7. **Add from another theme**: link one file, then its ⋯ › Remove link….
 
 ## Not built yet
 
-- The Theme Editor and the Settings pages of Phase 3 (Connection, Audio, Plugins, Logs, Advanced) still open in the web view.
-- Each page's **?** help button (its texts live in the server's web UI).
-- Cast to speakers, finding servers on the network, downloads and uploads from the phone.
+- The sequence editor and a step's Advanced dialog (they open in the web view).
+- Settings › Connection, Audio, Plugins, Logs, Advanced (web view).
+- Cast to speakers, finding servers on the network.

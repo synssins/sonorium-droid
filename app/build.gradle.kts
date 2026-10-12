@@ -94,6 +94,7 @@ dependencies {
     implementation(libs.gms.code.scanner)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
+    implementation(libs.media3.okhttp)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
