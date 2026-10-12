@@ -93,7 +93,7 @@ class ServerActivity : ComponentActivity() {
                                     Modifier.fillMaxWidth().padding(top = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                                 ) {
-                                    SecondaryButton("Servers") { finish() }
+                                    SecondaryButton("Back") { finish() }
                                     PrimaryButton("Update") { openStore(s.provider.packageName) }
                                 }
                             }
@@ -117,7 +117,7 @@ class ServerActivity : ComponentActivity() {
                                     Modifier.fillMaxWidth().padding(top = 16.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                                 ) {
-                                    SecondaryButton("Servers") { finish() }
+                                    SecondaryButton("Back") { finish() }
                                     PrimaryButton("Try again") { connect() }
                                 }
                             }
