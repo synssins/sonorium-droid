@@ -1,5 +1,7 @@
 ## What's new in this build
 
+- **Since alpha10:** Settings pages update when settings or plugins change elsewhere (and after a restart); the Theme Editor's Merry-go-round Crossfade follows the server's allowed range; on Android 8 the Theme Editor no longer pops the keyboard up by itself.
+
 - **The Theme Editor is native** (Themes › **Edit**, and right after Create theme):
   - Details: icon (tap the tile), Name, Description, Categories (type to search or create; tap × to remove).
   - Tracks in their four sections (Unassigned, Background, Intermittent, Ebb & Flow) with groups. Per track: ▶ preview on this phone, Mode, Volume (Ebb & Flow: low and high), Interval / Duration, Mute, and ⋯ (Fade in / out, Rise, Pause between plays, Pause, Gapless, Move to, New group, Reset track, Remove link).
