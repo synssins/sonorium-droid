@@ -87,6 +87,11 @@ EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.k
 `app/src/main/python/phone.py` (+ Engine Lab's engine files via Chaquopy `srcDir`). First-run wizard:
 `ui/wizard/FirstRunWizard.kt`, off (`FirstRun.ENABLED`).
 
+## Releases (Chris's rule)
+Every green build gets the next numbered release right away (`v0.1.0-alphaN`, release notes updated,
+android.yml run_workflow with `release`). Chris tests from the numbered releases, not `ci-latest`;
+a green build without a release blocks his testing.
+
 ## State at hand-over
 - **`085a06b` green** (API 35 + 26, 5 device tests): Chris's alpha14 bugs 1 and 3 (Unlock returns; theme
   switch crossfades via the engine-runners engine, synced from the server repo), sequences in On this
