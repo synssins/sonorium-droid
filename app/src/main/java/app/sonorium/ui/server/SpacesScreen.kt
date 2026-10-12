@@ -73,7 +73,7 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
         val narrow = maxWidth < 600.dp
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
-                PageHeader("Floors & Areas", null) {
+                PageHeader("Floors & Areas", null, help = "settings-spaces") {
                     if (editable) {
                         OutlinedButton(onClick = { adding = "floor" }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 44.dp)) {
                             Icon(SIcons.Plus, null, tint = Palette.text, modifier = Modifier.size(14.dp))

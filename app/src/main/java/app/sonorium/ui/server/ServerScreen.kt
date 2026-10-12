@@ -395,6 +395,8 @@ private fun ChannelsPage(
                     Text("Channels", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(8.dp))
                     CountBadge(state.sessions.size)
+                    Spacer(Modifier.width(6.dp))
+                    PageHelpButton("sessions")
                     Spacer(Modifier.weight(1f))
                     if (state.zones?.admin == true && narrow) {
                         // Phones: icon only, so the header fits next to New Channel

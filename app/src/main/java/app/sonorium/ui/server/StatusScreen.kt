@@ -118,7 +118,7 @@ fun StatusPage(state: ServerState, model: ServerViewModel) {
         val narrow = maxWidth < 600.dp
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
-                PageHeader("Status", null) {
+                PageHeader("Status", null, help = "status") {
                     Column(horizontalAlignment = Alignment.End) {
                         Text("Timing", color = Palette.textMuted, fontSize = 11.sp)
                         Segmented(listOf("Server", "As heard"), if (heard) 1 else 0, {

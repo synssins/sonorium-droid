@@ -125,7 +125,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column {
-                        PageHeader("Themes", themes.size) {
+                        PageHeader("Themes", themes.size, help = "themes") {
                             Button(
                                 onClick = { creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = 44.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),

@@ -47,12 +47,16 @@ import app.sonorium.ui.Palette
 
 /** A page title with its count badge and the header buttons (`spSetTitle`). */
 @Composable
-fun PageHeader(title: String, count: Int?, modifier: Modifier = Modifier, actions: @Composable () -> Unit = {}) {
+fun PageHeader(title: String, count: Int?, modifier: Modifier = Modifier, help: String? = null, actions: @Composable () -> Unit = {}) {
     Row(modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         count?.let {
             Spacer(Modifier.width(8.dp))
             CountBadge(it)
+        }
+        help?.let {
+            Spacer(Modifier.width(6.dp))
+            PageHelpButton(it)
         }
         Spacer(Modifier.weight(1f))
         actions()
@@ -213,4 +217,13 @@ fun EmptyState(title: String, sub: String?) {
         Text(title, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         sub?.let { Text(it, color = Palette.textSecondary, fontSize = 14.sp) }
     }
+}
+
+/** A page's ? button: its `PAGE_HELP` text in a help panel. */
+@Composable
+fun PageHelpButton(view: String) {
+    val (title, lines) = HelpTexts.PAGES[view] ?: return
+    var open by remember { mutableStateOf(false) }
+    IconBox(SIcons.Help, "Help: $title", { open = true }, size = 36)
+    if (open) HelpPanel(title, lines) { open = false }
 }

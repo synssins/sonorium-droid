@@ -88,7 +88,7 @@ fun GroupsPage(state: ServerState, model: ServerViewModel) {
         val narrow = maxWidth < 600.dp
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
-                PageHeader("Speaker Groups", state.groups.size) { AddButton("Add group", narrow) { adding = true } }
+                PageHeader("Speaker Groups", state.groups.size, help = "settings-groups") { AddButton("Add group", narrow) { adding = true } }
             }
             if (state.groups.isEmpty()) item { EmptyState("No speaker groups", null) }
             items(state.groups, key = { it.id }) { g ->

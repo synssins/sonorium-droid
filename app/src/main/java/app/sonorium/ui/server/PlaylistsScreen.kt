@@ -86,7 +86,7 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
         val side = if (narrow) 12.dp else 24.dp
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = side)) {
             item {
-                PageHeader("Playlists", state.playlists.size) {
+                PageHeader("Playlists", state.playlists.size, help = "playlists") {
                     AddButton("Add playlist", narrow) { adding = true }
                 }
             }
