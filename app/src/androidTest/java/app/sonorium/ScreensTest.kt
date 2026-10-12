@@ -69,7 +69,7 @@ class ScreensTest {
             for ((i, page) in NATIVE_PAGES.withIndex()) {
                 device.findObject(By.desc("Menu"))?.click()
                 Thread.sleep(1_200)
-                if (page in SETTINGS_PAGES && !device.hasObject(By.text("Servers"))) {
+                if (page in SETTINGS_PAGES && !device.hasObject(By.text(page))) {
                     device.findObject(By.text("Settings"))?.click()
                     Thread.sleep(600)
                 }
