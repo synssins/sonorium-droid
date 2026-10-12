@@ -7,7 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
-import app.sonorium.web.ServerActivity
+import app.sonorium.server.NativeServerActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import app.sonorium.ui.LinkViewModel
@@ -15,12 +15,17 @@ import app.sonorium.ui.SonoriumTheme
 import app.sonorium.ui.StartScreen
 
 class MainActivity : ComponentActivity() {
+    companion object {
+        /** From a server screen's Servers button: show the list, don't reopen the last server. */
+        const val EXTRA_SHOW_LIST = "show_list"
+    }
+
     private val linkModel: LinkViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (savedInstanceState == null && !handleLink(intent)) openLastServer()
+        if (savedInstanceState == null && !handleLink(intent) && !intent.getBooleanExtra(EXTRA_SHOW_LIST, false)) openLastServer()
         setContent {
             SonoriumTheme {
                 StartScreen(linkModel)
@@ -46,7 +51,7 @@ class MainActivity : ComponentActivity() {
         val servers = (application as SonoriumApp).servers
         lifecycleScope.launch {
             val id = servers.currentId.first() ?: return@launch
-            if (servers.find(id) != null) startActivity(ServerActivity.intent(this@MainActivity, id))
+            if (servers.find(id) != null) startActivity(NativeServerActivity.intent(this@MainActivity, id))
         }
     }
 }

@@ -1,22 +1,23 @@
 package app.sonorium
 
 import androidx.test.core.app.ActivityScenario
-import androidx.test.espresso.web.model.Atoms
-import androidx.test.espresso.web.sugar.Web.onWebView
-import androidx.test.espresso.web.webdriver.DriverAtoms.findElement
-import androidx.test.espresso.web.webdriver.Locator
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
+import app.sonorium.web.ServerActivity
 import java.io.File
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Screenshots of the web UI's main pages in portrait and landscape, for one
- * screen profile (CI changes the emulator's size and density between runs).
- * Needs a server linked already (EndToEndTest runs first, same install).
- * Argument `profile`: a name for the files, e.g. `tab-s10-ultra`.
+ * Screenshots for one screen profile (CI changes the emulator's size and density between
+ * runs), portrait and landscape: the native Channels screen, its menu and the channel editor,
+ * then the pages still shown by the web view. Needs a server linked already (EndToEndTest runs
+ * first, same install). Argument `profile`: a name for the files.
  */
 @RunWith(AndroidJUnit4::class)
 class ScreensTest {
@@ -26,82 +27,53 @@ class ScreensTest {
     private val shots = File(instrumentation.targetContext.getExternalFilesDir(null), "e2e/$profile").apply { mkdirs() }
 
     @Test
-    fun mainPages() {
-        // A fresh start opens the server used last.
+    fun mainScreens() {
         ActivityScenario.launch(MainActivity::class.java).use {
-            waitForPage()
-            menu("portrait")
-            capture("portrait")
-            device.setOrientationLandscape()
-            Thread.sleep(2_500)
-            menu("landscape")
-            capture("landscape")
+            for (orientation in listOf("portrait", "landscape")) {
+                if (orientation == "landscape") device.setOrientationLandscape() else device.setOrientationNatural()
+                Thread.sleep(2_500)
+                device.wait(Until.findObject(By.text("New Channel")), 60_000)
+                Thread.sleep(1_000)
+                shot("$orientation-1-channels")
+                // The menu (a side panel; a permanent sidebar on large screens)
+                device.findObject(By.desc("Menu"))?.let {
+                    it.click()
+                    Thread.sleep(1_200)
+                    shot("$orientation-2-menu")
+                    device.pressBack()
+                    Thread.sleep(800)
+                }
+                // The channel editor
+                device.findObject(By.desc("Edit"))?.let {
+                    it.click()
+                    device.wait(Until.findObject(By.text("Edit Channel")), 10_000)
+                    Thread.sleep(800)
+                    shot("$orientation-3-editor")
+                    device.findObject(By.text("Cancel"))?.click()
+                    Thread.sleep(800)
+                }
+            }
             device.setOrientationNatural()
             Thread.sleep(1_500)
         }
-    }
 
-    private fun capture(orientation: String) {
-        VIEWS.forEachIndexed { i, view ->
-            runCatching {
-                onWebView().perform(Atoms.script("showView('$view'); window.scrollTo(0, 0); return true;"))
+        // Pages still in the web view, as the native menu opens them
+        val app = instrumentation.targetContext.applicationContext as SonoriumApp
+        val serverId = runBlocking { app.servers.currentId.first() } ?: return
+        for ((i, view) in WEB_VIEWS.withIndex()) {
+            val intent = ServerActivity.intent(instrumentation.targetContext, serverId, view)
+            ActivityScenario.launch<ServerActivity>(intent).use {
+                Thread.sleep(7_000)
+                shot("portrait-web-${i + 1}-$view")
             }
-            Thread.sleep(2_000)
-            device.takeScreenshot(File(shots, "$orientation-${i + 1}-$view.png"))
         }
-        runCatching { onWebView().perform(Atoms.script("showView('sessions'); return true;")) }
     }
 
-    /**
-     * The menu: opened on phone layouts (hamburger), always there on wide ones.
-     * Also records the page's viewport and the menu's size, which showed the
-     * 0-height menu bug.
-     */
-    private fun menu(orientation: String) {
-        val info = runCatching {
-            onWebView().perform(
-                Atoms.script(
-                    """
-                    var btn = document.getElementById('mobile-nav-btn');
-                    if (btn && getComputedStyle(btn).display !== 'none' && btn.offsetParent !== null) toggleSidebar();
-                    var probe = document.createElement('div');
-                    probe.style.cssText = 'position:fixed;height:100vh;width:1px;visibility:hidden';
-                    document.body.appendChild(probe);
-                    var r = document.getElementById('sidebar').getBoundingClientRect();
-                    var out = 'inner=' + innerWidth + 'x' + innerHeight + ' 100vh=' + probe.offsetHeight +
-                        ' sidebar=' + Math.round(r.width) + 'x' + Math.round(r.height);
-                    probe.remove();
-                    return out;
-                    """.trimIndent(),
-                ),
-            ).get().value?.toString()
-        }.getOrElse { "error: ${it.message}" }
-        File(shots, "$orientation-0-menu.txt").writeText(info + "\n")
-        Thread.sleep(1_500)
-        device.takeScreenshot(File(shots, "$orientation-0-menu.png"))
-        runCatching {
-            onWebView().perform(Atoms.script("if (document.body.classList.contains('sidebar-open')) closeSidebar(); return true;"))
-        }
-        Thread.sleep(500)
-    }
-
-    private fun waitForPage() {
-        val end = System.currentTimeMillis() + 90_000
-        while (System.currentTimeMillis() < end) {
-            if (runCatching { onWebView().withElement(findElement(Locator.ID, "sessions-container")) }.isSuccess) {
-                Thread.sleep(1_500)
-                return
-            }
-            Thread.sleep(1_000)
-        }
-        device.takeScreenshot(File(shots, "timeout.png"))
-        throw AssertionError("The web UI didn't load")
+    private fun shot(name: String) {
+        device.takeScreenshot(File(shots, "$name.png"))
     }
 
     private companion object {
-        val VIEWS = listOf(
-            "sessions", "themes", "playlists", "settings-speakers", "settings-groups",
-            "settings-spaces", "settings-audio", "settings-advanced", "status",
-        )
+        val WEB_VIEWS = listOf("themes", "playlists", "settings-speakers", "status")
     }
 }

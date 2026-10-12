@@ -45,6 +45,8 @@ class ListenService : MediaSessionService() {
         val name: String,
         val themeName: String,
         val volume: Int,
+        /** The account's personal channel: re-listen and stop through /api/me/channel/listen. */
+        val personal: Boolean = false,
     ) {
         /** `http://host:port`, for a new slot's stream path. */
         val streamBase: String get() = url.substringBefore("/stream/")
@@ -123,6 +125,7 @@ class ListenService : MediaSessionService() {
                     name = intent.getStringExtra(EXTRA_NAME).orEmpty(),
                     themeName = intent.getStringExtra(EXTRA_THEME).orEmpty(),
                     volume = intent.getIntExtra(EXTRA_VOLUME, 100),
+                    personal = intent.getBooleanExtra(EXTRA_PERSONAL, false),
                 )
                 start(next)
             }
@@ -180,7 +183,12 @@ class ListenService : MediaSessionService() {
         reconnect?.cancel()
         exo.stop()
         publish()
-        scope.launch { runCatching { api(c.serverId)?.stopListening(c.sessionId) } }
+        scope.launch { runCatching { unlisten(c) } }
+    }
+
+    private suspend fun unlisten(c: Current) {
+        val api = api(c.serverId) ?: return
+        if (c.personal) api.stopListeningMyChannel() else api.stopListening(c.sessionId)
     }
 
     private fun reconnectSoon() {
@@ -201,7 +209,9 @@ class ListenService : MediaSessionService() {
     private fun relisten(c: Current) {
         reconnect?.cancel()
         reconnect = scope.launch {
-            val slot = runCatching { api(c.serverId)?.listen(c.sessionId) }.getOrNull()
+            val slot = runCatching {
+                api(c.serverId)?.let { if (c.personal) it.listenMyChannel() else it.listen(c.sessionId) }
+            }.getOrNull()
             if (current?.sessionId != c.sessionId || pausedByUser) return@launch
             val url = slot?.let { "${c.streamBase}${it.streamPath}?local=1" } ?: c.url
             current = c.copy(url = url)
@@ -215,16 +225,16 @@ class ListenService : MediaSessionService() {
         current = null
         exo.stop()
         exo.clearMediaItems()
-        ListenController.update(ListenController.Listening(c.serverId, c.sessionId, c.name, c.themeName, playing = false))
+        ListenController.update(ListenController.Listening(c.serverId, c.sessionId, c.name, c.themeName, playing = false, personal = c.personal))
         ListenController.update(null)
-        if (tellServer) scope.launch { runCatching { api(c.serverId)?.stopListening(c.sessionId) } }
+        if (tellServer) scope.launch { runCatching { unlisten(c) } }
         stopSelf(lastStartId)
     }
 
     private fun publish() {
         val c = current ?: return ListenController.update(null)
         val playing = !pausedByUser && (exo.playWhenReady || reconnect?.isActive == true)
-        ListenController.update(ListenController.Listening(c.serverId, c.sessionId, c.name, c.themeName, playing))
+        ListenController.update(ListenController.Listening(c.serverId, c.sessionId, c.name, c.themeName, playing, c.personal))
     }
 
     private suspend fun api(serverId: String): SonoriumApi? {
@@ -246,7 +256,7 @@ class ListenService : MediaSessionService() {
     override fun onDestroy() {
         current?.takeIf { !pausedByUser }?.let { c ->
             // Best effort: the server also releases a listener 15 s after its stream closes.
-            CoroutineScope(Dispatchers.IO).launch { runCatching { api(c.serverId)?.stopListening(c.sessionId) } }
+            CoroutineScope(Dispatchers.IO).launch { runCatching { unlisten(c) } }
         }
         ListenController.update(null)
         session?.release()
@@ -266,6 +276,7 @@ class ListenService : MediaSessionService() {
         const val EXTRA_NAME = "name"
         const val EXTRA_THEME = "theme"
         const val EXTRA_VOLUME = "volume"
+        const val EXTRA_PERSONAL = "personal"
         private const val MAX_FAILURES = 6
     }
 }

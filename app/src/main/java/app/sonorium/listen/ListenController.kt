@@ -18,6 +18,7 @@ object ListenController {
         val name: String,
         val themeName: String,
         val playing: Boolean,
+        val personal: Boolean = false,
     )
 
     private val _state = MutableStateFlow<Listening?>(null)
@@ -36,6 +37,7 @@ object ListenController {
         name: String,
         themeName: String,
         volume: Int,
+        personal: Boolean = false,
     ) {
         context.startService(
             Intent(context, ListenService::class.java).setAction(ListenService.ACTION_LISTEN)
@@ -44,7 +46,8 @@ object ListenController {
                 .putExtra(ListenService.EXTRA_URL, url)
                 .putExtra(ListenService.EXTRA_NAME, name)
                 .putExtra(ListenService.EXTRA_THEME, themeName)
-                .putExtra(ListenService.EXTRA_VOLUME, volume),
+                .putExtra(ListenService.EXTRA_VOLUME, volume)
+                .putExtra(ListenService.EXTRA_PERSONAL, personal),
         )
     }
 

@@ -48,7 +48,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import app.sonorium.CrashLog
 import app.sonorium.data.ServerRecord
-import app.sonorium.web.ServerActivity
+import app.sonorium.server.NativeServerActivity
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -88,7 +88,7 @@ fun StartScreen(model: LinkViewModel) {
                         Spacer(Modifier.height(16.dp))
                         PrimaryButton("Open") {
                             model.reset()
-                            context.startActivity(ServerActivity.intent(context, s.record.id))
+                            context.startActivity(NativeServerActivity.intent(context, s.record.id))
                         }
                     }
                     is LinkState.ConfirmWords -> Card { ConfirmWords(s, model) }
@@ -114,7 +114,7 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.heightIn(max = 520.dp)) {
         items(servers, key = { it.id }) { server ->
-            Card(Modifier.clickable { model.select(server); context.startActivity(ServerActivity.intent(context, server.id)) }) {
+            Card(Modifier.clickable { model.select(server); context.startActivity(NativeServerActivity.intent(context, server.id)) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         server.displayName,

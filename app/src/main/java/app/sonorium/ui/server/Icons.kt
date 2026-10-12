@@ -1,0 +1,89 @@
+package app.sonorium.ui.server
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
+import androidx.compose.ui.unit.dp
+
+/** The web UI's icons (its inline SVGs, 24x24, stroke 2), so native screens look the same. */
+object SIcons {
+    private fun icon(name: String, stroke: List<String> = emptyList(), fill: List<String> = emptyList()): ImageVector =
+        ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f).apply {
+            stroke.forEach {
+                addPath(
+                    pathData = addPathNodes(it),
+                    stroke = SolidColor(Color.Black),
+                    strokeLineWidth = 2f,
+                    strokeLineCap = StrokeCap.Round,
+                    strokeLineJoin = StrokeJoin.Round,
+                )
+            }
+            fill.forEach { addPath(pathData = addPathNodes(it), fill = SolidColor(Color.Black)) }
+        }.build()
+
+    private const val DOT = "a1 1 0 1 0 0 2a1 1 0 1 0 0-2z"
+
+    val Menu = icon("menu", listOf("M3 12h18M3 6h18M3 18h18"))
+    val Server = icon(
+        "server",
+        listOf(
+            "M4 3h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z",
+            "M4 14h16a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2z",
+            "M6 6.5h.01M6 17.5h.01",
+        ),
+    )
+    val Headphones = icon(
+        "headphones",
+        listOf(
+            "M3 18v-6a9 9 0 0 1 18 0v6",
+            "M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z",
+        ),
+    )
+    val Play = icon("play", fill = listOf("M8 5v14l11-7z"))
+    val Stop = icon("stop", fill = listOf("M7.5 6h9A1.5 1.5 0 0 1 18 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 16.5v-9A1.5 1.5 0 0 1 7.5 6z"))
+    val Edit = icon("edit", listOf("M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"))
+    val More = icon("more", fill = listOf("M5 11$DOT", "M12 11$DOT", "M19 11$DOT"))
+    val Volume = icon("volume", listOf("M11 5L6 9H2v6h4l5 4V5z", "M15.54 8.46a5 5 0 0 1 0 7.07"))
+    val Muted = icon("muted", listOf("M11 5L6 9H2v6h4l5 4V5z", "M15.54 8.46a5 5 0 0 1 0 7.07", "M3 3l18 18"))
+    val Palette = icon(
+        "palette",
+        listOf("M12 2a10 10 0 0 0 0 20c1.1 0 1.8-.9 1.8-1.9 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1 .8-1.8 1.8-1.8H17a5 5 0 0 0 5-5C22 6 17.5 2 12 2z"),
+        listOf("M7.5 9.3a1.2 1.2 0 1 0 0 2.4a1.2 1.2 0 1 0 0-2.4z", "M10.5 5.3a1.2 1.2 0 1 0 0 2.4a1.2 1.2 0 1 0 0-2.4z", "M15.5 5.8a1.2 1.2 0 1 0 0 2.4a1.2 1.2 0 1 0 0-2.4z"),
+    )
+    val Playlist = icon("playlist", listOf("M3 6h13M3 12h9M3 18h7", "M17 18V10l4-1.5", "M15 16a2 2 0 1 0 0 4a2 2 0 1 0 0-4z"))
+    val Next = icon("next", listOf("M19 5v14"), listOf("M5 4l10 8-10 8V4z"))
+    val Plus = icon("plus", listOf("M12 5v14M5 12h14"))
+    val Check = icon("check", listOf("M20 6L9 17l-5-5"))
+    val ChevronDown = icon("chevron", listOf("M6 9l6 6 6-6"))
+    val ChevronRight = icon("chevron-right", listOf("M9 6l6 6-6 6"))
+    val Link = icon(
+        "link",
+        listOf(
+            "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71",
+            "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+        ),
+    )
+    val Cast = icon(
+        "cast",
+        listOf("M2 16.1A5 5 0 0 1 5.9 20M2 12.05A9 9 0 0 1 9.95 20M2 8V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6", "M2 20h.01"),
+    )
+    val Close = icon("close", listOf("M18 6L6 18M6 6l12 12"))
+    val Grid = icon("grid", listOf("M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"))
+    val Music = icon("music", listOf("M9 18V5l12-2v13", "M6 15a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM18 13a3 3 0 1 0 0 6a3 3 0 1 0 0-6z"))
+    val Settings = icon(
+        "settings",
+        listOf(
+            "M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z",
+            "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z",
+        ),
+    )
+    val Activity = icon("activity", listOf("M22 12h-4l-3 9L9 3l-3 9H2"))
+    val Help = icon("help", listOf("M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20z", "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3", "M12 17h.01"))
+    val Trash = icon("trash", listOf("M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"))
+    val Search = icon("search", listOf("M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z", "M21 21l-4.35-4.35"))
+    val Sequence = icon("sequence", listOf("M3 14h6v6H3z", "M17 3l4 7h-8z", "M17 14a3 3 0 1 0 0 6a3 3 0 1 0 0-6z"))
+    val Speakers = icon("speakers", listOf("M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z", "M12 10a4 4 0 1 0 0 8a4 4 0 1 0 0-8z", "M12 6h.01"))
+}

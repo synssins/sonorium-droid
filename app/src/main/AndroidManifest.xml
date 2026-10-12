@@ -65,7 +65,14 @@
                 <data android:scheme="sonorium" android:host="pair" />
             </intent-filter>
         </activity>
-        <!-- The server's web UI. Keeps the page across rotation and resizing. -->
+        <!-- One server, native. Keeps its state across rotation and resizing. -->
+        <activity
+            android:name=".server.NativeServerActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|density|uiMode|navigation" />
+
+        <!-- The server's web UI (pages not native yet). Keeps the page across rotation and resizing. -->
         <activity
             android:name=".web.ServerActivity"
             android:exported="false"

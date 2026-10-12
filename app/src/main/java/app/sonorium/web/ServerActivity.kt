@@ -38,6 +38,7 @@ import androidx.webkit.WebViewFeature
 import app.sonorium.SonoriumApp
 import app.sonorium.data.ServerRecord
 import app.sonorium.listen.ListenController
+import app.sonorium.server.NativeServerActivity
 import app.sonorium.net.PinnedTls
 import app.sonorium.net.SonoriumApi
 import app.sonorium.ui.Card
@@ -230,6 +231,10 @@ class ServerActivity : ComponentActivity() {
             androidx.webkit.WebSettingsCompat.setSafeBrowsingEnabled(settings, true)
         }
         webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String?) {
+                openRequestedView(view)
+            }
+
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val origin = proxy?.origin ?: return true
                 if (request.url.toString().startsWith(origin)) return false
@@ -241,6 +246,18 @@ class ServerActivity : ComponentActivity() {
     }
 
     private var hostInstalledFor: String? = null
+    private var viewOpened = false
+
+    /** The page the native menu asked for: wait for the page's showView(), then call it once. */
+    private fun openRequestedView(view: WebView, attempt: Int = 0) {
+        val target = intent.getStringExtra(EXTRA_VIEW) ?: return
+        if (viewOpened || attempt > 40 || !target.matches(Regex("[a-z-]+"))) return
+        view.evaluateJavascript(
+            "(function(){if(typeof showView==='function'&&typeof sessions!=='undefined'){showView('$target');return true}return false})()",
+        ) { result ->
+            if (result == "true") viewOpened = true else view.postDelayed({ openRequestedView(view, attempt + 1) }, 250)
+        }
+    }
 
     private fun installHost(view: WebView, origin: String, streamBase: String, record: ServerRecord, host: String) {
         if (hostInstalledFor == origin) return
@@ -282,8 +299,10 @@ class ServerActivity : ComponentActivity() {
                 val sessionId = text("sessionId") ?: return
                 ListenController.setVolume(this, sessionId, number("volume") ?: return)
             }
-            // The page's Servers item: back to the server list.
-            "showServers" -> finish()
+            // The page's Servers button: back to the server list.
+            "showServers" -> NativeServerActivity.showServers(this)
+            // The page is ready: open the page the native menu asked for.
+            "ready" -> Unit
             "unlinked" -> lifecycleScope.launch {
                 val id = intent.getStringExtra(EXTRA_SERVER_ID) ?: return@launch
                 app.servers.find(id)?.let { unlinked(it) }
@@ -376,8 +395,10 @@ class ServerActivity : ComponentActivity() {
     companion object {
         private const val EXTRA_SERVER_ID = "server_id"
 
-        fun intent(context: Context, serverId: String): Intent =
-            Intent(context, ServerActivity::class.java).putExtra(EXTRA_SERVER_ID, serverId)
+        private const val EXTRA_VIEW = "view"
+
+        fun intent(context: Context, serverId: String, view: String? = null): Intent =
+            Intent(context, ServerActivity::class.java).putExtra(EXTRA_SERVER_ID, serverId).putExtra(EXTRA_VIEW, view)
     }
 }
 
