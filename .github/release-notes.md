@@ -13,6 +13,7 @@
 - **Settings › Audio Settings is native:** Crossfade, Default volume, Master output gain as a draft; **Save settings** / **Cancel**; ⋯ › Reset to defaults….
 - **Settings › Plugins is native:** Installed (on/off, each plugin's form and actions, its settings, ⋯ › Uninstall…) and Catalog (Install / Update), **Upload plugin** (.zip).
 - **Settings › Logs is native:** the server's log, updated every 3 s while it shows; search, All / Info / Warnings / Errors / Playback, Pause, Copy, Download.
+- **Settings › Advanced is native:** Features (with Restart now), every playback value with its default, reset and unusual-value warnings, the Zones switch, and Network › Stream URL (standalone).
 - Each page's **?** button shows its help (the web UI's texts): Channels, Playlists, Themes, Speakers, Speaker Groups, Floors & Areas, Status.
 
 ## Please test
@@ -29,9 +30,10 @@
 10. Settings › **Audio Settings**: move Crossfade, Cancel; move it again, Save settings.
 11. Settings › **Plugins**: switch a plugin off and on; open the Catalog tab.
 12. Settings › **Logs**: play a channel and pick **Playback**; Pause, then Resume.
+13. Settings › **Advanced**: change Track fade to 8, then its reset button; turn Zones off and on (if you use them).
 
 ## Not built yet
 
 - The ▶ preview of a single transition in Advanced (the web UI's Web Audio preview).
-- Settings › Advanced (web view).
+- Users & devices and Keys stay in the web UI (by design).
 - Cast to speakers, finding servers on the network.

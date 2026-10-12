@@ -793,6 +793,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
     val logs = LogsHolder()
 
+    /** Settings › Advanced: the features as they ran at the first look after connect / restart (`advancedRunning`). */
+    var advancedRunning: Map<String, Boolean>? = null
+
     /** After Home Assistant is removed: speakers, groups, channels and network info change (`afterHomeAssistantRemoved`). */
     fun afterHomeAssistantRemoved() = viewModelScope.launch {
         refreshSpeakers()

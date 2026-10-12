@@ -76,7 +76,7 @@ enum class Page(val title: String, val icon: ImageVector, val webView: String?, 
     Groups("Speaker Groups", SIcons.Speakers, null, "sp.set"),
     Spaces("Floors & Areas", SIcons.Grid, null, "st.change"),
     Audio("Audio Settings", SIcons.Volume, null, "st.change"),
-    Advanced("Advanced", SIcons.Settings, "settings-advanced", "st.change"),
+    Advanced("Advanced", SIcons.Settings, null, "st.change"),
     Logs("Logs", SIcons.Activity, null, "st.view"),
     Plugins("Plugins", SIcons.Settings, null, "admin.plugins"),
     Connection("Connection", SIcons.Link, null, "admin.connection"),
@@ -159,6 +159,7 @@ fun ServerScreen(
                             page == Page.Audio -> AudioPage(model)
                             page == Page.Plugins -> PluginsPage(model)
                             page == Page.Logs -> LogsPage(model)
+                            page == Page.Advanced -> AdvancedSettingsPage(state, model)
                             page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                             else -> ChannelsPage(
                                 state = state,

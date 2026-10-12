@@ -223,6 +223,11 @@ class EndToEndTest {
             need(By.textContains("log level:"), 15_000, "32-logs", "The Logs page didn't load")
             Thread.sleep(1_000)
             screenshot("32-logs")
+
+            // Settings › Advanced: the playback values
+            openPage("Advanced", settings = true)
+            need(By.text("Wait between plays"), 15_000, "33-advanced", "The Advanced page didn't list the playback values")
+            screenshot("33-advanced")
             openPage("Channels")
             need(By.text(channelName), 15_000, "26-back", "Channels didn't come back")
 

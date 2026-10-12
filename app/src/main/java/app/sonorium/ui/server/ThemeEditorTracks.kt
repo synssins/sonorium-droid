@@ -439,7 +439,7 @@ private fun PauseRow(t: EditorTrack, enabled: Boolean, onCommit: (String, String
 
 /** A small number input that reports its text on Done or on focus loss (only when changed). */
 @Composable
-fun NumberBox(initial: String, placeholder: String, enabled: Boolean, description: String, width: Int = 64, error: Boolean = false, onCommit: (String) -> Unit) {
+fun NumberBox(initial: String, placeholder: String, enabled: Boolean, description: String, width: Int = 64, error: Boolean = false, keyboard: KeyboardType = KeyboardType.Decimal, onCommit: (String) -> Unit) {
     var text by remember(initial) { mutableStateOf(initial) }
     var focused by remember { mutableStateOf(false) }
     fun commit() { if (text != initial) onCommit(text) }
@@ -450,7 +450,7 @@ fun NumberBox(initial: String, placeholder: String, enabled: Boolean, descriptio
         singleLine = true,
         textStyle = TextStyle(color = Palette.text, fontSize = 14.sp),
         cursorBrush = SolidColor(Palette.accent),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Done),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboard, imeAction = ImeAction.Done),
         keyboardActions = KeyboardActions(onDone = { commit() }),
         modifier = Modifier
             .width(width.dp)
