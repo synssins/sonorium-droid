@@ -87,19 +87,13 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     val localThemes by model.localThemes.collectAsState()
     val downloads by model.downloads.collectAsState()
     var unlockFor by remember { mutableStateOf<String?>(null) }
-    var folderFor by remember { mutableStateOf<String?>(null) }
-    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        val id = folderFor
-        folderFor = null
-        if (uri == null || id == null) return@rememberLauncherForActivityResult
-        runCatching { model.themeStore.setRoot(uri) }
-            .onSuccess { model.saveThemeToPhone(id) }
-            .onFailure { model.toast("Couldn't use that folder", error = true) }
-    }
+    // Save to phone: the unlock, then the themes folder (explained first), then the download
+    val folderPicker = rememberThemesFolderPicker(model)
     fun saveToPhone(id: String) {
         when {
             !model.entitlement.isPro.value -> unlockFor = id
-            model.themeStore.root == null -> { folderFor = id; pickFolder.launch(app.sonorium.local.ThemeStore.suggestedStart()) }
+            model.themeStore.root == null || model.localFolder.value == app.sonorium.local.ThemeStore.FolderState.MISSING ->
+                folderPicker.ask(changing = false) { model.saveThemeToPhone(id) }
             else -> model.saveThemeToPhone(id)
         }
     }
@@ -204,9 +198,11 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                         onExport = { model.exportTheme(t) { name, bytes -> pendingExport = bytes; saveZip.launch(name) } },
                         onDelete = { deleting = t },
                         phoneAction = app.sonorium.local.PackageRules.action(packages?.get(t.id), localThemes)?.let { a -> packages?.get(t.id)?.sizeBytes?.takeIf { it > 0 }?.let { "$a (${bytesText(it)})" } ?: a },
+                        phoneBlocked = app.sonorium.local.PackageRules.blocked(packages?.get(t.id), localThemes),
                         onPhone = app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) != app.sonorium.local.PackageRules.OnPhone.NONE,
                         downloading = downloads[t.id],
                         onSaveToPhone = { saveToPhone(t.id) },
+                        onCancelSave = { model.cancelSaveToPhone(t.id) },
                     )
                 }
             }
@@ -279,9 +275,12 @@ private fun ThemeCard(
     onExport: () -> Unit,
     onDelete: () -> Unit,
     phoneAction: String? = null,
+    /** Why it can't be saved to the phone (its licence): a disabled menu entry. */
+    phoneBlocked: String? = null,
     onPhone: Boolean = false,
     downloading: Float? = null,
     onSaveToPhone: () -> Unit = {},
+    onCancelSave: () -> Unit = {},
 ) {
     val onAir = ThemeRules.onAir(t.id, state.sessions)
     Surface(
@@ -324,9 +323,9 @@ private fun ThemeCard(
                     }
                     if (onPhone) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(SIcons.Headphones, null, tint = Palette.textSecondary, modifier = Modifier.size(12.dp))
+                            Icon(SIcons.Headphones, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(if (phoneAction != null) "On this phone · update ready" else "On this phone", color = Palette.textSecondary, fontSize = 12.sp)
+                            Text(if (phoneAction != null) "On this phone · update ready" else "On this phone", color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1)
                         }
                     }
                     t.categories.forEach { Badge(it) }
@@ -353,12 +352,17 @@ private fun ThemeCard(
                 Spacer(Modifier.width(6.dp))
                 MoreMenu("More for ${t.name}", listOfNotNull(
                     phoneAction?.takeIf { downloading == null }?.let { MenuAction(it, SIcons.Headphones, onClick = onSaveToPhone) },
+                    phoneBlocked?.let { MenuAction(it, SIcons.Headphones, enabled = false) {} },
                     MenuAction("Export", SIcons.Download, onClick = onExport),
                     MenuAction("Delete…", SIcons.Trash, danger = true, separatorBefore = true, onClick = onDelete),
                 ))
             }
             if (downloading != null) {
-                Text("Saving to this phone… ${(downloading * 100).toInt()}%", color = Palette.textSecondary, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Saving to this phone… ${(downloading * 100).toInt()}%", color = Palette.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    // Stops the download; what's downloaded is kept for next time
+                    TextButton(onClick = onCancelSave, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Cancel", color = Palette.textSecondary) }
+                }
                 LinearProgressIndicator(
                     progress = { downloading }, color = Palette.accent, trackColor = Palette.backgroundSecondary,
                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
