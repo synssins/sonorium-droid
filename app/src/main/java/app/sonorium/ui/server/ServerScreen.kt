@@ -70,17 +70,17 @@ import kotlinx.coroutines.launch
 enum class Page(val title: String, val icon: ImageVector, val webView: String?, val perm: String? = null) {
     Channels("Channels", SIcons.Grid, null),
     Personal("My channel", SIcons.Headphones, null),
-    Playlists("Playlists", SIcons.Playlist, "playlists"),
-    Themes("Themes", SIcons.Music, "themes"),
-    Speakers("Speakers", SIcons.Speakers, "settings-speakers", "sp.set"),
-    Groups("Speaker Groups", SIcons.Speakers, "settings-groups", "sp.set"),
-    Spaces("Floors & Areas", SIcons.Grid, "settings-spaces", "st.change"),
+    Playlists("Playlists", SIcons.Playlist, null),
+    Themes("Themes", SIcons.Music, null),
+    Speakers("Speakers", SIcons.Speakers, null, "sp.set"),
+    Groups("Speaker Groups", SIcons.Speakers, null, "sp.set"),
+    Spaces("Floors & Areas", SIcons.Grid, null, "st.change"),
     Audio("Audio Settings", SIcons.Volume, "settings-audio", "st.change"),
     Advanced("Advanced", SIcons.Settings, "settings-advanced", "st.change"),
     Logs("Logs", SIcons.Activity, "settings-logs", "st.view"),
     Plugins("Plugins", SIcons.Settings, "settings-plugins", "admin.plugins"),
     Connection("Connection", SIcons.Link, "settings-connection", "admin.connection"),
-    Status("Status", SIcons.Activity, "status"),
+    Status("Status", SIcons.Activity, null),
 }
 
 private val SETTINGS = listOf(Page.Speakers, Page.Groups, Page.Spaces, Page.Audio, Page.Advanced, Page.Logs, Page.Plugins, Page.Connection)
@@ -98,6 +98,8 @@ fun ServerScreen(
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
     var editing by remember { mutableStateOf<Session?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
+    // Link channels (Zones, admin): null = closed; a link = change it; NEW_LINK = a new one
+    var linking by remember { mutableStateOf<app.sonorium.net.ChannelLink?>(null) }
     val drawer = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -106,6 +108,7 @@ fun ServerScreen(
         if (p.webView != null) onWebPage(p.webView) else page = p
     }
 
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast) {
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Tablets in landscape keep the menu open as a sidebar; everything else slides it in
@@ -144,12 +147,20 @@ fun ServerScreen(
                                 }
                             }
                             page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening)
+                            page == Page.Playlists -> PlaylistsPage(state, model)
+                            page == Page.Groups -> GroupsPage(state, model)
+                            page == Page.Speakers -> SpeakersPage(state, model)
+                            page == Page.Spaces -> SpacesPage(state, model)
+                            page == Page.Status -> StatusPage(state, model)
+                            // The Theme Editor is Phase 3: Edit opens the web UI's Themes page for now
+                            page == Page.Themes -> ThemesPage(state, model, onEdit = { onWebPage("themes") })
                             else -> ChannelsPage(
                                 state = state,
                                 model = model,
                                 listenVolume = listenVolume,
                                 onNew = { creating = true },
                                 onEdit = { editing = it },
+                                onLink = { linking = it ?: NEW_LINK },
                             )
                         }
                         ToastHost(toast, Modifier.align(Alignment.BottomCenter).padding(16.dp))
@@ -184,6 +195,16 @@ fun ServerScreen(
             },
             onClose = { creating = false; editing = null },
         )
+    }
+    linking?.let { link ->
+        LinkChannelsDialog(
+            edit = link.takeIf { it !== NEW_LINK },
+            state = state,
+            onLoadPresets = model::loadPresetsAsync,
+            onSubmit = { id, body, onError, onDone -> model.saveLink(id, body, onError, onDone) },
+            onClose = { linking = null },
+        )
+    }
     }
 }
 
@@ -330,6 +351,7 @@ private fun ChannelsPage(
     listenVolume: Int,
     onNew: () -> Unit,
     onEdit: (Session) -> Unit,
+    onLink: (app.sonorium.net.ChannelLink?) -> Unit,
 ) {
     val listening by ListenController.state.collectAsState()
     val expanded by model.expanded.collectAsState()
@@ -358,6 +380,7 @@ private fun ChannelsPage(
         val side = if (maxWidth < 600.dp) 12.dp else 24.dp
         // Phones: every channel collapsed until opened; wide screens: open until collapsed
         val openByDefault = maxWidth >= 840.dp
+        val narrow = maxWidth < 600.dp
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 340.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = side, end = side, bottom = 24.dp),
@@ -372,6 +395,23 @@ private fun ChannelsPage(
                     Spacer(Modifier.width(8.dp))
                     CountBadge(state.sessions.size)
                     Spacer(Modifier.weight(1f))
+                    if (state.zones?.admin == true && narrow) {
+                        // Phones: icon only, so the header fits next to New Channel
+                        IconBox(SIcons.Link, "Link channels", { onLink(null) }, tint = Palette.text, size = 44)
+                        Spacer(Modifier.width(8.dp))
+                    } else if (state.zones?.admin == true) {
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { onLink(null) },
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, Palette.border),
+                            modifier = Modifier.heightIn(min = 44.dp),
+                        ) {
+                            Icon(SIcons.Link, null, tint = Palette.text, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("Link channels", color = Palette.text)
+                        }
+                        Spacer(Modifier.width(8.dp))
+                    }
                     Button(
                         onClick = onNew,
                         shape = RoundedCornerShape(8.dp),
@@ -387,7 +427,7 @@ private fun ChannelsPage(
             // Link bars (Zones): one per link, above the cards (1.6)
             state.zones?.links?.forEach { link ->
                 item(span = { GridItemSpan(maxLineSpan) }, key = "link-${link.id}") {
-                    LinkBar(state, link, admin = state.zones.admin, onUnlink = { model.unlink(link.id) })
+                    LinkBar(state, link, admin = state.zones.admin, onChange = { onLink(link) }, onUnlink = { model.unlink(link.id) })
                 }
             }
             if (state.sessionsLoaded && state.sessions.isEmpty()) {
@@ -429,8 +469,10 @@ private fun ChannelsPage(
     }
 }
 
+private val NEW_LINK = app.sonorium.net.ChannelLink(id = "")
+
 @Composable
-private fun LinkBar(state: ServerState, link: app.sonorium.net.ChannelLink, admin: Boolean, onUnlink: () -> Unit) {
+private fun LinkBar(state: ServerState, link: app.sonorium.net.ChannelLink, admin: Boolean, onChange: () -> Unit, onUnlink: () -> Unit) {
     val plays = link.playlistId?.let { state.playlist(it)?.name ?: "Playlist" } ?: state.theme(link.themeId)?.name.orEmpty()
     fun names(ids: List<String>) = ids.mapNotNull { id -> state.sessions.firstOrNull { it.id == id }?.name }.joinToString(", ")
     Surface(color = Palette.accentSecondary.copy(alpha = 0.1f), shape = RoundedCornerShape(10.dp), border = BorderStroke(1.dp, Palette.accentSecondary.copy(alpha = 0.5f))) {
@@ -448,6 +490,7 @@ private fun LinkBar(state: ServerState, link: app.sonorium.net.ChannelLink, admi
                 Text(names(link.channels) + if (left.isNotEmpty()) " · $left left" else "", color = Palette.textSecondary, fontSize = 12.sp)
             }
             if (admin) {
+                androidx.compose.material3.TextButton(onClick = onChange) { Text("Change", color = Palette.text) }
                 androidx.compose.material3.TextButton(onClick = onUnlink) { Text("Unlink", color = Palette.text) }
             }
         }

@@ -1,28 +1,28 @@
 ## What's new in this build
 
-- **The app is native.** Tapping a server opens Sonorium's own Android screens, not the web page:
-  - **Top bar:** ☰ menu, the Sonorium logo, the green **server button** (the server's name, or its address when unnamed; tap it for the server list) and, when the server supports it, the **headphone button** for your personal channel.
-  - **Menu:** a side panel (Playback, Configuration, Settings, System). On large tablets in landscape it stays open as a sidebar.
-  - **Collapsed channels (phones):** each channel is one row: › to open it, the theme icon, name with Playing/Stopped, what's playing (Theme · Preset), and a small Play/Stop on the right. Opening a row shows the full card with ⌄ to close it. Each channel remembers whether it's open. Tablets and wide screens start with the cards open.
-  - **Channels:** every card control works natively: Play/Stop, Theme, Preset/sequence, playlist mode, Next with the countdown, speaker volume and mute, Listen here with this phone's volume, Recent changes, Edit, Delete. Wide screens show several cards side by side.
-  - **Channel editor:** name, Theme or Playlist, preset, volume, Announcements, and the speakers (group, or the floor › area › speaker picker with search).
-  - **Live updates:** changes made elsewhere (web UI, Home Assistant, another phone) appear within a second or two.
-- **Pages not native yet** (Playlists, Themes, Settings pages, Status) open in the web view at that page. The server button there returns to the server list.
-- **My channel** (headphone button): appears once the server has the personal channel.
+- **Every Phase 2 page is native now** (☰ menu):
+  - **Playlists:** the list with entries, order, play time and repeat; ▸ shows each playlist's entries; a green dot when a channel plays it. **Add playlist** / **Edit**: name, play time per entry, In order / Shuffle, Repeat, Fit sequences, and the entries (theme + preset or sequence; ⋯ to move, duplicate or remove). ⋯ › Duplicate and Delete….
+  - **Themes:** cards with search, Sort (Name / Most tracks), category chips with counts, ★ favorites, the "playing on" badge, **Preview** on this phone (bar with pause, volume and close), **Create theme**, ⋯ › Export (save the .zip) and Delete…, page ⋯ › Import theme…, Manage categories…, Refresh. **Edit** still opens the web Theme Editor (it's Phase 3).
+  - **Settings › Speakers:** sections by floor and area, search, source filter, Hide offline, Rescan; per speaker: rename (tap the name), area, volume offset, Test, Use, and ⋯ (Reset name, Play via, Remove). **Add speaker** on standalone servers.
+  - **Settings › Speaker Groups:** groups with their chips and members; **Add group** / **Edit** with the floor › area › speaker tree.
+  - **Settings › Floors & Areas:** add, rename, move and delete floors and areas (when Sonorium manages them).
+  - **Status:** what each channel plays right now, track by track, with Server / As heard timing.
+- **Link channels** (Zones, admins): the header button and **Change** on a link bar open the dialog: name, channels, a theme + preset or a playlist, **Link and play**.
+- Error messages now show on top of the editors too (they were hidden behind them).
 
 ## Please test
 
 1. Install over the previous build. Your servers are still linked.
-2. Open a server: the native Channels screen appears.
-3. On a card: change Theme and Preset; Play and Stop (on a channel with speakers); move the volume; mute and unmute the speakers. The web UI in a browser shows the same changes, and changes made in the browser show up in the app.
-4. 🎧 on a card: it plays on the phone, keeps playing with the screen off, with lock-screen controls.
-5. ✎ Edit a channel: change its name and speakers, save. **New Channel**: create one, then delete it with ⋯ › Delete….
-6. ☰ menu: Playlists, Themes, Settings › …, Status open in the web view; Back returns to Channels.
-7. Rotate, and try the tablet: the menu is a side panel on phones; several cards per row on wide screens.
-8. The server button: the server list opens; open another server.
+2. ☰ › **Playlists**: add a playlist with two entries, save; open it with ▸; Edit it; ⋯ › Duplicate; delete the copy.
+3. ☰ › **Themes**: search, pick a category chip, ★ a theme, **Preview** one (it plays on the phone only), then close the preview bar.
+4. ☰ › Settings › **Speakers**: rename a speaker and reset the name; change its area; **Test** (Office_C97A or the Office display, please).
+5. Settings › **Speaker Groups**: add a group with one area, open it with ▸, delete it.
+6. Settings › **Floors & Areas**: add a floor, rename it, delete it.
+7. ☰ › **Status** while a channel plays: rows update; switch Server / As heard.
+8. With Zones on: **Link channels** on Channels, link two channels, then Unlink.
 
 ## Not built yet
 
-- Native Playlists, Themes, Speakers, Groups, Floors & Areas and Status (next), then the Theme Editor and Settings.
-- The Link channels dialog (Zones); link strips, Leave/Rejoin, Unlink, owner and Kid mode are in.
+- The Theme Editor and the Settings pages of Phase 3 (Connection, Audio, Plugins, Logs, Advanced) still open in the web view.
+- Each page's **?** help button (its texts live in the server's web UI).
 - Cast to speakers, finding servers on the network, downloads and uploads from the phone.

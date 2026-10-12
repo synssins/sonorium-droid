@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 /**
  * Screenshots for one screen profile (CI changes the emulator's size and density between
  * runs), portrait and landscape: the native Channels screen, its menu and the channel editor,
- * then the pages still shown by the web view. Needs a server linked already (EndToEndTest runs
+ * then the Phase 2 native pages and a page still shown by the web view. Needs a server linked already (EndToEndTest runs
  * first, same install). Argument `profile`: a name for the files.
  */
 @RunWith(AndroidJUnit4::class)
@@ -63,7 +63,24 @@ class ScreensTest {
             Thread.sleep(1_500)
         }
 
-        // Pages still in the web view, as the native menu opens them
+        // The Phase 2 native pages, opened from the menu
+        ActivityScenario.launch(MainActivity::class.java).use {
+            device.wait(Until.findObject(By.text("New Channel")), 60_000)
+            for ((i, page) in NATIVE_PAGES.withIndex()) {
+                device.findObject(By.desc("Menu"))?.click()
+                Thread.sleep(1_200)
+                if (page in SETTINGS_PAGES && !device.hasObject(By.text("Speaker Groups"))) {
+                    device.findObject(By.text("Settings"))?.click()
+                    Thread.sleep(600)
+                }
+                val item = device.findObject(By.text(page)) ?: continue
+                item.click()
+                Thread.sleep(2_500)
+                shot("portrait-4-${i + 1}-${page.lowercase().replace(Regex("[^a-z]+"), "-")}")
+            }
+        }
+
+        // A page still in the web view, as the native menu opens it
         val app = instrumentation.targetContext.applicationContext as SonoriumApp
         val serverId = runBlocking { app.servers.currentId.first() } ?: return
         for ((i, view) in WEB_VIEWS.withIndex()) {
@@ -80,6 +97,8 @@ class ScreensTest {
     }
 
     private companion object {
-        val WEB_VIEWS = listOf("themes", "playlists", "settings-speakers", "status")
+        val WEB_VIEWS = listOf("settings-audio")
+        val NATIVE_PAGES = listOf("Playlists", "Themes", "Speakers", "Speaker Groups", "Floors & Areas", "Status")
+        val SETTINGS_PAGES = setOf("Speakers", "Speaker Groups", "Floors & Areas")
     }
 }

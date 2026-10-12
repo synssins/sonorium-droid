@@ -166,6 +166,22 @@ data class ThemeSummary(
     @SerialName("is_favorite") val isFavorite: Boolean = false,
     val categories: List<String> = emptyList(),
     val problems: List<String> = emptyList(),
+    val description: String = "",
+)
+
+@Serializable
+data class Categories(val categories: List<String> = emptyList())
+
+@Serializable
+data class FavoriteResult(@SerialName("is_favorite") val isFavorite: Boolean = false)
+
+@Serializable
+data class CreatedTheme(@SerialName("theme_id") val themeId: String? = null)
+
+@Serializable
+data class ImportedTheme(
+    @SerialName("theme_folder") val themeFolder: String = "",
+    @SerialName("files_extracted") val filesExtracted: Int = 0,
 )
 
 @Serializable
@@ -181,6 +197,8 @@ data class SequenceInfo(
     val id: String,
     val name: String = "",
     @SerialName("has_intrusion") val hasIntrusion: Boolean = false,
+    @SerialName("pass_min") val passMin: Double? = null,
+    @SerialName("pass_max") val passMax: Double? = null,
 )
 
 @Serializable
@@ -197,8 +215,18 @@ data class PlaylistEntry(
     @SerialName("sequence_id") val sequenceId: String? = null,
 )
 
+/** A playlist (native-api.md Phase 2, Playlists); [playMin]/[playMax] are seconds. */
 @Serializable
-data class Playlist(val id: String, val name: String = "", val entries: List<PlaylistEntry> = emptyList())
+data class Playlist(
+    val id: String,
+    val name: String = "",
+    val entries: List<PlaylistEntry> = emptyList(),
+    val order: String = "in_order",
+    val repeat: Boolean = true,
+    @SerialName("play_min") val playMin: Double = 1800.0,
+    @SerialName("play_max") val playMax: Double = 3600.0,
+    @SerialName("fit_sequences") val fitSequences: Boolean = false,
+)
 
 @Serializable
 data class Playlists(val playlists: List<Playlist> = emptyList())
@@ -212,6 +240,41 @@ data class Speaker(
     val online: Boolean = true,
     val type: String? = null,
     val source: List<String> = emptyList(),
+    @SerialName("area_id") val areaId: String? = null,
+    val address: String? = null,
+    @SerialName("original_name") val originalName: String? = null,
+    @SerialName("default_area_id") val defaultAreaId: String? = null,
+    @SerialName("volume_offset") val volumeOffset: Int = 0,
+    val merged: List<MergedSpeaker> = emptyList(),
+    @SerialName("play_via") val playVia: String? = null,
+)
+
+/** Another way to reach the same device (`merged[]`). */
+@Serializable
+data class MergedSpeaker(val id: String, val type: String? = null, val source: String? = null)
+
+/** `GET /network-speakers` (standalone only; 404 on the add-on). */
+@Serializable
+data class NetworkSpeakers(@SerialName("last_scan") val lastScan: String? = null, val found: Int = 0)
+
+@Serializable
+data class RefreshResult(@SerialName("total_speakers") val totalSpeakers: Int = 0)
+
+@Serializable
+data class TestResult(val seconds: Double? = null)
+
+@Serializable
+data class ConnectionInfo(@SerialName("ha_url") val haUrl: String? = null)
+
+/** `POST /speakers/manual/check` and `POST /speakers/manual`. */
+@Serializable
+data class ManualResult(
+    val id: String? = null,
+    val name: String? = null,
+    val type: String? = null,
+    val found: Boolean = true,
+    val message: String? = null,
+    @SerialName("merged_into") val mergedInto: String? = null,
 )
 
 @Serializable
@@ -247,6 +310,39 @@ data class SpeakerGroup(
     val icon: String? = null,
     @SerialName("speaker_count") val speakerCount: Int = 0,
     val summary: String? = null,
+    @SerialName("include_floors") val includeFloors: List<String> = emptyList(),
+    @SerialName("include_areas") val includeAreas: List<String> = emptyList(),
+    @SerialName("include_speakers") val includeSpeakers: List<String> = emptyList(),
+    @SerialName("exclude_areas") val excludeAreas: List<String> = emptyList(),
+    @SerialName("exclude_speakers") val excludeSpeakers: List<String> = emptyList(),
+)
+
+// ---------- Floors & Areas (GET /spaces) ----------
+
+@Serializable
+data class SpaceArea(
+    val id: String,
+    val name: String = "",
+    val source: List<String> = emptyList(),
+    @SerialName("local_id") val localId: String? = null,
+    val speakers: Int = 0,
+)
+
+@Serializable
+data class SpaceFloor(
+    val id: String,
+    val name: String = "",
+    val source: List<String> = emptyList(),
+    @SerialName("local_id") val localId: String? = null,
+    val speakers: Int = 0,
+    val areas: List<SpaceArea> = emptyList(),
+)
+
+@Serializable
+data class Spaces(
+    val editable: Boolean = false,
+    val floors: List<SpaceFloor> = emptyList(),
+    @SerialName("unassigned_areas") val unassignedAreas: List<SpaceArea> = emptyList(),
 )
 
 /** A Cast device playing the channel, reported by a phone (G2). */
@@ -289,7 +385,12 @@ data class ChannelLink(
 )
 
 @Serializable
-data class ZoneUser(val id: String, val username: String = "", val role: String = "")
+data class ZoneUser(
+    val id: String,
+    val username: String = "",
+    val role: String = "",
+    @SerialName("can_leave_link") val canLeaveLink: Boolean = false,
+)
 
 @Serializable
 data class ZonesView(
@@ -306,3 +407,44 @@ data class ZonesView(
     /** Leave/Rejoin: an admin, or the channel's owner when they may leave links. */
     fun mayLeave(channelId: String) = admin || (zones[channelId]?.owner != null && zones[channelId]?.owner == me && canLeaveLink)
 }
+
+// ---------- Status (GET /now-playing) ----------
+
+@Serializable
+data class NowPlaying(val at: Double = 0.0, val channels: List<NowChannel> = emptyList())
+
+@Serializable
+data class NowSequence(val name: String = "", val step: Int? = null, val steps: Int? = null)
+
+@Serializable
+data class NowChannel(
+    val id: String,
+    val name: String = "",
+    @SerialName("theme_id") val themeId: String? = null,
+    @SerialName("theme_name") val themeName: String? = null,
+    @SerialName("preset_name") val presetName: String? = null,
+    val sequence: NowSequence? = null,
+    @SerialName("speakers_playing") val speakersPlaying: Boolean = false,
+    val speakers: String? = null,
+    @SerialName("speakers_muted") val speakersMuted: Boolean = false,
+    val listening: Boolean = false,
+    @SerialName("buffer_seconds") val bufferSeconds: Double = 0.0,
+    val sections: List<NowSection> = emptyList(),
+)
+
+@Serializable
+data class NowSection(val title: String = "", val rows: List<NowRow> = emptyList())
+
+@Serializable
+data class NowRow(
+    val type: String = "track",
+    val key: String = "",
+    val name: String = "",
+    val state: String = "",
+    val mode: String = "",
+    val now: String = "",
+    val seconds: Double? = null,
+    val level: Double? = null,
+    val band: List<Double>? = null,
+    val tracks: List<NowRow> = emptyList(),
+)

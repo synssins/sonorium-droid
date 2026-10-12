@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -219,6 +220,26 @@ fun PercentSlider(
 @Composable
 fun FieldLabel(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), color = Palette.textMuted, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, modifier = modifier)
+}
+
+/** The current toast, for full-screen dialogs: they sit above the page's own toast. */
+val LocalToast = androidx.compose.runtime.compositionLocalOf<Toast?> { null }
+
+/** A toast host for inside a full-screen dialog (editors); place it at the bottom of the dialog. */
+@Composable
+fun DialogToast(modifier: Modifier = Modifier) {
+    ToastHost(LocalToast.current, modifier)
+}
+
+/** A full-screen editor's background, with the toast shown above it. */
+@Composable
+fun EditorSurface(content: @Composable () -> Unit) {
+    Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
+        Box(Modifier.fillMaxSize()) {
+            content()
+            DialogToast(Modifier.align(Alignment.BottomCenter).padding(bottom = 88.dp, start = 16.dp, end = 16.dp))
+        }
+    }
 }
 
 /** The bottom toast (0.4): icon + text, 3 s, red for errors. */

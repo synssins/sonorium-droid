@@ -9,12 +9,14 @@ import app.sonorium.data.ServerRecord
 import app.sonorium.listen.ListenController
 import app.sonorium.net.ApiException
 import app.sonorium.net.Me
+import app.sonorium.net.NowPlaying
 import app.sonorium.net.PinnedTls
 import app.sonorium.net.Playlist
 import app.sonorium.net.ServerInfo
 import app.sonorium.net.Session
 import app.sonorium.net.SonoriumApi
 import app.sonorium.net.SpeakerGroup
+import app.sonorium.net.Spaces
 import app.sonorium.net.SpeakerHierarchy
 import app.sonorium.net.ThemePresets
 import app.sonorium.net.ThemeSummary
@@ -62,6 +64,12 @@ data class ServerState(
     val zones: app.sonorium.net.ZonesView? = null,
     /** Channels switched to playlist mode on their card, until a playlist is picked (1.5.2). */
     val playlistMode: Set<String> = emptySet(),
+    val spaces: Spaces? = null,
+    /** Standalone servers (GET /network-speakers answers); null on the add-on. */
+    val network: app.sonorium.net.NetworkSpeakers? = null,
+    /** Whether the server has Home Assistant, as far as this caller can tell (GET /connection). */
+    val hasHa: Boolean = true,
+    val categories: List<String> = emptyList(),
 ) {
     val personalChannel: Boolean get() = info?.personalChannel == true
     val playingCount: Int get() = sessions.count { it.isPlaying }
@@ -195,6 +203,10 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _state.update { it.copy(presets = it.presets + (themeId to presets)) }
     }
 
+    fun loadPresetsAsync(themeId: String) {
+        viewModelScope.launch { loadPresets(themeId) }
+    }
+
     private fun refreshSessionsSoon() {
         if (sessionsRefresh?.isActive == true) return
         sessionsRefresh = viewModelScope.launch {
@@ -263,7 +275,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             type.startsWith("theme.") -> api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t) } } }
             type.startsWith("playlist.") -> api?.let { a -> guard { a.playlists() }?.let { p -> _state.update { it.copy(playlists = p) } } }
             type.startsWith("group.") -> api?.let { a -> guard { a.groups() }?.let { g -> _state.update { it.copy(groups = g) } } }
-            type.startsWith("speaker.") || type.startsWith("spaces.") || type.startsWith("settings.") -> refreshSpeakers()
+            type.startsWith("spaces.") -> {
+                refreshSpeakers()
+                if (_state.value.spaces != null) refreshSpaces()
+            }
+            type.startsWith("speaker.") || type.startsWith("settings.") -> refreshSpeakers()
         }
     }
 
@@ -405,6 +421,21 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         refreshSessions()
     }
 
+    /** Link channels (1.6): errors go back to the dialog, shown under the form (not a toast). */
+    fun saveLink(linkId: String?, body: JsonObject, onError: (String) -> Unit, onDone: () -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            if (linkId == null) api.createLink(body) else api.updateLink(linkId, body)
+            onDone()
+            refreshZones()
+            refreshSessions()
+        } catch (e: ApiException) {
+            if (e.unlinked) markUnlinked() else onError(if (e.detail.startsWith("[")) "Request failed" else e.detail)
+        } catch (_: Exception) {
+            onError("Can't reach the server.")
+        }
+    }
+
     fun stopCasting(session: Session, outputId: String) = act {
         it.stopOutput(session.id, outputId)
         refreshSessions()
@@ -513,6 +544,371 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         ListenController.state.value?.let { ListenController.setVolume(getApplication(), it.sessionId, volume) }
     }
 
+    // ---------- Playlists (native-api.md Phase 2, Playlists) ----------
+
+    suspend fun refreshPlaylists() {
+        val api = api ?: return
+        guard { api.playlists() }?.let { p -> _state.update { it.copy(playlists = p) } }
+    }
+
+    /** Preset names for every theme the playlists use (cached per theme). */
+    fun loadPlaylistPresets() {
+        val s = _state.value
+        val known = s.themes.map { it.id }.toSet()
+        s.playlists.flatMap { p -> p.entries.mapNotNull { it.themeId } }.distinct()
+            .filter { it in known && it !in s.presets }
+            .forEach { viewModelScope.launch { loadPresets(it) } }
+    }
+
+    /** Add (id null) or save; [onDone] gets the playlist so the list can open its row. */
+    fun savePlaylist(id: String?, body: JsonObject, onDone: (Playlist) -> Unit) = act(if (id == null) "Playlist added" else "Playlist saved") {
+        val saved = if (id == null) it.createPlaylist(body) else it.updatePlaylist(id, body)
+        onDone(saved)
+        refreshPlaylists()
+        refreshSessions()
+    }
+
+    fun deletePlaylist(playlist: Playlist, onDone: () -> Unit = {}) = act("Playlist deleted") {
+        it.deletePlaylist(playlist.id)
+        onDone()
+        refreshPlaylists()
+        refreshSessions()
+    }
+
+    /** ⋯ › Duplicate: the copy shows right under the original until the next reload. */
+    fun duplicatePlaylist(playlist: Playlist) = act("Duplicated") {
+        val copy = it.createPlaylist(PlaylistRules.duplicateBody(playlist, _state.value.playlists.map { p -> p.name }))
+        _state.update { s ->
+            val list = s.playlists.filter { p -> p.id != copy.id }.toMutableList()
+            val at = list.indexOfFirst { p -> p.id == playlist.id }
+            if (at >= 0) list.add(at + 1, copy) else list.add(copy)
+            s.copy(playlists = list)
+        }
+    }
+
+    // ---------- Themes ----------
+
+    suspend fun refreshThemeList() {
+        val api = api ?: return
+        guard { api.themes() }?.let { t -> _state.update { it.copy(themes = t) } }
+    }
+
+    suspend fun refreshCategories() {
+        val api = api ?: return
+        guard { api.categories() }?.let { c -> _state.update { it.copy(categories = c) } }
+    }
+
+    fun toggleFavorite(themeId: String) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val r = api.toggleFavorite(themeId)
+            _state.update { s -> s.copy(themes = s.themes.map { if (it.id == themeId) it.copy(isFavorite = r.isFavorite) else it }) }
+            toast(if (r.isFavorite) "Added to favorites" else "Removed from favorites", error = false)
+        } catch (e: Exception) {
+            fail(e)
+        }
+    }
+
+    /** Create theme; [onDone] gets the new theme's id when exactly one new theme appeared (null on error). */
+    fun createTheme(name: String, category: String?, onDone: (ok: Boolean, newId: String?) -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val before = _state.value.themes.map { it.id }.toSet()
+            val created = api.createTheme(name.trim())
+            if (category != null && created.themeId != null) api.setThemeCategories(created.themeId, listOf(category))
+            refreshThemeList()
+            toast("Created \"${name.trim()}\"", error = false)
+            val fresh = _state.value.themes.map { it.id }.filter { it !in before }
+            onDone(true, fresh.singleOrNull())
+        } catch (e: Exception) {
+            failOr(e, "Failed to create theme")
+            onDone(false, null)
+        }
+    }
+
+    fun deleteTheme(theme: ThemeSummary) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            api.deleteTheme(theme.id)
+            if (_preview.value?.themeId == theme.id) closePreview()
+            _state.update { s -> s.copy(themes = s.themes.filter { it.id != theme.id }) }
+            toast("Theme \"${theme.name}\" deleted", error = false)
+        } catch (e: Exception) {
+            failOr(e, "Failed to delete theme")
+        }
+    }
+
+    fun refreshThemesNow() = viewModelScope.launch {
+        val api = api ?: return@launch
+        refreshCategories()
+        toast("Rescanning themes...", error = true)
+        try {
+            api.refreshThemes()
+            refreshThemeList()
+            toast("Themes refreshed", error = false)
+        } catch (e: Exception) {
+            failOr(e, "Failed to refresh themes")
+        }
+    }
+
+    /** Export: the zip's name and bytes, handed to [save] (the system's save dialog). */
+    fun exportTheme(theme: ThemeSummary, save: (String, ByteArray) -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        toast("Preparing export...", error = true)
+        try {
+            val (name, bytes) = api.exportTheme(theme.id)
+            save(name, bytes)
+        } catch (e: Exception) {
+            failOr(e, "Failed to export theme")
+        }
+    }
+
+    fun importTheme(fileName: String, bytes: ByteArray) = viewModelScope.launch {
+        val api = api ?: return@launch
+        toast("Importing theme...", error = true)
+        try {
+            val r = api.importTheme(fileName, bytes)
+            api.refreshThemes()
+            refreshThemeList()
+            toast("Imported \"${r.themeFolder}\" (${r.filesExtracted} files)", error = false)
+        } catch (e: Exception) {
+            failOr(e, "Failed to import theme")
+        }
+    }
+
+    fun addCategory(name: String, onDone: () -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            api.addCategory(ThemeRules.collapseSpaces(name))
+            refreshCategories()
+            onDone()
+        } catch (e: Exception) {
+            failOr(e, "Failed to add category")
+        }
+    }
+
+    fun deleteCategory(name: String, onDone: () -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            api.deleteCategory(name)
+            onDone()
+            refreshCategories()
+            refreshThemeList()
+            toast("Category \"$name\" deleted", error = false)
+        } catch (e: Exception) {
+            failOr(e, "Failed to delete category")
+        }
+    }
+
+    // ---------- Theme preview: `/stream/<theme id>` played on this phone only ----------
+
+    data class Preview(val themeId: String, val name: String, val paused: Boolean = false, val volume: Int = 80)
+
+    private val _preview = MutableStateFlow<Preview?>(null)
+    val preview: StateFlow<Preview?> = _preview.asStateFlow()
+    private var previewPlayer: androidx.media3.exoplayer.ExoPlayer? = null
+
+    fun togglePreview(theme: ThemeSummary) {
+        if (_preview.value?.themeId == theme.id) return closePreview()
+        val host = host ?: return
+        val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort ?: return
+        val player = previewPlayer ?: androidx.media3.exoplayer.ExoPlayer.Builder(getApplication()).build().also { p ->
+            previewPlayer = p
+            p.addListener(object : androidx.media3.common.Player.Listener {
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    toast("Failed to load theme stream", error = true)
+                    closePreview()
+                }
+            })
+        }
+        val volume = _preview.value?.volume ?: 80
+        _preview.value = Preview(theme.id, theme.name, volume = volume)
+        player.setMediaItem(androidx.media3.common.MediaItem.fromUri("http://$host:$port/stream/${android.net.Uri.encode(theme.id)}"))
+        player.volume = volume / 100f
+        player.prepare()
+        player.play()
+    }
+
+    fun pausePreview() {
+        val p = _preview.value ?: return
+        val player = previewPlayer ?: return
+        if (p.paused) player.play() else player.pause()
+        _preview.value = p.copy(paused = !p.paused)
+    }
+
+    fun setPreviewVolume(volume: Int) {
+        _preview.value = _preview.value?.copy(volume = volume)
+        previewPlayer?.volume = volume / 100f
+    }
+
+    fun closePreview() {
+        previewPlayer?.stop()
+        previewPlayer?.clearMediaItems()
+        _preview.value = null
+    }
+
+    // ---------- Status ----------
+
+    /** One `GET /now-playing`; errors are ignored (the page simply polls again). */
+    suspend fun nowPlaying(): NowPlaying? {
+        val api = api ?: return null
+        return guard { api.nowPlaying() }
+    }
+
+    // ---------- Settings › Speakers ----------
+
+    fun loadSpeakersPage() = viewModelScope.launch {
+        val api = api ?: return@launch
+        refreshSpeakers()
+        refreshNetwork()
+        // 403/404 → treated as "has HA" (the web UI's rule)
+        val conn = guard { api.connection() }
+        _state.update { it.copy(hasHa = conn == null || !conn.haUrl.isNullOrEmpty()) }
+    }
+
+    private suspend fun refreshNetwork() {
+        val api = api ?: return
+        val net = try { api.networkSpeakers() } catch (_: Exception) { null }
+        _state.update { it.copy(network = net) }
+    }
+
+    fun setSpeakerUsed(entityId: String, on: Boolean) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            api.setSpeakerUsed(entityId, on)
+        } catch (e: Exception) {
+            fail(e)
+        }
+        refreshSpeakers()
+    }
+
+    /** `saveSpeakerSettings`: reload the hierarchy, then the toast. */
+    fun saveSpeaker(entityId: String, body: JsonObject, success: String?) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            api.speakerSettings(entityId, body)
+            guard { api.speakerHierarchy() }?.let { h -> _state.update { it.copy(hierarchy = h) } }
+            success?.let { toast(it, error = false) }
+        } catch (e: Exception) {
+            failOr(e, "Failed to save speaker")
+            _state.update { it.copy(hierarchy = it.hierarchy?.copy()) }
+        }
+    }
+
+    /** Test sound; [onDone] gets the busy time in seconds (0 on error). */
+    fun testSpeaker(entityId: String, name: String, onDone: (Double) -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val r = api.testSpeaker(entityId)
+            toast("Playing a test sound on $name", error = false)
+            onDone(r.seconds ?: 4.0)
+        } catch (e: Exception) {
+            failOr(e, "Test sound failed")
+            onDone(0.0)
+        }
+    }
+
+    fun rescanSpeakers(onDone: () -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val r = api.refreshSpeakers()
+            refreshSpeakers()
+            refreshNetwork()
+            toast("Found ${r.totalSpeakers} speaker${if (r.totalSpeakers == 1) "" else "s"}", error = false)
+        } catch (e: Exception) {
+            failOr(e, "Rescan failed")
+        }
+        onDone()
+    }
+
+    fun removeManualSpeaker(id: String) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            api.removeManualSpeaker(id)
+            refreshSpeakers()
+            toast("Speaker removed", error = false)
+        } catch (e: Exception) {
+            failOr(e, "Failed to remove speaker")
+        }
+    }
+
+    suspend fun checkManualSpeaker(body: JsonObject): Result<app.sonorium.net.ManualResult> {
+        val api = api ?: return Result.failure(IllegalStateException())
+        return try {
+            Result.success(api.checkManualSpeaker(body))
+        } catch (e: ApiException) {
+            if (e.unlinked) markUnlinked()
+            Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun addManualSpeaker(body: JsonObject, onDone: (Boolean) -> Unit) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val r = api.addManualSpeaker(body)
+            refreshSpeakers()
+            refreshNetwork()
+            val name = r.name ?: (body["name"] as? JsonPrimitive)?.content.orEmpty()
+            toast(if (r.mergedInto != null) "Added $name (same device as a Home Assistant speaker)" else "Added $name", error = false)
+            onDone(true)
+        } catch (e: Exception) {
+            failOr(e, "Could not add the speaker")
+            onDone(false)
+        }
+    }
+
+    // ---------- Speaker Groups ----------
+
+    suspend fun refreshGroups() {
+        val api = api ?: return
+        guard { api.groups() }?.let { g -> _state.update { it.copy(groups = g) } }
+    }
+
+    fun saveGroup(id: String?, body: JsonObject, onDone: (SpeakerGroup) -> Unit) = act(if (id == null) "Group created" else "Group updated") {
+        val saved = if (id == null) it.createGroup(body) else it.updateGroup(id, body)
+        onDone(saved)
+        refreshGroups()
+    }
+
+    fun deleteGroup(group: SpeakerGroup) = act("Group deleted") {
+        it.deleteGroup(group.id)
+        refreshGroups()
+    }
+
+    fun refreshHierarchy() {
+        viewModelScope.launch { refreshSpeakers() }
+    }
+
+    // ---------- Floors & Areas: every write answers the whole object; no success toasts ----------
+
+    fun refreshSpaces() = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val spaces = api.spaces()
+            _state.update { it.copy(spaces = spaces) }
+        } catch (e: Exception) {
+            _state.update { it.copy(spaces = Spaces()) }
+            fail(e)
+        }
+    }
+
+    /** [onDone] runs only on success (the add dialog closes then). */
+    fun changeSpaces(onDone: () -> Unit = {}, block: suspend (SonoriumApi) -> Spaces) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val spaces = block(api)
+            _state.update { it.copy(spaces = spaces) }
+            onDone()
+            refreshSpeakers()
+        } catch (e: Exception) {
+            // Re-render reverts the field to the server's value
+            _state.update { it.copy(spaces = it.spaces?.copy()) }
+            fail(e)
+        }
+    }
+
     // ---------- The personal channel ----------
 
     fun updatePersonal(body: JsonObject, success: String? = null) = act(success) {
@@ -557,6 +953,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         toast(text, error = true)
     }
 
+    /** Like [fail], with the web UI's fallback text for an empty message. */
+    private suspend fun failOr(e: Exception, fallback: String) {
+        if (e is ApiException && !e.unlinked && e.detail.isBlank()) toast(fallback, error = true) else fail(e)
+    }
+
     private suspend fun markUnlinked() {
         val record = _state.value.record ?: return
         events?.cancel()
@@ -569,6 +970,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     override fun onCleared() {
+        previewPlayer?.release()
+        previewPlayer = null
         events?.cancel()
         super.onCleared()
     }

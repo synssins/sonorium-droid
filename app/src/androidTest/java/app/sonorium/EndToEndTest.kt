@@ -106,6 +106,63 @@ class EndToEndTest {
             need(By.text("Channel created"), 15_000, "09-created", "No toast after creating a channel")
             screenshot("09-created")
 
+            // Phase 2 native screens. Playlists: add one with an entry → the web UI's toast.
+            openPage("Playlists")
+            need(By.desc("Add playlist"), 15_000, "20-playlists", "No Add playlist button").click()
+            need(By.desc("Name"), 10_000, "20-playlist-editor", "The playlist editor didn't open").text = "CI playlist"
+            hideKeyboard()
+            find(By.text("Add entry"), "No Add entry button").click()
+            find(By.desc("Theme 1"), "No theme field on the new entry").click()
+            need(By.textContains("A Rainy Day"), 10_000, "20-theme-list", "No theme list").click()
+            Thread.sleep(500)
+            screenshot("20-playlist-editor")
+            find(By.desc("Save playlist"), "No save button in the playlist editor").click()
+            need(By.text("Playlist added"), 15_000, "20-playlist-added", "No toast after adding a playlist")
+            need(By.text("CI playlist"), 10_000, "20-playlist-row", "The new playlist isn't listed")
+            screenshot("20-playlists")
+
+            // Status: the poll fills the page
+            openPage("Status")
+            need(By.text("Active Channels"), 15_000, "21-status", "The Status page didn't open")
+            Thread.sleep(1_000)
+            screenshot("21-status")
+
+            // Themes: the cards, and a favorite → toast
+            openPage("Themes")
+            need(By.textContains("A Rainy Day"), 15_000, "22-themes", "No theme cards")
+            screenshot("22-themes")
+            find(By.desc("Add to favorites"), "No favorite button").click()
+            need(By.text("Added to favorites"), 10_000, "22-favorite", "No toast after a favorite")
+
+            // Settings › Speakers
+            openPage("Speakers", settings = true)
+            need(By.text("Hide offline"), 15_000, "23-speakers", "The Speakers page didn't open")
+            Thread.sleep(1_000)
+            screenshot("23-speakers")
+
+            // Settings › Speaker Groups: nothing selected → the web UI's refusal
+            openPage("Speaker Groups", settings = true)
+            need(By.desc("Add group"), 15_000, "24-groups", "No Add group button").click()
+            need(By.desc("Name"), 10_000, "24-group-editor", "The group editor didn't open").text = "CI group"
+            hideKeyboard()
+            screenshot("24-group-editor")
+            find(By.desc("Save group"), "No save button in the group editor").click()
+            need(By.text("Select at least one speaker"), 10_000, "24-group-refused", "No toast for a group without speakers")
+            find(By.text("Cancel"), "No Cancel in the group editor").click()
+
+            // Settings › Floors & Areas: add a floor when the server lets this install edit them
+            openPage("Floors & Areas", settings = true)
+            need(By.text(java.util.regex.Pattern.compile("^(Group speakers by floor|From Home Assistant).*", java.util.regex.Pattern.DOTALL)), 15_000, "25-spaces", "The Floors & Areas page didn't open")
+            device.findObject(By.text("Add floor"))?.let { add ->
+                add.click()
+                need(By.desc("Name"), 10_000, "25-add-floor", "The Add floor dialog didn't open").text = "CI floor"
+                find(By.desc("Save floor"), "No save button in the Add floor dialog").click()
+                need(By.text("CI floor"), 10_000, "25-floor-added", "The new floor isn't listed")
+            }
+            screenshot("25-spaces")
+            openPage("Channels")
+            need(By.text(channelName), 15_000, "26-back", "Channels didn't come back")
+
             // 8. Landscape.
             device.setOrientationLandscape()
             Thread.sleep(2_500)
@@ -119,6 +176,18 @@ class EndToEndTest {
             screenshot("11-servers")
             oldWebView?.let { File(shots, "old-webview.txt").writeText("WebView ${it.versionName}\n") }
         }
+    }
+
+    /** Opens a page from the menu (side panel on phones); Settings items open the Settings group first. */
+    private fun openPage(title: String, settings: Boolean = false) {
+        device.findObject(By.desc("Menu"))?.click()
+        Thread.sleep(1_200)
+        if (settings && !device.hasObject(By.text("Speaker Groups"))) {
+            find(By.text("Settings"), "No Settings in the menu").click()
+            Thread.sleep(600)
+        }
+        find(By.text(title), "No $title in the menu").click()
+        Thread.sleep(1_200)
     }
 
     private fun find(selector: BySelector, message: String): UiObject2 =

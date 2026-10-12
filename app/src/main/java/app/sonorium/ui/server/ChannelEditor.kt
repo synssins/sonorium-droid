@@ -104,7 +104,7 @@ fun ChannelEditor(
     var hoursTo by rememberSaveable { mutableStateOf(zone?.schedule?.end ?: "") }
 
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
+        EditorSurface {
             // imePadding: the footer (Create/Save, Cancel) stays above the keyboard
             BoxWithConstraints(Modifier.safeDrawingPadding().imePadding()) {
                 val wide = maxWidth >= 720.dp

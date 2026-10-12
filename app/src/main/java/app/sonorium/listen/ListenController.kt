@@ -21,6 +21,12 @@ object ListenController {
         val personal: Boolean = false,
     )
 
+    /** Seconds buffered ahead in the local player (Status "As heard"); main thread only, null when not playing. */
+    @Volatile
+    internal var bufferProbe: (() -> Double)? = null
+
+    fun bufferedAhead(): Double? = bufferProbe?.invoke()
+
     private val _state = MutableStateFlow<Listening?>(null)
     val state: StateFlow<Listening?> = _state.asStateFlow()
 

@@ -92,6 +92,7 @@ class ListenService : MediaSessionService() {
                 if (current != null && !pausedByUser) reconnectSoon()
             }
         })
+        ListenController.bufferProbe = { exo.totalBufferedDuration / 1000.0 }
         val player = object : ForwardingPlayer(exo) {
             override fun play() = resume()
             override fun pause() = stopByUser()
@@ -254,6 +255,7 @@ class ListenService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        ListenController.bufferProbe = null
         current?.takeIf { !pausedByUser }?.let { c ->
             // Best effort: the server also releases a listener 15 s after its stream closes.
             CoroutineScope(Dispatchers.IO).launch { runCatching { unlisten(c) } }

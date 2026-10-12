@@ -89,6 +89,14 @@ class SonoriumApi(
         sendRaw("PUT", "zones/$channelId", body)
     }
 
+    suspend fun createLink(body: JsonObject) {
+        sendRaw("POST", "links", body)
+    }
+
+    suspend fun updateLink(linkId: String, body: JsonObject) {
+        sendRaw("PUT", "links/$linkId", body)
+    }
+
     suspend fun removeLink(linkId: String) {
         execute(request("links/$linkId").delete().build())
     }
@@ -99,13 +107,122 @@ class SonoriumApi(
 
     suspend fun themePresets(themeId: String): ThemePresets = get("themes/$themeId/presets")
 
+    suspend fun categories(): List<String> = get<Categories>("categories").categories
+
+    suspend fun refreshThemes() {
+        execute(request("themes/refresh").post(EMPTY).build())
+    }
+
+    suspend fun toggleFavorite(themeId: String): FavoriteResult =
+        decode(execute(request("themes/$themeId/favorite").post(EMPTY).build()))
+
+    suspend fun createTheme(name: String): CreatedTheme =
+        send("POST", "themes/create", buildJsonObject { put("name", name); put("description", ""); put("icon", "") })
+
+    /** Replaces the theme's whole category list. */
+    suspend fun setThemeCategories(themeId: String, categories: List<String>) {
+        sendRaw("POST", "themes/$themeId/categories", buildJsonObject {
+            put("categories", kotlinx.serialization.json.JsonArray(categories.map { JsonPrimitive(it) }))
+        })
+    }
+
+    suspend fun deleteTheme(themeId: String) {
+        execute(request("themes/$themeId").delete().build())
+    }
+
+    /** The theme as a zip: file name (from Content-Disposition) and bytes. */
+    suspend fun exportTheme(themeId: String): Pair<String, ByteArray> = withContext(Dispatchers.IO) {
+        client.newCall(request("themes/$themeId/export").get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw ApiException.from(response.code, response.body.string(), null)
+            val name = response.header("Content-Disposition")?.let { Regex("filename=\"?([^\";]+)").find(it)?.groupValues?.get(1) } ?: "$themeId.zip"
+            name to response.body.bytes()
+        }
+    }
+
+    suspend fun importTheme(fileName: String, bytes: ByteArray): ImportedTheme {
+        val body = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("file", fileName, bytes.toRequestBody("application/zip".toMediaType()))
+            .build()
+        return decode(execute(request("themes/import").post(body).build()))
+    }
+
+    suspend fun addCategory(name: String) {
+        sendRaw("POST", "categories", buildJsonObject { put("name", name) })
+    }
+
+    suspend fun deleteCategory(name: String) {
+        val url = baseUrl.newBuilder().addPathSegment("api").addPathSegment("categories").addPathSegment(name).build()
+        execute(request("categories").url(url).delete().build())
+    }
+
     suspend fun playlists(): List<Playlist> = get<Playlists>("playlists").playlists
 
+    suspend fun createPlaylist(body: JsonObject): Playlist = send("POST", "playlists", body)
+
+    suspend fun updatePlaylist(id: String, body: JsonObject): Playlist = send("PUT", "playlists/$id", body)
+
+    suspend fun deletePlaylist(id: String) {
+        execute(request("playlists/$id").delete().build())
+    }
+
     suspend fun groups(): List<SpeakerGroup> = get("groups")
+
+    suspend fun createGroup(body: JsonObject): SpeakerGroup = send("POST", "groups", body)
+
+    suspend fun updateGroup(id: String, body: JsonObject): SpeakerGroup = send("PUT", "groups/$id", body)
+
+    suspend fun deleteGroup(id: String) {
+        execute(request("groups/$id").delete().build())
+    }
+
+    // ---------- Floors & Areas: every write answers the whole spaces object ----------
+
+    suspend fun spaces(): Spaces = get("spaces")
+
+    suspend fun addFloor(body: JsonObject): Spaces = send("POST", "spaces/floors", body)
+
+    suspend fun addArea(body: JsonObject): Spaces = send("POST", "spaces/areas", body)
+
+    suspend fun updateFloor(localId: String, body: JsonObject): Spaces = send("PUT", "spaces/floors/$localId", body)
+
+    suspend fun updateArea(localId: String, body: JsonObject): Spaces = send("PUT", "spaces/areas/$localId", body)
+
+    suspend fun deleteFloor(localId: String): Spaces = decode(execute(request("spaces/floors/$localId").delete().build()))
+
+    suspend fun deleteArea(localId: String): Spaces = decode(execute(request("spaces/areas/$localId").delete().build()))
 
     suspend fun speakerHierarchy(): SpeakerHierarchy = get("speakers/hierarchy")
 
     suspend fun enabledSpeakers(): List<String> = get<EnabledSpeakers>("settings/speakers").enabledSpeakers
+
+    suspend fun setSpeakerUsed(entityId: String, on: Boolean) {
+        sendRaw("POST", "settings/speakers/${if (on) "enable" else "disable"}", buildJsonObject { put("entity_id", entityId) })
+    }
+
+    /** Only the keys sent change; JSON null resets that key. */
+    suspend fun speakerSettings(entityId: String, body: JsonObject) {
+        sendRaw("PUT", "speakers/${seg(entityId)}/settings", body)
+    }
+
+    suspend fun testSpeaker(entityId: String): TestResult =
+        decode(execute(request("speakers/${seg(entityId)}/test").post(EMPTY).build()))
+
+    suspend fun refreshSpeakers(): RefreshResult = decode(execute(request("speakers/refresh").post(EMPTY).build()))
+
+    suspend fun networkSpeakers(): NetworkSpeakers = get("network-speakers")
+
+    suspend fun connection(): ConnectionInfo = get("connection")
+
+    suspend fun checkManualSpeaker(body: JsonObject): ManualResult = send("POST", "speakers/manual/check", body)
+
+    suspend fun addManualSpeaker(body: JsonObject): ManualResult = send("POST", "speakers/manual", body)
+
+    suspend fun removeManualSpeaker(id: String) {
+        execute(request("speakers/manual/${seg(id)}").delete().build())
+    }
+
+    /** Speaker ids (`media_player.x`, `net:cast:…`) are single path segments; OkHttp encodes the rest. */
+    private fun seg(id: String): String = id
 
     // ---------- The personal channel (planned: /api/info.personal_channel) ----------
 
@@ -121,6 +238,8 @@ class SonoriumApi(
     }
 
     suspend fun status(): ServerStatus = get("status")
+
+    suspend fun nowPlaying(): NowPlaying = get("now-playing")
 
     suspend fun install(): InstallInfo = get("install")
 
