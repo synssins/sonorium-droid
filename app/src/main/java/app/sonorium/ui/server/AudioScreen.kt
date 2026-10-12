@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -64,20 +65,38 @@ fun AudioPage(model: ServerViewModel) {
     val saved = model.audioSaved
     val draft = model.audioDraft
     val settingsChanged by model.settingsChanged.collectAsState()
-    LaunchedEffect(settingsChanged) {
+    var failed by remember { mutableStateOf(false) }
+    var attempt by remember { mutableStateOf(0) }
+    LaunchedEffect(settingsChanged, attempt) {
+        failed = false
         model.call { it.json("GET", "settings") }.onSuccess { o ->
             fun n(k: String) = (o[k] as? JsonPrimitive)?.doubleOrNull
             val v = AudioValues(n("crossfade_duration") ?: 3.0, n("default_volume")?.roundToInt() ?: 60, n("master_gain")?.roundToInt() ?: 60)
             // a clean draft follows the server; an unsaved one stays
             if (model.audioDraft == null || model.audioDraft == model.audioSaved) model.audioDraft = v
             model.audioSaved = v
-        }.onFailure { if (model.audioSaved == null) { model.audioSaved = AudioValues.DEFAULTS; model.audioDraft = AudioValues.DEFAULTS } }
+        }.onFailure { failed = true } // never show defaults as if they were the server's (QA 9)
     }
     val dirty = saved != null && draft != null && draft != saved
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = if (narrow) 12.dp else 24.dp)) {
+            if (saved == null) {
+                PageHeader("Audio Settings", null, help = "settings-audio") {}
+                Column(Modifier.fillMaxWidth().padding(vertical = 32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (failed) {
+                        Text("Couldn't load the audio settings", color = Palette.text, fontSize = 16.sp)
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(onClick = { attempt++ }, border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
+                            Text("Try again", color = Palette.text)
+                        }
+                    } else {
+                        androidx.compose.material3.CircularProgressIndicator(color = Palette.accent)
+                    }
+                }
+                return@Column
+            }
             PageHeader("Audio Settings", null, help = "settings-audio") {
                 MoreMenu("More", listOf(MenuAction("Reset to defaults…", SIcons.Refresh, enabled = draft != null && draft != AudioValues.DEFAULTS) {
                     ask = Ask("Reset to defaults?", "Crossfade 3.0 s · Volume 60% · Gain 60%", "Reset") {

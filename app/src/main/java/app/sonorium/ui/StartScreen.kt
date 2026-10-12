@@ -135,7 +135,8 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    if (server.id == currentId) Chip("Connected")
+                    // The server the app opens (not a live connection: that shows on the main screen's button)
+                    if (server.id == currentId) Chip("Current")
                 }
                 Text(
                     listOfNotNull(

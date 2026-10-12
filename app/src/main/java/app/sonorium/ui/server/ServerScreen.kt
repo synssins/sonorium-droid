@@ -35,8 +35,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -107,7 +109,7 @@ fun ServerScreen(
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
     var themesOnPhone by rememberSaveable { mutableStateOf(false) }
     // A server that can't be reached: Themes opens on the themes on this phone (R19)
-    LaunchedEffect(state.failure != null) { if (state.failure != null) themesOnPhone = true }
+    LaunchedEffect(state.failure != null) { themesOnPhone = state.failure != null }
     var editing by remember { mutableStateOf<Session?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
     // Link channels (Zones, admin): null = closed; a link = change it; NEW_LINK = a new one
@@ -120,6 +122,11 @@ fun ServerScreen(
         if (p.webView != null) onWebPage(p.webView) else page = p
     }
 
+    // A page this account can't open (e.g. restored after Android closed the app): back to Channels (QA 20)
+    LaunchedEffect(page, state.me) {
+        val perm = page.perm
+        if (perm != null && state.me != null && perm !in state.me?.perms.orEmpty()) page = Page.Channels
+    }
     // Back from any other page returns to Channels (R6), not to the Servers list
     androidx.activity.compose.BackHandler(enabled = page != Page.Channels) { page = Page.Channels }
     // Registered later, so it goes first: Back with the menu open just closes the menu (R10)
@@ -143,39 +150,35 @@ fun ServerScreen(
                         onPersonal = { page = Page.Personal },
                     )
                     // A server that can't be reached: a line above the page, which stays browsable
-                    state.failure?.let { failure ->
+                    val serverPage = page != Page.Personal && page != Page.Themes
+                    state.failure?.takeIf { !serverPage }?.let { failure ->
                         Row(
                             Modifier.fillMaxWidth().background(Palette.backgroundSecondary).padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(failure, color = Palette.text, fontSize = 13.sp, modifier = Modifier.weight(1f))
-                            if (!state.unlinked) {
-                                androidx.compose.material3.TextButton(onClick = { model.connect() }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
-                                    Text("Try again", color = Palette.accent)
-                                }
-                            }
+                            androidx.compose.material3.TextButton(
+                                onClick = { if (state.unlinked) onServers() else model.connect() },
+                                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
+                            ) { Text(if (state.unlinked) "Servers" else "Try again", color = Palette.accent) }
                         }
                     }
                     Box(Modifier.weight(1f)) {
                         when {
-                            state.connecting && state.sessions.isEmpty() -> Centered {
+                            serverPage && state.connecting && state.sessions.isEmpty() -> Centered {
                                 CircularProgressIndicator(color = Palette.accent)
                                 Spacer(Modifier.height(12.dp))
-                                Text("Connecting to ${state.record?.displayName.orEmpty()}", color = Palette.textSecondary)
+                                Text(state.record?.let { "Connecting to ${it.displayName}…" } ?: "Connecting…", color = Palette.textSecondary)
                             }
-                            // No server: Channels explains and offers Connect; the other pages show their empty state
-                            state.record == null && page == Page.Channels -> Centered {
-                                Text("No server connected", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                                Spacer(Modifier.height(8.dp))
-                                Text("Connect to your Sonorium server to see its channels.", color = Palette.textSecondary, fontSize = 14.sp)
-                                Spacer(Modifier.height(16.dp))
-                                Button(
-                                    onClick = onServers,
-                                    colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
-                                ) { Text("Connect") }
-                            }
+                            // Pages that show the server's data: nothing stale when there's no server or it can't be
+                            // reached, only why and what to do (QA: no old data presented as live)
+                            serverPage && (state.record == null || state.failure != null) -> NoConnection(
+                                state, page,
+                                onServers = onServers,
+                                onRetry = { model.connect() },
+                                onPhone = { page = Page.Personal },
+                            )
                             page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening)
                             page == Page.Playlists -> PlaylistsPage(state, model)
                             page == Page.Groups -> GroupsPage(state, model)
@@ -196,7 +199,11 @@ fun ServerScreen(
                                     { themesOnPhone = it == 1 },
                                     Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
                                 )
-                                if (themesOnPhone) LocalThemesPage(model) else ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
+                                when {
+                                    themesOnPhone -> LocalThemesPage(model)
+                                    state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { themesOnPhone = true })
+                                    else -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
+                                }
                             }
                             else -> ChannelsPage(
                                 state = state,
@@ -274,17 +281,34 @@ private fun TopBar(
             contentScale = ContentScale.Fit, modifier = Modifier.height(26.dp).widthIn(max = 110.dp),
         )
         Spacer(Modifier.weight(1f))
-        // The server button: the name given in the app, else the address (1.8)
-        val label = state.record?.displayName ?: "Connect"
+        // The server button: the name given in the app (else the address), with its connection status;
+        // "Connect" when there's none (QA: a removed or unreachable server never looks connected)
+        val record = state.record?.takeIf { !state.unlinked }
+        val label = record?.displayName ?: "Connect"
+        val status = when {
+            record == null -> null
+            state.connecting -> "connecting"
+            state.failure != null -> "can't reach"
+            else -> "connected"
+        }
+        val live = status == "connected"
         Surface(
-            color = Palette.accent,
+            color = if (live || record == null) Palette.accent else Palette.backgroundSecondary,
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.height(TOP_BAR_CONTROL.dp).widthIn(max = 200.dp).semantics { contentDescription = "Servers: $label" }.clickable(onClick = onServers),
+            border = if (live || record == null) null else androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
+            modifier = Modifier.height(TOP_BAR_CONTROL.dp).widthIn(max = 200.dp)
+                .semantics { contentDescription = "Servers: $label" + (status?.let { ", $it" } ?: "") }
+                .clickable(onClick = onServers),
         ) {
             Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(SIcons.Server, null, tint = Palette.bar, modifier = Modifier.size(16.dp))
+                val fg = if (live || record == null) Palette.bar else Palette.text
+                Icon(SIcons.Server, null, tint = fg, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(label, color = Palette.bar, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                if (record != null && !live) {
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.size(8.dp).background(if (state.connecting) Palette.warning else Palette.danger, androidx.compose.foundation.shape.CircleShape))
+                }
             }
         }
         // The headphone button: the account's personal channel (native only), when the server has it
@@ -316,7 +340,7 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
         }
         Section("Playback")
         MenuItem(Page.Channels, current, onOpen, badge = state.playingCount.takeIf { it > 0 })
-        if (state.personalChannel) MenuItem(Page.Personal, current, onOpen)
+        MenuItem(Page.Personal, current, onOpen)
         MenuItem(Page.Playlists, current, onOpen)
         Section("Configuration")
         MenuItem(Page.Themes, current, onOpen)
@@ -384,6 +408,66 @@ private fun MenuRow(
         Text(title, color = if (selected) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
         badge?.let { CountBadge(it) }
         trailing?.let { Icon(it, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) }
+    }
+}
+
+/**
+ * A server page with no server to show: never connected, removed or unlinked (Connect / Servers), or
+ * unreachable (Try again), and the way to the phone's own player. Nothing from the server is shown.
+ */
+@Composable
+private fun NoConnection(state: ServerState, page: Page, onServers: () -> Unit, onRetry: () -> Unit, onPhone: () -> Unit) {
+    val what = when (page) {
+        Page.Channels -> "its channels"
+        Page.Playlists -> "its playlists"
+        Page.Themes -> "its themes"
+        Page.Status -> "what's playing"
+        Page.Speakers, Page.Groups -> "its speakers"
+        Page.Spaces -> "its floors and areas"
+        Page.Logs -> "its log"
+        else -> "its settings"
+    }
+    val record = state.record?.takeIf { !state.unlinked }
+    Centered {
+        Icon(SIcons.Server, null, tint = Palette.textMuted, modifier = Modifier.size(28.dp))
+        Spacer(Modifier.height(12.dp))
+        Text(
+            when {
+                record == null && state.unlinked -> "Not linked"
+                record == null -> "No server connected"
+                else -> "Can't reach ${record.displayName}"
+            },
+            color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            when {
+                record == null && state.unlinked -> state.failure ?: "Open Servers to link this phone again."
+                record == null -> "Connect to your Sonorium server to see $what."
+                else -> "Check that this phone is on the same network. It reconnects by itself when the server is back."
+            },
+            color = Palette.textSecondary, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Spacer(Modifier.height(16.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (record != null) {
+                OutlinedButton(
+                    onClick = onServers, border = androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
+                    modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                ) { Text("Servers", color = Palette.text) }
+            }
+            Button(
+                onClick = if (record != null) onRetry else onServers,
+                colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) { Text(if (record != null) "Try again" else if (state.unlinked) "Servers" else "Connect") }
+        }
+        if (page != Page.Themes) {
+            Spacer(Modifier.height(8.dp))
+            TextButton(onClick = onPhone, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
+                Text("Play on this phone", color = Palette.accent)
+            }
+        }
     }
 }
 

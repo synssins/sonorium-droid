@@ -91,8 +91,12 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
                     }
                 }
                 Text(
-                    if (editable) "Group speakers by floor and area. A floor or area with the same name as one in Home Assistant becomes one."
-                    else "From Home Assistant. Change them there.",
+                    when {
+                        spaces == null && state.spacesFailed -> "Couldn't load the floors and areas. Open the page again to retry."
+                        spaces == null -> "Loading floors and areas…"
+                        editable -> "Group speakers by floor and area. A floor or area with the same name as one in Home Assistant becomes one."
+                        else -> "From Home Assistant. Change them there."
+                    },
                     color = Palette.textSecondary, fontSize = 14.sp, modifier = Modifier.padding(bottom = 12.dp),
                 )
             }

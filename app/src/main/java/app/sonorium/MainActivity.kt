@@ -25,8 +25,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The launcher icon while the app is open in the background: just bring it back (R13)
-        if (!isTaskRoot && intent?.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER)) {
+        // The launcher icon (or a notification) while the app is open in the background: just bring it back
+        // (R13; QA: a notification tap stacked a second main screen). Links and the Servers list still open.
+        val isLink = intent?.action == Intent.ACTION_VIEW
+        if (!isTaskRoot && !isLink && !intent.getBooleanExtra(EXTRA_SHOW_LIST, false)) {
             finish()
             return
         }

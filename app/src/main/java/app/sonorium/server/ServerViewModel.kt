@@ -55,6 +55,8 @@ data class ServerState(
     val connecting: Boolean = true,
     val failure: String? = null,
     val unlinked: Boolean = false,
+    /** Floors & Areas couldn't be loaded (not "there are none"). */
+    val spacesFailed: Boolean = false,
     val info: ServerInfo? = null,
     val me: Me? = null,
     val sessions: List<Session> = emptyList(),
@@ -109,6 +111,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private var eventsRetry: Job? = null
     private var poll: Job? = null
     private var sessionsRefresh: Job? = null
+    /** The token [api] was made with (a re-link replaces it in the store). */
+    private var tokenInUse: String? = null
+    private var storeWatch: Job? = null
+    private var reconnect: Job? = null
+    private var networkWatch: android.net.ConnectivityManager.NetworkCallback? = null
 
     private val prefs = application.getSharedPreferences("sonorium", Context.MODE_PRIVATE)
 
@@ -117,33 +124,115 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     val listenVolume: StateFlow<Int> = _listenVolume.asStateFlow()
 
     fun open(id: String?) {
+        watchStore()
+        watchNetwork()
         if (id == null) {
             // No server linked or chosen: the interface still shows (offline / local themes)
-            _state.value = ServerState(connecting = false)
+            if (serverId == null) _state.value = ServerState(connecting = false)
             return
         }
-        if (serverId == id && api != null) return
+        if (serverId == id && (api != null || _state.value.connecting)) return
         serverId = id
         loadExpanded()
         connect()
     }
 
-    fun connect() {
+    /**
+     * Follows the stored servers while this screen lives: a server removed in the Servers list (or
+     * unlinked) is dropped here at once, a re-link reconnects with the new token, a rename shows, and a
+     * server linked from the Servers list opens here when there was none (QA: stale server after Remove).
+     */
+    private fun watchStore() {
+        if (storeWatch != null) return
+        storeWatch = viewModelScope.launch {
+            kotlinx.coroutines.flow.combine(app.servers.servers, app.servers.currentId) { list, current -> list to current }
+                .collect { (list, current) ->
+                    val id = serverId
+                    val mine = id?.let { i -> list.firstOrNull { it.id == i } }
+                    val next = current?.takeIf { c -> list.any { it.id == c } }
+                    when {
+                        id != null && mine == null -> {
+                            teardown()
+                            serverId = next
+                            if (next != null) connect() else _state.value = ServerState(connecting = false)
+                        }
+                        id == null && next != null -> {
+                            serverId = next
+                            loadExpanded()
+                            connect()
+                        }
+                        id != null && next != null && next != id -> {
+                            teardown()
+                            serverId = next
+                            loadExpanded()
+                            connect()
+                        }
+                        mine != null -> {
+                            val token = app.servers.token(mine.id)
+                            if (token != null && tokenInUse != null && token != tokenInUse) {
+                                teardown()
+                                connect()
+                            } else if (_state.value.record != null && mine.displayName != _state.value.record?.displayName) {
+                                _state.update { it.copy(record = mine) }
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    /** The network came back: reconnect (or refresh) at once instead of waiting for Try again (QA 6). */
+    private fun watchNetwork() {
+        if (networkWatch != null) return
+        val cm = app.getSystemService(android.net.ConnectivityManager::class.java) ?: return
+        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                viewModelScope.launch {
+                    delay(1_500)
+                    val s = _state.value
+                    if (s.record == null || s.unlinked || s.failure == null) return@launch
+                    if (api == null) connect(quiet = true) else refreshSessions()
+                }
+            }
+        }
+        runCatching { cm.registerDefaultNetworkCallback(callback) }.onSuccess { networkWatch = callback }
+    }
+
+    /** Drops everything that talks to the current server (removed, unlinked, switched). */
+    private fun teardown() {
+        events?.cancel()
+        events = null
+        eventsRetry?.cancel()
+        poll?.cancel()
+        reconnect?.cancel()
+        sessionsRefresh?.cancel()
+        api = null
+        client = null
+        host = null
+        tokenInUse = null
+        lastEventId = null
+        runCatching { closePreview() }
+    }
+
+    /** Connects to the server; [quiet]: a retry in the background (the unreachable line stays until it works). */
+    fun connect(quiet: Boolean = false) {
         val id = serverId ?: return
+        reconnect?.cancel()
         viewModelScope.launch {
             val record = app.servers.find(id)
             if (record == null) {
-                _state.value = ServerState(connecting = false, failure = "This server isn't linked any more.")
+                _state.value = ServerState(connecting = false, unlinked = true, failure = "This server isn't linked any more. Open Servers to link it again.")
                 return@launch
             }
-            _state.update { it.copy(record = record, connecting = true, failure = null) }
+            if (!quiet || _state.value.record?.id != record.id) _state.update { it.copy(record = record, connecting = true, failure = null, unlinked = false) }
             val token = app.servers.token(id)
             if (token == null) {
-                _state.update { it.copy(connecting = false, failure = "This phone isn't linked to ${record.displayName}. Link it again.") }
+                _state.update { it.copy(connecting = false, unlinked = true, failure = "This phone isn't linked to ${record.displayName}. Open Servers to link it again.") }
                 return@launch
             }
             val pinned = PinnedTls.pinnedClient(app.baseClient, record.fingerprint)
             val reached = app.linker.reach(pinned, record.hosts, record.httpsPort)
+            if (serverId != id) return@launch
             if (reached == null || reached.info.id != record.id) {
                 _state.update {
                     it.copy(
@@ -151,6 +240,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                         failure = if (reached == null) unreachableText(record)
                         else "A different server answered at ${reached.host}.",
                     )
+                }
+                // Keep trying in the background while this screen shows (the network callback also helps)
+                reconnect = viewModelScope.launch {
+                    delay(15_000)
+                    if (visible && serverId == id && api == null) connect(quiet = true)
                 }
                 return@launch
             }
@@ -160,7 +254,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             client = pinned
             host = reached.host
             api = SonoriumApi(pinned, SonoriumApi.baseUrl(reached.host, record.httpsPort), token)
-            _state.update { it.copy(record = updated, info = reached.info, connecting = false) }
+            tokenInUse = token
+            _state.update { it.copy(record = updated, info = reached.info, connecting = false, failure = null, unlinked = false) }
             loadAll()
             startEvents()
             startPolling()
@@ -334,6 +429,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     fun onResume() {
         visible = true
         if (api != null) viewModelScope.launch { refreshSessions() }
+        else if (serverId != null && !_state.value.connecting && !_state.value.unlinked) connect(quiet = true)
     }
 
     fun onPause() {
@@ -370,8 +466,19 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun setVolume(session: Session, volume: Int) {
+        val before = session.volume
         _state.update { s -> s.copy(sessions = s.sessions.map { if (it.id == session.id) it.copy(volume = volume) else it }) }
-        act { it.updateSession(session.id, buildJsonObject { put("volume", volume) }) }
+        viewModelScope.launch {
+            val api = api ?: return@launch
+            try {
+                api.updateSession(session.id, buildJsonObject { put("volume", volume) })
+            } catch (e: Exception) {
+                // The server didn't take it: put the slider back (QA 14)
+                _state.update { s -> s.copy(sessions = s.sessions.map { if (it.id == session.id) it.copy(volume = before) else it }) }
+                if (e is java.io.IOException) reachable(false)
+                fail(e)
+            }
+        }
     }
 
     /** Optimistic: flips at once, reverts with an error toast on failure (1.2). */
@@ -676,7 +783,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     fun refreshThemesNow() = viewModelScope.launch {
         val api = api ?: return@launch
         refreshCategories()
-        toast("Rescanning themes...", error = true)
+        toast("Rescanning themes…", error = false)
         try {
             api.refreshThemes()
             refreshThemeList()
@@ -692,7 +799,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     /** Export: the zip's name and bytes, handed to [save] (the system's save dialog). */
     fun exportTheme(theme: ThemeSummary, save: (String, ByteArray) -> Unit) = viewModelScope.launch {
         val api = api ?: return@launch
-        toast("Preparing export...", error = true)
+        toast("Preparing export…", error = false)
         try {
             val (name, bytes) = api.exportTheme(theme.id)
             save(name, bytes)
@@ -703,7 +810,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun importTheme(fileName: String, bytes: ByteArray) = viewModelScope.launch {
         val api = api ?: return@launch
-        toast("Importing theme...", error = true)
+        toast("Importing theme…", error = false)
         try {
             val r = api.importTheme(fileName, bytes)
             api.refreshThemes()
@@ -937,6 +1044,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             if (e.unlinked) markUnlinked()
             Result.failure(e)
         } catch (e: Exception) {
+            if (e is java.io.IOException) reachable(false)
             Result.failure(e)
         }
     }
@@ -1145,9 +1253,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val api = api ?: return@launch
         try {
             val spaces = api.spaces()
-            _state.update { it.copy(spaces = spaces) }
+            _state.update { it.copy(spaces = spaces, spacesFailed = false) }
         } catch (e: Exception) {
-            _state.update { it.copy(spaces = Spaces()) }
+            // Not "no floors": the page says it couldn't load them (QA 8)
+            _state.update { it.copy(spaces = null, spacesFailed = true) }
+            if (e is java.io.IOException) reachable(false)
             fail(e)
         }
     }
@@ -1184,6 +1294,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 block(api)
                 success?.let { toast(it, error = false) }
             } catch (e: Exception) {
+                if (e is java.io.IOException) reachable(false)
                 fail(e)
             }
         }
@@ -1227,6 +1338,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private fun reachable(ok: Boolean) {
         val record = _state.value.record ?: return
         val text = unreachableText(record)
+        val recovered = ok && _state.value.failure == text
         _state.update { s ->
             when {
                 ok && s.failure == text -> s.copy(failure = null)
@@ -1234,6 +1346,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 else -> s
             }
         }
+        // Back online: everything may have changed meanwhile (QA 18)
+        if (recovered) viewModelScope.launch { loadAll() }
     }
 
     private suspend fun fail(e: Exception) {
@@ -1244,7 +1358,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val text = when {
             e is ApiException && e.detail.startsWith("[") -> "Request failed" // 422 validation list (0.1)
             e is ApiException -> e.detail
-            else -> "Can't reach the server."
+            else -> _state.value.record?.let(::unreachableText) ?: "Can't reach the server."
         }
         toast(text, error = true)
     }
@@ -1256,9 +1370,14 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     private suspend fun markUnlinked() {
         val record = _state.value.record ?: return
-        events?.cancel()
-        app.servers.remove(record.id)
-        _state.update { it.copy(unlinked = true, failure = "This phone was unlinked from ${record.displayName}. Link it again.") }
+        val used = tokenInUse
+        teardown()
+        serverId = null
+        // Show nothing from that server any more, only why (QA 5)
+        _state.value = ServerState(connecting = false, unlinked = true, failure = "This phone was unlinked from ${record.displayName}. Open Servers to link it again.")
+        // Forget it here unless it was linked again meanwhile (a newer token: QA 2)
+        val stored = app.servers.token(record.id)
+        if (stored == null || stored == used) app.servers.remove(record.id)
     }
 
     fun toast(text: String, error: Boolean) {
@@ -1270,6 +1389,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         previewPlayer?.release()
         previewPlayer = null
         events?.cancel()
+        networkWatch?.let { cb -> runCatching { app.getSystemService(android.net.ConnectivityManager::class.java)?.unregisterNetworkCallback(cb) } }
         super.onCleared()
     }
 
