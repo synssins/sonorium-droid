@@ -177,7 +177,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                         Text("Edit theme", color = Palette.textSecondary, fontSize = 12.sp)
                         Text(ui.title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                    IconBox(SIcons.Help, "How a theme plays", { help = true })
+                    IconBox(SIcons.Help, "How a theme plays", { help = true }, size = 44)
                     Spacer(Modifier.width(6.dp))
                     MoreMenu("More theme options", listOf(MenuAction("Export theme", SIcons.Download) {
                         model.toast("Preparing export...", error = false)
@@ -187,7 +187,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                         }
                     }))
                     Spacer(Modifier.width(6.dp))
-                    IconBox(SIcons.Close, "Cancel", { cancel() })
+                    IconBox(SIcons.Close, "Cancel", { cancel() }, size = 44)
                 }
                 val hooks = ListHooks(editor, { ask = it }, ::upload, live, deleting) { deleting = it }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)) {
@@ -728,7 +728,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                         IconBox(SIcons.ChevronRight, "Back to themes", { source = null }, modifier = Modifier.padding(end = 8.dp))
                     }
                     Text(source?.name ?: "Add from another theme", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    IconBox(SIcons.Close, "Cancel", ::close)
+                    IconBox(SIcons.Close, "Cancel", ::close, size = 44)
                 }
                 Spacer(Modifier.height(8.dp))
                 val src = source

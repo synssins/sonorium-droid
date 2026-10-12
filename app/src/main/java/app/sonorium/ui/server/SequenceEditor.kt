@@ -103,7 +103,7 @@ fun SequenceEditorScreen(editor: ThemeEditor, ui: EditorUi, onAdvanced: (Int) ->
                         )
                         Spacer(Modifier.width(6.dp))
                     }
-                    IconBox(SIcons.Close, "Close", editor::closeSequence)
+                    IconBox(SIcons.Close, "Close", editor::closeSequence, size = 44)
                 }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)) {
                     item(key = "fields") {

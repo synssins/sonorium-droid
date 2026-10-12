@@ -359,7 +359,7 @@ private fun PlaylistEditor(
                         )
                         Spacer(Modifier.width(6.dp))
                     }
-                    IconBox(SIcons.Close, "Close", onClose, size = 40)
+                    IconBox(SIcons.Close, "Close", onClose, size = 44)
                 }
                 LazyColumn(state = list, modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp), horizontalAlignment = Alignment.Start) {
                     item {

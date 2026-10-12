@@ -85,6 +85,9 @@ enum class Page(val title: String, val icon: ImageVector, val webView: String?, 
     Status("Status", SIcons.Activity, null),
 }
 
+/** Every control in the top bar is this tall (dp): the web UI's 44 px touch size, so they line up. */
+private const val TOP_BAR_CONTROL = 44
+
 // The web UI's order (slots.js): Connection, Audio Settings, Floors & Areas, Speakers, Speaker Groups, Plugins, Logs, Advanced
 private val SETTINGS = listOf(Page.Connection, Page.Audio, Page.Spaces, Page.Speakers, Page.Groups, Page.Plugins, Page.Logs, Page.Advanced)
 
@@ -233,7 +236,7 @@ private fun TopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showMenuButton) {
-            IconBox(SIcons.Menu, "Menu", onMenu, tint = Palette.text, size = 44)
+            IconBox(SIcons.Menu, "Menu", onMenu, tint = Palette.text, size = TOP_BAR_CONTROL)
             Spacer(Modifier.width(10.dp))
         }
         Image(
@@ -246,9 +249,9 @@ private fun TopBar(
         Surface(
             color = Palette.accent,
             shape = RoundedCornerShape(8.dp),
-            modifier = Modifier.heightIn(min = 40.dp).widthIn(max = 200.dp).semantics { contentDescription = "Servers: $label" }.clickable(onClick = onServers),
+            modifier = Modifier.height(TOP_BAR_CONTROL.dp).widthIn(max = 200.dp).semantics { contentDescription = "Servers: $label" }.clickable(onClick = onServers),
         ) {
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(SIcons.Server, null, tint = Palette.bar, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(label, color = Palette.bar, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -262,7 +265,7 @@ private fun TopBar(
                 tint = if (personalOn) Palette.bar else Palette.accent,
                 background = if (personalOn) Palette.accent else Palette.backgroundSecondary,
                 border = Palette.accent,
-                size = 40,
+                size = TOP_BAR_CONTROL,
             )
         }
     }

@@ -94,7 +94,7 @@ data class MenuAction(
 
 /** The ⋯ button and its menu. */
 @Composable
-fun MoreMenu(description: String, items: List<MenuAction>, size: Int = 40) {
+fun MoreMenu(description: String, items: List<MenuAction>, size: Int = 44) {
     var open by remember { mutableStateOf(false) }
     Box {
         IconBox(SIcons.More, description, { open = true }, size = size)
@@ -224,6 +224,6 @@ fun EmptyState(title: String, sub: String?) {
 fun PageHelpButton(view: String) {
     val (title, lines) = HelpTexts.PAGES[view] ?: return
     var open by remember { mutableStateOf(false) }
-    IconBox(SIcons.Help, "Help: $title", { open = true }, size = 36)
+    IconBox(SIcons.Help, "Help: $title", { open = true }, size = 44)
     if (open) HelpPanel(title, lines) { open = false }
 }

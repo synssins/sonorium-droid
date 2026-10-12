@@ -369,7 +369,7 @@ fun HelpPanel(title: String, lines: List<HelpLine>, onClose: () -> Unit) {
             Column(Modifier.fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    IconBox(SIcons.Close, "Close help", onClose)
+                    IconBox(SIcons.Close, "Close help", onClose, size = 44)
                 }
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp)) {
                     lines.forEach { line ->

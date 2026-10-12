@@ -140,7 +140,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         Text(title, color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(sub, color = Palette.textSecondary, fontSize = 12.sp)
                     }
-                    IconBox(SIcons.Help, "Advanced transitions help", { help = true })
+                    IconBox(SIcons.Help, "Advanced transitions help", { help = true }, size = 44)
                     Spacer(Modifier.width(6.dp))
                     MoreMenu("More transition actions", listOf(MenuAction("Reset to Smooth…", SIcons.Refresh) {
                         ask = Ask("Reset every track in “$name” to Smooth?", null, "Reset") {
@@ -150,7 +150,7 @@ fun AdvancedDialog(editor: ThemeEditor, ui: EditorUi, index: Int, onClose: () ->
                         }
                     }))
                     Spacer(Modifier.width(6.dp))
-                    IconBox(SIcons.Close, "Cancel", onClose)
+                    IconBox(SIcons.Close, "Cancel", onClose, size = 44)
                 }
                 // Tabs with counts
                 Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {

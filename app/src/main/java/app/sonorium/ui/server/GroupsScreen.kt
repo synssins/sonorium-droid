@@ -284,7 +284,7 @@ private fun GroupEditor(
             Column(Modifier.safeDrawingPadding().imePadding().fillMaxSize()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(if (edit == null) "Add group" else "Edit group", color = Palette.text, fontSize = 20.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                    IconBox(SIcons.Close, "Close", onClose, size = 40)
+                    IconBox(SIcons.Close, "Close", onClose, size = 44)
                 }
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 20.dp)) {
                     item {
