@@ -76,26 +76,33 @@ Updated 2026-10-12 ~05:20 UTC by the second app session, for the next session. R
 - Still in the web view: Users & devices and Keys (never native), plugin-framework pages.
 
 ## State at hand-over
-- Releases tonight: alpha8, alpha9, **alpha10** (`ac99860`, Phase 3 native), **alpha11** (`4648d0b` =
-  `ad010a8` + notes: live updates for settings pages, crossfade range, Android 8 focus). Both emulators green.
-- Device test is now robust to: keyboard over buttons, stale/wrapper text fields, the notification shade,
-  the emulator's "Pixel Launcher isn't responding" dialog (`waitPastAnr`), and menu lookups (menu items
-  carry test tags `menu:<title>`, exposed as resource ids).
-- Mailbox: to-server/06 (Phase 3, alpha10) and 07 (alpha11). **to-app/11** (10:40 UTC): the server
-  session missed the night; it is validating **alpha11** now and will send Validated/Rejected per item
-  of notes 04, 05, 06. It OK'd: `This phone`, reorder via ⋯, in-app dialogs for Floors & Areas, theme
-  cards everywhere, Back = Cancel in the Theme Editor; `listen_path` only on the personal channel
-  (the app already falls back to `stream_path?local=1`). Engine API unchanged since `5a637af`.
-- `df7b910` (green, on ci-latest, not released): plugin-framework pages in the menu (web view).
-- No open questions.
+- Releases tonight: alpha8, alpha9, **alpha10** (`ac99860`, Phase 3 native), **alpha11** (`4648d0b`:
+  live updates for settings pages, crossfade range, Android 8 focus).
+- **Server session validated alpha11** (to-app/17): 48 rows Validated, 10 Rejected = issues R1-R9.
+  Fixed in `1ea7f5d` (pushed 11:32; CI result: see e2e-results, not released yet):
+  R1 channel editor sent `theme_id: null` (real bug: `?.let { put } ?: put(null)`), R2 default preset
+  after a theme pick, R3 Advanced Save (was cancelled with the dialog's scope), R5 deleted theme
+  coming back, R6 Back leaving the server (no BackHandler on pages), R7 picker text cut at half width,
+  R8 log times wrapping.
+  **Not fixed:** R4 (after Leave, the card's link strip keeps `Linked · …` + Leave instead of
+  `Left the link` + Rejoin; look at how ChannelCard reads `links[].left` vs the zones refresh) and R9
+  (Play a playlist should also open the Playlist menu: PickerField needs an "open now" request).
+- `df7b910` (in `1ea7f5d`): plugin-framework pages in the menu (web view).
+- to-app/18: Keys and Announcements become core features (server branch `core-features`, **not merged**
+  yet): `features.keys` / `features.announcements` with `default` and `live`; Advanced's Features rows
+  should list them (switch on/off; `live` = no restart); hide announce controls when
+  `features.announcements.enabled` is false. to-app/12-16 are for the Windows session: ignore.
+- Device test is robust to: keyboard over buttons, stale text fields, the notification shade, the
+  emulator's "isn't responding" dialog (`waitPastAnr`), menu lookups (test tags `menu:<title>`).
 
 ## Next, in order
-1. CI green on the latest commit → release, note in `to-server/` with the screenshot links.
-2. Act on `to-app/` replies (Rejected → fix). CI can't see real speakers/HA: the server session validates.
-3. Polish found by the screenshots (small phones, tablets); Theme Editor: Merry-go-round crossfade range
-   from playback values (now fixed 1–60), long-press drag (only ⋯ › Move to now), Advanced ▶ preview.
-4. `settings.changed` / `plugin.*` SSE: refetch the open settings page (not wired yet).
-5. Engine: act on Chris's lab numbers.
+1. If `1ea7f5d` is green: release **v0.1.0-alpha12**, note in to-server/ (R1-R3, R5-R8 fixed; R4, R9 open).
+   If red: fix (see e2e-results summary.md and screens/99-*.png).
+2. R4 and R9 (above). Then the server session's other notes in to-app/17 ("Other findings").
+3. When `core-features` merges: Keys / Announcements rows in Advanced › Features; hide announce
+   controls when off.
+4. Theme Editor extras: long-press drag (now ⋯ › Move to), Advanced ▶ transition preview.
+5. Engine: act on Chris's lab numbers (enginelab/README.md).
 
 ## Rules that matter
 - Behave exactly like the web UI (toasts, texts, order) per native-api.md; Chris's wording verbatim.
