@@ -1,5 +1,12 @@
 ## What's new in this build
 
+- **Touch sizes: 48 dp** (your decision): buttons and icon buttons are 48 dp (small ones 44 dp), the top bar's buttons are all the same 48 dp, collapsed channel rows are 56 dp tall.
+- **Leave on a linked channel** now shows "Left the link" with **Rejoin**.
+- **Play a playlist** opens the playlist menu at once.
+- **Back with the menu open** just closes the menu.
+- Linking with a username and password follows the server's new `accounts` flag.
+
+### Earlier (alpha12)
 - **Fixes from the server session's check of alpha11:** New/Edit Channel now saves the theme you pick (it was lost), and preselects the theme's ★ preset; a sequence step's **Advanced… › Save** saves properly; a deleted theme leaves the Themes list at once; **Back** on any page returns to Channels (it used to leave the server); dropdowns use their full width before "…"; log times fit on one line.
 - **One size standard for buttons** (shared with the web UI): top-bar and header buttons are all the same height (the headphone button was smaller); small icon buttons are a bit larger; text sizes follow one scale.
 
@@ -23,6 +30,8 @@
 - Each page's **?** button shows its help (the web UI's texts): Channels, Playlists, Themes, Speakers, Speaker Groups, Floors & Areas, Status.
 
 ## Please test
+
+- Top bar: the menu, server and headphone buttons are the same height. Leave/Rejoin a link (Zones). Play a playlist on a card: the menu opens. Open the ☰ menu, press Back: only the menu closes.
 
 0. New Channel: pick a theme: its ★ preset is chosen; Create: the channel plays that theme. Back from My channel / Themes returns to Channels.
 
