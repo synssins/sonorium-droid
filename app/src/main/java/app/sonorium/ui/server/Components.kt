@@ -177,7 +177,7 @@ fun IconBox(
             .size(size.dp)
             .alpha(if (enabled) 1f else app.sonorium.ui.UiSize.DISABLED_ALPHA)
             .semantics { contentDescription = description }
-            .clickable(enabled = enabled, onClick = onClick),
+            .clickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
     ) {
         Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = tint, modifier = Modifier.size((if (size >= app.sonorium.ui.UiSize.STANDARD) app.sonorium.ui.UiSize.GLYPH else app.sonorium.ui.UiSize.GLYPH_SMALL).dp)) }
     }

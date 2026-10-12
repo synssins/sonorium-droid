@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.sonorium.SonoriumApp
 import app.sonorium.local.LocalTheme
+import app.sonorium.local.StarterThemes
 import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
 import app.sonorium.net.PackageSummary
@@ -99,6 +100,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val app = application as SonoriumApp
     private val _state = MutableStateFlow(ServerState())
     val state: StateFlow<ServerState> = _state.asStateFlow()
+    /** A page to show, asked from outside the screen (a notification opens My channel). */
+    val requestedPage = MutableStateFlow<String?>(null)
     private val _toasts = MutableStateFlow<Toast?>(null)
     val toasts: StateFlow<Toast?> = _toasts.asStateFlow()
 
@@ -909,6 +912,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     fun refreshLocalThemes() = viewModelScope.launch {
         val store = app.themeStore
         var folder = store.folderState()
+        // The themes the app ships with, copied into the folder once (they show at once below)
+        if (folder == ThemeStore.FolderState.OK) runCatching { StarterThemes.installOnce(getApplication(), store) }
         val list = if (folder == ThemeStore.FolderState.OK) {
             runCatching { store.list() }
                 .onFailure { android.util.Log.w("LocalThemes", "Couldn't read the themes folder", it); folder = ThemeStore.FolderState.MISSING }

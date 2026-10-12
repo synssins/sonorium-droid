@@ -23,6 +23,7 @@ class NativeServerActivity : ComponentActivity() {
         // No server: the main screen still opens (Connect button, browse, local themes)
         val id = intent.getStringExtra(EXTRA_SERVER_ID)
         model.open(id)
+        pageFrom(intent)
         askForNotifications()
         setContent {
             SonoriumTheme {
@@ -32,6 +33,19 @@ class NativeServerActivity : ComponentActivity() {
                     onWebPage = { view -> id?.let { startActivity(ServerActivity.intent(this, it, view)) } },
                 )
             }
+        }
+    }
+
+    /** A notification of the phone's player or cast opens My channel. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pageFrom(intent)
+    }
+
+    private fun pageFrom(intent: Intent?) {
+        if (intent?.getStringExtra(app.sonorium.engine.OpenApp.EXTRA_OPEN_PAGE) == app.sonorium.engine.OpenApp.PAGE_MY_CHANNEL) {
+            model.requestedPage.value = app.sonorium.engine.OpenApp.PAGE_MY_CHANNEL
         }
     }
 

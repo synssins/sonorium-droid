@@ -122,7 +122,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     header()
-                    PageHeader("On this phone", themes?.size, help = "themes") {
+                    PageHeader("On this phone", themes?.size, help = "phone-themes") {
                         Button(
                             onClick = startImport, enabled = importing == null,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),

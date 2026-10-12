@@ -297,10 +297,10 @@ private fun ThemeCard(
             else -> Palette.border
         }),
     ) {
-        Column(Modifier.padding(14.dp)) {
+        Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.Top) {
-                Text(ChannelRules.themeIcon(t.id, t), fontSize = 26.sp)
-                Spacer(Modifier.width(10.dp))
+                Text(ChannelRules.themeIcon(t.id, t), fontSize = 22.sp)
+                Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(t.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(ThemeRules.tracks(t.totalTracks), color = Palette.textSecondary, fontSize = 12.sp)
@@ -348,7 +348,7 @@ private fun ThemeCard(
                         .clickable(enabled = can, onClick = onPreview),
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(if (previewing) SIcons.Stop else SIcons.Play, null, tint = Palette.text, modifier = Modifier.size(18.dp))
+                        Icon(if (previewing) SIcons.Stop else SIcons.Play, null, tint = Palette.text, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH.dp))
                     }
                 }
                 Spacer(Modifier.weight(1f))

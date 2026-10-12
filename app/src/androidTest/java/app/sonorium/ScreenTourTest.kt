@@ -146,7 +146,8 @@ class ScreenTourTest {
         shot("menu-settings-open")
         val titles = device.findObjects(By.res(java.util.regex.Pattern.compile("menu:.*")))
             .mapNotNull { it.resourceName?.removePrefix("menu:") }
-            .filter { it != "Settings" }
+            // Servers opens its own screen (shot separately from the top bar)
+            .filter { it != "Settings" && it != "Servers" }
             .distinct()
         back()
         titles.forEach { title ->

@@ -122,6 +122,14 @@ fun ServerScreen(
         if (p.webView != null) onWebPage(p.webView) else page = p
     }
 
+    // Asked from outside (a notification): My channel
+    val requested by model.requestedPage.collectAsState()
+    LaunchedEffect(requested) {
+        if (requested == app.sonorium.engine.OpenApp.PAGE_MY_CHANNEL) {
+            page = Page.Personal
+            model.requestedPage.value = null
+        }
+    }
     // A page this account can't open (e.g. restored after Android closed the app): back to Channels (QA 20)
     LaunchedEffect(page, state.me) {
         val perm = page.perm
@@ -179,7 +187,7 @@ fun ServerScreen(
                                 onRetry = { model.connect() },
                                 onPhone = { page = Page.Personal },
                             )
-                            page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening)
+                            page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening, onPhoneThemes = { page = Page.Themes; themesOnPhone = true })
                             page == Page.Playlists -> PlaylistsPage(state, model)
                             page == Page.Groups -> GroupsPage(state, model)
                             page == Page.Speakers -> SpeakersPage(state, model)
@@ -191,7 +199,7 @@ fun ServerScreen(
                             page == Page.Logs -> LogsPage(model)
                             page == Page.Advanced -> AdvancedSettingsPage(state, model)
                             // Themes: the server's, or the ones on this phone (the only ones without a server)
-                            page == Page.Themes && state.record == null -> LocalThemesPage(model)
+                            page == Page.Themes && state.record == null -> LocalThemesPage(model, hasServer = false)
                             page == Page.Themes -> Column(Modifier.fillMaxSize()) {
                                 Segmented(
                                     listOf("On ${state.record?.displayName.orEmpty()}", "On this phone"),
@@ -200,7 +208,7 @@ fun ServerScreen(
                                     Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
                                 )
                                 when {
-                                    themesOnPhone -> LocalThemesPage(model)
+                                    themesOnPhone -> LocalThemesPage(model, hasServer = true)
                                     state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { themesOnPhone = true })
                                     else -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                                 }
