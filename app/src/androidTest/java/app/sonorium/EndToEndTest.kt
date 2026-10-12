@@ -196,6 +196,16 @@ class EndToEndTest {
                 need(By.text("CI floor"), 10_000, "25-floor-added", "The new floor isn't listed")
             }
             screenshot("25-spaces")
+
+            // Settings › Connection (Phase 3): the core rows on a standalone server; Edit MQTT, Cancel
+            openPage("Connection", settings = true)
+            need(By.text("MQTT"), 15_000, "29-connection", "The Connection page didn't list MQTT")
+            find(By.text("Home Assistant"), "No Home Assistant row")
+            screenshot("29-connection")
+            device.findObjects(By.text("Edit")).getOrNull(1)?.click() ?: throw AssertionError("No Edit on the MQTT row")
+            need(By.desc("Broker"), 10_000, "29-connection-edit", "The MQTT dialog didn't open")
+            screenshot("29-connection-edit")
+            find(By.text("Cancel"), "No Cancel in the MQTT dialog").click()
             openPage("Channels")
             need(By.text(channelName), 15_000, "26-back", "Channels didn't come back")
 

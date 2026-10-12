@@ -79,11 +79,12 @@ enum class Page(val title: String, val icon: ImageVector, val webView: String?, 
     Advanced("Advanced", SIcons.Settings, "settings-advanced", "st.change"),
     Logs("Logs", SIcons.Activity, "settings-logs", "st.view"),
     Plugins("Plugins", SIcons.Settings, "settings-plugins", "admin.plugins"),
-    Connection("Connection", SIcons.Link, "settings-connection", "admin.connection"),
+    Connection("Connection", SIcons.Link, null, "admin.connection"),
     Status("Status", SIcons.Activity, null),
 }
 
-private val SETTINGS = listOf(Page.Speakers, Page.Groups, Page.Spaces, Page.Audio, Page.Advanced, Page.Logs, Page.Plugins, Page.Connection)
+// The web UI's order (slots.js): Connection, Audio Settings, Floors & Areas, Speakers, Speaker Groups, Plugins, Logs, Advanced
+private val SETTINGS = listOf(Page.Connection, Page.Audio, Page.Spaces, Page.Speakers, Page.Groups, Page.Plugins, Page.Logs, Page.Advanced)
 
 @Composable
 fun ServerScreen(
@@ -154,6 +155,7 @@ fun ServerScreen(
                             page == Page.Speakers -> SpeakersPage(state, model)
                             page == Page.Spaces -> SpacesPage(state, model)
                             page == Page.Status -> StatusPage(state, model)
+                            page == Page.Connection -> ConnectionPage(state, model)
                             page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                             else -> ChannelsPage(
                                 state = state,
@@ -276,7 +278,7 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
         MenuItem(Page.Playlists, current, onOpen)
         Section("Configuration")
         MenuItem(Page.Themes, current, onOpen)
-        val settings = SETTINGS.filter { it.perm == null || it.perm in perms }
+        val settings = SETTINGS.filter { (it.perm == null || it.perm in perms) && (it != Page.Connection || state.connectionPage) }
         MenuRow(SIcons.Settings, "Settings", selected = false, trailing = if (settingsOpen) SIcons.ChevronDown else SIcons.ChevronRight) { settingsOpen = !settingsOpen }
         if (settingsOpen) {
             settings.forEach { MenuItem(it, current, onOpen, indent = true) }

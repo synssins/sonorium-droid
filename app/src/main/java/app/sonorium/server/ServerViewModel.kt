@@ -70,6 +70,8 @@ data class ServerState(
     /** Whether the server has Home Assistant, as far as this caller can tell (GET /connection). */
     val hasHa: Boolean = true,
     val categories: List<String> = emptyList(),
+    /** Settings › Connection is listed: GET /connection answered or a plugin declares a connection. */
+    val connectionPage: Boolean = false,
 ) {
     val personalChannel: Boolean get() = info?.personalChannel == true
     val playingCount: Int get() = sessions.count { it.isPlaying }
@@ -158,6 +160,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { guard { api.playlists() }?.let { p -> _state.update { it.copy(playlists = p) } } }
         viewModelScope.launch { guard { api.groups() }?.let { g -> _state.update { it.copy(groups = g) } } }
         viewModelScope.launch { refreshSpeakers() }
+        viewModelScope.launch { refreshConnectionPage() }
         viewModelScope.launch { guard { api.status() }?.let { s -> _state.update { it.copy(version = s.version) } } }
         viewModelScope.launch { guard { api.install() }?.let { i -> _state.update { it.copy(installLabel = i.label) } } }
         if (_state.value.personalChannel) viewModelScope.launch { refreshPersonal() }
@@ -746,6 +749,63 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         previewPlayer?.clearMediaItems()
         _preview.value = null
     }
+
+    // ---------- Phase 3 Settings pages ----------
+
+    suspend fun refreshConnectionPage() {
+        val api = api ?: return
+        val core = runCatching { api.json("GET", "connection") }.isSuccess
+        val plugins = !core && runCatching { (api.json("GET", "extensions")["connections"] as? kotlinx.serialization.json.JsonArray)?.isNotEmpty() == true }.getOrDefault(false)
+        _state.update { it.copy(connectionPage = core || plugins) }
+    }
+
+
+    /** After Home Assistant is removed: speakers, groups, channels and network info change (`afterHomeAssistantRemoved`). */
+    fun afterHomeAssistantRemoved() = viewModelScope.launch {
+        refreshSpeakers()
+        refreshGroups()
+        refreshSessions()
+        refreshNetwork()
+    }
+
+    /** One server call for a page; an unlinked answer forgets the token. */
+    suspend fun <T> call(block: suspend (SonoriumApi) -> T): Result<T> {
+        val api = api ?: return Result.failure(IllegalStateException("Not connected"))
+        return try {
+            Result.success(block(api))
+        } catch (e: ApiException) {
+            if (e.unlinked) markUnlinked()
+            Result.failure(e)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** The message a page shows for a failed call (`error.message || fallback`). */
+    fun messageOf(e: Throwable?, fallback: String): String = when (e) {
+        is ApiException -> e.firstMessage ?: e.detail.takeIf { it.isNotBlank() && !it.startsWith("{") } ?: fallback
+        null -> fallback
+        else -> fallback.ifEmpty { "Can't reach the server." }
+    }
+
+    /** `spWaitForRestart`: 3 s, then up to 30 tries of GET /install every 2 s; then everything reloads. */
+    fun waitForRestart() = viewModelScope.launch {
+        val api = api ?: return@launch
+        delay(3_000)
+        repeat(30) {
+            if (runCatching { api.install() }.isSuccess) {
+                loadAll()
+                _restarted.value = System.nanoTime()
+                return@launch
+            }
+            delay(2_000)
+        }
+        toast("Sonorium is taking a while to restart. Refresh the page in a moment.", error = true)
+    }
+
+    private val _restarted = MutableStateFlow(0L)
+    /** Changes after a restart finished: pages refetch their own data. */
+    val restarted: StateFlow<Long> = _restarted.asStateFlow()
 
     // ---------- Theme Editor (Phase 3) ----------
 

@@ -372,6 +372,23 @@ class SonoriumApi(
 
     private fun theme(themeId: String, vararg segments: String): Request.Builder = request("themes").url(themeUrl(themeId, *segments))
 
+    // ---------- Phase 3 Settings pages: plain JSON calls (`/api/<path>`, the web's api() rules) ----------
+
+    /** [method] `/api/<path>` with an optional JSON body; a 2xx `{"error": …}` fails too. */
+    suspend fun json(method: String, path: String, body: JsonObject? = null): JsonObject {
+        val b = body?.toString()?.toRequestBody(JSON) ?: if (method == "GET" || method == "DELETE") null else EMPTY
+        val text = strict(request(path).method(method, b).build())
+        return runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: JsonObject(emptyMap())
+    }
+
+    /** `GET /api/<path>` as raw bytes (downloads). */
+    suspend fun bytes(path: String): ByteArray = withContext(Dispatchers.IO) {
+        client.newCall(request(path).get().build()).execute().use { response ->
+            if (!response.isSuccessful) throw ApiException.from(response.code, response.body.string(), null)
+            response.body.bytes()
+        }
+    }
+
     // ---------- The personal channel (planned: /api/info.personal_channel) ----------
 
     suspend fun myChannel(): Session = get("me/channel")
