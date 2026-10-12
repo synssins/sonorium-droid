@@ -404,6 +404,42 @@ class SonoriumApi(
         }
     }
 
+    // ---------- Theme packages (APP_API.md 10): downloading a theme to the phone ----------
+
+    suspend fun themePackages(): List<PackageSummary> = get<ThemePackages>("themes/packages").packages
+
+    suspend fun themePackage(themeId: String): ThemePackage = decode(execute(theme(themeId, "package").get().build()))
+
+    /**
+     * Downloads one file of a theme package into [dest], resuming after the bytes already there
+     * (`Range` + `If-Range` with the file's ETag, the sha256 the package lists). [onBytes] gets each chunk's size.
+     */
+    suspend fun downloadThemeFile(themeId: String, file: PackageFile, dest: java.io.File, onBytes: (Long) -> Unit) = withContext(Dispatchers.IO) {
+        val have = if (dest.exists()) dest.length() else 0L
+        if (have == file.size) return@withContext
+        val req = theme(themeId, "files", *file.path.split('/').toTypedArray()).get().apply {
+            if (have in 1 until file.size) {
+                header("Range", "bytes=$have-")
+                header("If-Range", "\"${file.sha256}\"")
+            }
+        }.build()
+        client.newCall(req).execute().use { response ->
+            if (!response.isSuccessful) throw ApiException.from(response.code, response.body.string(), response.header("Retry-After"))
+            val append = response.code == 206
+            if (!append && have > 0) onBytes(-have)
+            java.io.FileOutputStream(dest, append).use { out ->
+                val input = response.body.byteStream()
+                val buf = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                    onBytes(n.toLong())
+                }
+            }
+        }
+    }
+
     // ---------- The personal channel (planned: /api/info.personal_channel) ----------
 
     suspend fun myChannel(): Session = get("me/channel")

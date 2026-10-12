@@ -7,7 +7,22 @@ import os
 
 os.environ.setdefault("SONORIUM_LOG_LEVEL", "warning")
 
+from sonorium import playback_values as _values  # noqa: E402
 from sonorium.engine import Engine, PcmFileDecoder, mirror_lookup  # noqa: E402
+
+MARKER = ".sonorium-package.json"
+
+
+def package_values(theme_dir):
+    """The server's Advanced values saved with a downloaded theme (known keys only), else {}."""
+    try:
+        with open(os.path.join(theme_dir, MARKER), encoding="utf-8") as f:
+            values = json.load(f).get("playback_values") or {}
+        values = {k: v for k, v in values.items() if k in _values.DEFAULTS}
+        _values.validate(values)
+        return values
+    except (OSError, ValueError, AttributeError):
+        return {}
 
 
 class Player:
@@ -17,6 +32,7 @@ class Player:
         self.engine = Engine(
             theme_dir,
             preset_id=preset_id or None,
+            playback_values=package_values(theme_dir),
             seed=int(seed),
             decoder=PcmFileDecoder(lookup=mirror_lookup(theme_dir, cache_dir)),
         )

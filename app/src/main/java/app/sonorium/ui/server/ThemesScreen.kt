@@ -37,6 +37,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -83,6 +84,27 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     var managing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<ThemeSummary?>(null) }
     var pendingExport by remember { mutableStateOf<ByteArray?>(null) }
+    val packages by model.packages.collectAsState()
+    val localThemes by model.localThemes.collectAsState()
+    val downloads by model.downloads.collectAsState()
+    val isPro by model.entitlement.isPro.collectAsState()
+    var unlockFor by remember { mutableStateOf<String?>(null) }
+    var folderFor by remember { mutableStateOf<String?>(null) }
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        val id = folderFor
+        folderFor = null
+        if (uri == null || id == null) return@rememberLauncherForActivityResult
+        runCatching { model.themeStore.setRoot(uri) }
+            .onSuccess { model.saveThemeToPhone(id) }
+            .onFailure { model.toast("Couldn't use that folder", error = true) }
+    }
+    fun saveToPhone(id: String) {
+        when {
+            !isPro -> unlockFor = id
+            model.themeStore.root == null -> { folderFor = id; pickFolder.launch(app.sonorium.local.ThemeStore.suggestedStart()) }
+            else -> model.saveThemeToPhone(id)
+        }
+    }
 
     val saveZip = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         val bytes = pendingExport
@@ -104,6 +126,8 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     LaunchedEffect(Unit) {
         model.refreshCategories()
         model.refreshThemeList()
+        model.refreshPackages()
+        model.refreshLocalThemes()
     }
 
     val themes = state.themes
@@ -181,6 +205,10 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                         onEdit = { onEdit(t) },
                         onExport = { model.exportTheme(t) { name, bytes -> pendingExport = bytes; saveZip.launch(name) } },
                         onDelete = { deleting = t },
+                        phoneAction = app.sonorium.local.PackageRules.action(packages?.get(t.id), localThemes),
+                        onPhone = app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) != app.sonorium.local.PackageRules.OnPhone.NONE,
+                        downloading = downloads[t.id],
+                        onSaveToPhone = { saveToPhone(t.id) },
                     )
                 }
             }
@@ -199,6 +227,9 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                 }
             }
         }, onDismiss = { creating = false })
+    }
+    unlockFor?.let { id ->
+        UnlockScreen(model, onClose = { unlockFor = null }, onUnlocked = { unlockFor = null; saveToPhone(id) })
     }
     if (managing) CategoriesDialog(state, model, onClosedChip = { if (chip == it) chip = ThemeRules.ALL }, onDismiss = { managing = false })
     deleting?.let { t ->
@@ -249,6 +280,10 @@ private fun ThemeCard(
     onEdit: () -> Unit,
     onExport: () -> Unit,
     onDelete: () -> Unit,
+    phoneAction: String? = null,
+    onPhone: Boolean = false,
+    downloading: Float? = null,
+    onSaveToPhone: () -> Unit = {},
 ) {
     val onAir = ThemeRules.onAir(t.id, state.sessions)
     Surface(
@@ -277,7 +312,7 @@ private fun ThemeCard(
             if (t.description.isNotBlank()) {
                 Text(t.description, color = Palette.textSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
             }
-            if (onAir.isNotEmpty() || t.categories.isNotEmpty()) {
+            if (onAir.isNotEmpty() || t.categories.isNotEmpty() || onPhone) {
                 FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     if (onAir.isNotEmpty()) {
                         Row(
@@ -287,6 +322,13 @@ private fun ThemeCard(
                             Dot(Palette.accent)
                             Spacer(Modifier.width(4.dp))
                             Text(ThemeRules.onAirLabel(onAir), color = Palette.accent, fontSize = 12.sp)
+                        }
+                    }
+                    if (onPhone) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(SIcons.Headphones, null, tint = Palette.textSecondary, modifier = Modifier.size(12.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(if (phoneAction != null) "On this phone · update ready" else "On this phone", color = Palette.textSecondary, fontSize = 12.sp)
                         }
                     }
                     t.categories.forEach { Badge(it) }
@@ -311,10 +353,18 @@ private fun ThemeCard(
                     Text("Edit", color = Palette.text)
                 }
                 Spacer(Modifier.width(6.dp))
-                MoreMenu("More for ${t.name}", listOf(
+                MoreMenu("More for ${t.name}", listOfNotNull(
+                    phoneAction?.takeIf { downloading == null }?.let { MenuAction(it, SIcons.Headphones, onClick = onSaveToPhone) },
                     MenuAction("Export", SIcons.Download, onClick = onExport),
                     MenuAction("Delete…", SIcons.Trash, danger = true, separatorBefore = true, onClick = onDelete),
                 ))
+            }
+            if (downloading != null) {
+                Text("Saving to this phone… ${(downloading * 100).toInt()}%", color = Palette.textSecondary, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                LinearProgressIndicator(
+                    progress = { downloading }, color = Palette.accent, trackColor = Palette.backgroundSecondary,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                )
             }
         }
     }

@@ -24,6 +24,9 @@ data class LocalTheme(
     val categories: List<String> = emptyList(),
     val tracks: Int = 0,
     val bytes: Long = 0,
+    /** Downloaded from a server ([MARKER]): the server's theme id and the package's content hash. */
+    val themeId: String? = null,
+    val contentHash: String? = null,
 )
 
 /**
@@ -86,11 +89,14 @@ class ThemeStore(private val context: Context) {
             ?.let { runCatching { SonoriumApi.json.parseToJsonElement(it) as? JsonObject }.getOrNull() }
         if (meta == null && audio.isEmpty()) return null
         fun s(k: String) = (meta?.get(k) as? JsonPrimitive)?.takeIf { it.isString }?.content
+        val marker = files.firstOrNull { it.name == MARKER }?.let { readText(tree, it.id) }
+            ?.let { runCatching { SonoriumApi.json.parseToJsonElement(it) as? JsonObject }.getOrNull() }
+        fun m(k: String) = (marker?.get(k) as? JsonPrimitive)?.takeIf { it.isString }?.content
         return LocalTheme(
             docId = dir.id, folder = dir.name, name = s("name")?.ifBlank { null } ?: dir.name,
             icon = s("icon").orEmpty(), description = s("description").orEmpty(),
             categories = (meta?.get("categories") as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty(),
-            tracks = audio.size, bytes = bytes,
+            tracks = audio.size, bytes = bytes, themeId = m("theme_id"), contentHash = m("content_hash"),
         )
     }
 
@@ -191,10 +197,48 @@ class ThemeStore(private val context: Context) {
         runCatching { DocumentsContract.deleteDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, theme.docId)) }.getOrDefault(false)
     }
 
+    /**
+     * Puts a downloaded theme into the themes folder: [paths] (relative to [source]) and the [marker] file.
+     * Written beside [replacing] first, which is removed only once the copy is complete.
+     * Returns the folder name.
+     */
+    suspend fun install(source: java.io.File, paths: List<String>, name: String, marker: String, replacing: LocalTheme?): String = withContext(Dispatchers.IO) {
+        val tree = root ?: throw ImportProblem("Choose a folder for themes first")
+        val rootId = rootId(tree)
+        val siblings = children(tree, rootId)
+        val taken = siblings.map { it.name.lowercase() }.toSet()
+        val finalName = replacing?.folder ?: PackageRules.folderName(name, taken)
+        val workName = if (replacing == null) finalName else PackageRules.folderName("$finalName (new)", taken)
+        val folder = create(tree, rootId, DocumentsContract.Document.MIME_TYPE_DIR, workName)
+        try {
+            val dirs = mutableMapOf("" to folder)
+            paths.forEach { path ->
+                val rel = path.split('/')
+                val doc = create(tree, dirOf(tree, dirs, rel.dropLast(1)), mimeOf(rel.last()), rel.last())
+                resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, doc))?.use { out ->
+                    java.io.File(source, path).inputStream().use { it.copyTo(out) }
+                } ?: throw ImportProblem("Couldn't write to the themes folder")
+            }
+            val doc = create(tree, folder, "application/json", MARKER)
+            resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, doc))?.use { it.write(marker.toByteArray()) }
+        } catch (e: Exception) {
+            runCatching { DocumentsContract.deleteDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, folder)) }
+            throw e
+        }
+        if (replacing != null) {
+            DocumentsContract.deleteDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, replacing.docId))
+            DocumentsContract.renameDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, folder), finalName)
+        }
+        finalName
+    }
+
     class ImportProblem(message: String) : Exception(message)
 
     companion object {
         private const val KEY_ROOT = "themeFolder"
+
+        /** In a theme folder downloaded from a server: theme id, content hash, the server's playback values. */
+        const val MARKER = ".sonorium-package.json"
         private val AUDIO = setOf("mp3", "wav", "flac", "ogg", "m4a", "aac", "opus")
         fun isAudio(name: String) = name.substringAfterLast('.', "").lowercase() in AUDIO
         fun mimeOf(name: String): String = when (name.substringAfterLast('.', "").lowercase()) {
