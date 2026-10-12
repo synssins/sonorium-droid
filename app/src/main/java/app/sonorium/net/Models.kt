@@ -69,3 +69,10 @@ data class Me(
     val plugins: List<String> = emptyList(),
     val starting: Boolean = false,
 )
+
+/** `POST /api/sessions/{id}/listen`. */
+@Serializable
+data class ListenSlot(
+    @SerialName("channel_id") val channelId: Int,
+    @SerialName("stream_path") val streamPath: String,
+)

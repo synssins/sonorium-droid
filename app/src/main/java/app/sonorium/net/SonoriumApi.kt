@@ -30,6 +30,14 @@ class SonoriumApi(
 
     suspend fun me(): Me = get("auth/me")
 
+    /** Starts (or keeps) a channel's mix for a listener; APP_API.md 9.3. */
+    suspend fun listen(sessionId: String): ListenSlot =
+        decode(execute(request("sessions/$sessionId/listen").post(ByteArray(0).toRequestBody(null)).build()))
+
+    suspend fun stopListening(sessionId: String) {
+        execute(request("sessions/$sessionId/listen").delete().build())
+    }
+
     private suspend inline fun <reified T> get(path: String): T =
         decode(execute(request(path).get().build()))
 

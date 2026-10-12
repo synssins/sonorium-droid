@@ -1,6 +1,8 @@
 ## What's new in this build
 
-- **Servers** in the menu (System section) returns to the server list, to switch servers. Back does the same.
+- **Listen here plays in the background:** the channel card's 🎧 Listen button now plays through the app's own player. It keeps playing with the screen off or in another app, with controls on the lock screen and in the notification. Pause there stops listening; Play starts it again. Unplugging headphones pauses. If Wi-Fi drops, it reconnects.
+- The card's listen volume slider sets the phone's volume for that channel.
+- Android 13+ asks once to allow notifications (for the playback controls).
 - **Menu fix:** the ☰ menu button opens the menu; before, it only dimmed the screen. The app's web view told the page its screen height was 0, so the menu (and the sidebar on wide screens) had no height.
 - **Old phones:** if the phone's Android System WebView is too old for the web UI (older than version 106), the app says so and offers **Update**, which opens it in the Play Store.
 - The server's web UI opens inside the app (since alpha4).
@@ -22,10 +24,10 @@
 5. Leave the app and come back: the page is still there and up to date.
 6. Tablet: open a server and check both orientations.
 7. ☰ › **Servers**: the server list opens; tap another server to switch.
+8. Listen: tap 🎧 on a channel. Sound plays on the phone. Turn the screen off: it keeps playing. Use Pause and Play on the lock screen: the card's button follows. Change the listen slider. Walk out of Wi-Fi range and back: it reconnects.
 
 ## Not built yet
 
-- **Listen here** plays inside the page, so it stops when the screen turns off. Lock-screen controls and background playback come next.
 - Cast, finding servers on the network, downloads (theme export, logs) and theme uploads from the phone.
 
 ## Known issues

@@ -37,6 +37,7 @@ import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import app.sonorium.SonoriumApp
 import app.sonorium.data.ServerRecord
+import app.sonorium.listen.ListenController
 import app.sonorium.net.PinnedTls
 import app.sonorium.net.SonoriumApi
 import app.sonorium.ui.Card
@@ -52,7 +53,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 
 /** One linked server's web UI, through the [LoopbackProxy]. */
@@ -258,7 +262,26 @@ class ServerActivity : ComponentActivity() {
 
     private fun onPageMessage(raw: String) {
         val message = runCatching { Json.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return
-        when ((message["type"] as? JsonPrimitive)?.content) {
+        fun text(key: String) = (message[key] as? JsonPrimitive)?.content
+        fun number(key: String) = (message[key] as? JsonPrimitive)?.content?.toDoubleOrNull()?.toInt()
+        val serverId = intent.getStringExtra(EXTRA_SERVER_ID)
+        when (text("type")) {
+            // The page loaded (or reloaded): tell it what the app is playing.
+            "ready" -> sendListening(ListenController.state.value)
+            "listen" -> {
+                val sessionId = text("sessionId") ?: return
+                val url = text("url") ?: return
+                askForNotifications()
+                ListenController.listen(
+                    this, serverId ?: return, sessionId, url,
+                    name = text("name").orEmpty(), themeName = text("themeName").orEmpty(), volume = number("volume") ?: 100,
+                )
+            }
+            "stopListening" -> text("sessionId")?.let { ListenController.stop(this, it) }
+            "setListenVolume" -> {
+                val sessionId = text("sessionId") ?: return
+                ListenController.setVolume(this, sessionId, number("volume") ?: return)
+            }
             // The page's Servers item: back to the server list.
             "showServers" -> finish()
             "unlinked" -> lifecycleScope.launch {
@@ -269,10 +292,38 @@ class ServerActivity : ComponentActivity() {
     }
 
     /** Tells the page something, e.g. `refresh` after the app comes back. */
-    private fun sendToPage(type: String) {
+    private fun sendToPage(type: String, data: JsonObject? = null) {
         val proxyReply = reply ?: return
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            runCatching { proxyReply.postMessage("""{"type":"$type"}""") }
+            val message = buildJsonObject {
+                put("type", type)
+                data?.let { put("data", it) }
+            }
+            runCatching { proxyReply.postMessage(message.toString()) }
+        }
+    }
+
+    /** The native player's state, so the card's Listen button follows the lock screen. */
+    private var lastSentListening: ListenController.Listening? = null
+
+    private fun sendListening(listening: ListenController.Listening?) {
+        val serverId = intent.getStringExtra(EXTRA_SERVER_ID)
+        val previous = lastSentListening
+        lastSentListening = listening
+        val target = listening?.takeIf { it.serverId == serverId }
+            ?: previous?.takeIf { it.serverId == serverId }?.copy(playing = false)
+            ?: return
+        sendToPage("listening", buildJsonObject {
+            put("sessionId", target.sessionId)
+            put("playing", target.playing)
+        })
+    }
+
+    private fun askForNotifications() {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1)
         }
     }
 
@@ -287,6 +338,18 @@ class ServerActivity : ComponentActivity() {
             screen = Screen.Failed("This phone was unlinked from ${record.label}. Link it again.")
         }
     }
+
+    override fun onStart() {
+        super.onStart()
+        listenWatch = lifecycleScope.launch { ListenController.state.collect { sendListening(it) } }
+    }
+
+    override fun onStop() {
+        listenWatch?.cancel()
+        super.onStop()
+    }
+
+    private var listenWatch: kotlinx.coroutines.Job? = null
 
     override fun onResume() {
         super.onResume()

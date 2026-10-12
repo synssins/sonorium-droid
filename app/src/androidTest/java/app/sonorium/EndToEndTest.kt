@@ -15,10 +15,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import app.sonorium.listen.ListenController
 import app.sonorium.web.WebViewSupport
 import java.io.File
 import org.hamcrest.Matchers.containsString
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -75,14 +77,42 @@ class EndToEndTest {
             device.setOrientationNatural()
             Thread.sleep(2_000)
 
-            // 4. The menu's Servers item returns to the server list.
+            // 4. Listen here plays natively: the card's Listen button starts the app's player.
+            onWebView().perform(
+                Atoms.script("document.querySelector('[onclick*=\"chToggleListen\"]').click(); return true;"),
+            )
+            val playing = waitFor(30_000) { ListenController.state.value?.playing == true }
+            screenshot("04-listening")
+            device.openNotification()
+            Thread.sleep(2_000)
+            screenshot("05-notification")
+            device.pressBack()
+            Thread.sleep(1_000)
+            assertTrue("The native player didn't start: ${ListenController.state.value}", playing)
+
+            // ...and the same button stops it.
+            onWebView().perform(
+                Atoms.script("document.querySelector('[onclick*=\"chToggleListen\"]').click(); return true;"),
+            )
+            assertTrue("The native player didn't stop", waitFor(15_000) { ListenController.state.value?.playing != true })
+
+            // 5. The menu's Servers item returns to the server list.
             onWebView().perform(
                 Atoms.script("toggleSidebar(); document.querySelector('[data-host=\"servers\"]').click(); return true;"),
             )
             val list = device.wait(Until.findObject(By.text("Scan Link App code")), 15_000)
-            screenshot("04-servers")
+            screenshot("06-servers")
             assertNotNull("The Servers menu item didn't return to the server list", list)
         }
+    }
+
+    private fun waitFor(timeoutMs: Long, condition: () -> Boolean): Boolean {
+        val end = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < end) {
+            if (condition()) return true
+            Thread.sleep(500)
+        }
+        return condition()
     }
 
     private fun waitForWeb(timeoutMs: Long, check: () -> Unit) {

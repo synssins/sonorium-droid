@@ -39,6 +39,13 @@ object HostScript {
             authHeader: function () { return null; },
             unlinked: function (body) { send('unlinked', { detail: body && body.detail }); },
             showServers: function () { send('showServers'); },
+            listen: function (sessionId, url, info) {
+              info = info || {};
+              send('listen', { sessionId: sessionId, url: url, name: info.name || '', themeName: info.themeName || '',
+                               volume: typeof info.volume === 'number' ? info.volume : 100 });
+            },
+            stopListening: function (sessionId) { send('stopListening', { sessionId: sessionId }); },
+            setListenVolume: function (sessionId, volume) { send('setListenVolume', { sessionId: sessionId, volume: volume }); },
             on: function (event, handler) { (handlers[event] = handlers[event] || []).push(handler); }
           };
           send('ready');
