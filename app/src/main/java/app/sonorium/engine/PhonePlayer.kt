@@ -3,6 +3,7 @@ package app.sonorium.engine
 import android.content.Context
 import android.content.Intent
 import app.sonorium.SonoriumApp
+import app.sonorium.cast.CastController
 import app.sonorium.local.LocalTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -79,10 +80,13 @@ object PhonePlayer {
                     openFor = theme.docId
                     _state.update { st -> st.copy(presets = presets, sequences = sequences, presetId = st.presetId ?: presets.firstOrNull { it.isDefault }?.id, preparing = null) }
                 }
-                if (!_state.value.playing) {
-                    app.startService(Intent(app, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, theme.name))
-                } else {
-                    PhonePlayerService.retitle(theme.name)
+                when {
+                    // Casting: the speaker plays the engine's stream (already flowing after a theme change)
+                    CastController.casting ->
+                        if (!CastController.state.value.streaming) CastController.startStream(theme.name)
+                    !_state.value.playing ->
+                        app.startService(Intent(app, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, theme.name))
+                    else -> PhonePlayerService.retitle(theme.name)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -98,6 +102,10 @@ object PhonePlayer {
     fun stop(context: Context?) {
         job?.cancel()
         _state.update { it.copy(preparing = null) }
+        if (CastController.casting) {
+            CastController.stop()
+            return
+        }
         context?.applicationContext?.let { it.startService(Intent(it, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_STOP)) }
     }
 
@@ -142,6 +150,21 @@ object PhonePlayer {
     fun setVolume(volume: Int) {
         _state.update { it.copy(volume = volume) }
         if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.setVolume(volume / 100f) } }
+    }
+
+    /** A cast session started: the phone stops playing itself and its engine feeds the speaker. */
+    fun castStarted(context: Context) {
+        val app = context.applicationContext
+        if (_state.value.playing) app.startService(Intent(app, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_STOP))
+        play(context)
+    }
+
+    /** The cast ended: stopped, as when a TV cast ends. */
+    internal fun onCastEnded() = onPlaying(false)
+
+    /** The phone's own player (not casting): while casting, its stop doesn't mean the mix stopped. */
+    internal fun onLocalPlaying(playing: Boolean) {
+        if (!CastController.casting) onPlaying(playing)
     }
 
     internal fun onPlaying(playing: Boolean) {

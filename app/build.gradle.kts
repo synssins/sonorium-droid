@@ -99,6 +99,8 @@ dependencies {
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
     implementation(libs.media3.okhttp)
+    // Google Cast (CastContext, MediaRouter) for casting the phone's own mix
+    implementation(libs.media3.cast)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

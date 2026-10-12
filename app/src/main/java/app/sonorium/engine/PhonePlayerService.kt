@@ -46,7 +46,7 @@ class PhonePlayerService : MediaSessionService() {
             // isPlaying alone never changes while audio focus holds playback back, so follow every change.
             override fun onEvents(player: Player, events: Player.Events) {
                 val on = exo.isPlaying || (wanted && exo.playWhenReady && exo.playbackState != Player.STATE_IDLE && exo.playbackState != Player.STATE_ENDED)
-                PhonePlayer.onPlaying(on)
+                PhonePlayer.onLocalPlaying(on)
             }
 
             override fun onPlaybackSuppressionReasonChanged(reason: Int) {
@@ -111,7 +111,7 @@ class PhonePlayerService : MediaSessionService() {
         wanted = false
         exo.stop()
         exo.clearMediaItems()
-        PhonePlayer.onPlaying(false)
+        PhonePlayer.onLocalPlaying(false)
         stopSelf()
     }
 
@@ -124,7 +124,7 @@ class PhonePlayerService : MediaSessionService() {
         session?.release()
         session = null
         exo.release()
-        PhonePlayer.onPlaying(false)
+        PhonePlayer.onLocalPlaying(false)
         super.onDestroy()
     }
 
