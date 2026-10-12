@@ -211,6 +211,12 @@ class EndToEndTest {
             openPage("Audio Settings", settings = true)
             need(By.text("Master output gain"), 15_000, "30-audio", "The Audio Settings page didn't open")
             screenshot("30-audio")
+
+            // Settings › Plugins: the installed list (CI's server has the built-in plugins)
+            openPage("Plugins", settings = true)
+            need(By.textContains("Installed ("), 15_000, "31-plugins", "The Plugins page didn't open")
+            Thread.sleep(1_500)
+            screenshot("31-plugins")
             openPage("Channels")
             need(By.text(channelName), 15_000, "26-back", "Channels didn't come back")
 

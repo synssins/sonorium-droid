@@ -381,6 +381,17 @@ class SonoriumApi(
         return runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: JsonObject(emptyMap())
     }
 
+    /** `POST /api/plugins/upload` with the .zip. */
+    suspend fun uploadPlugin(fileName: String, bytes: ByteArray): JsonObject {
+        val body = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM)
+            .addFormDataPart("file", fileName, bytes.toRequestBody("application/zip".toMediaType())).build()
+        return json.parseToJsonElement(strict(request("plugins/upload").post(body).build())) as? JsonObject ?: JsonObject(emptyMap())
+    }
+
+    /** `GET /api/<path>` answering a JSON array. */
+    suspend fun jsonArray(path: String): kotlinx.serialization.json.JsonArray =
+        json.parseToJsonElement(execute(request(path).get().build())) as? kotlinx.serialization.json.JsonArray ?: kotlinx.serialization.json.JsonArray(emptyList())
+
     /** `GET /api/<path>` as raw bytes (downloads). */
     suspend fun bytes(path: String): ByteArray = withContext(Dispatchers.IO) {
         client.newCall(request(path).get().build()).execute().use { response ->

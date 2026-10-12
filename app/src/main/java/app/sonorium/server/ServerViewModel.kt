@@ -766,6 +766,19 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     var audioSaved by androidx.compose.runtime.mutableStateOf<app.sonorium.ui.server.AudioValues?>(null)
     var audioDraft by androidx.compose.runtime.mutableStateOf<app.sonorium.ui.server.AudioValues?>(null)
 
+    /** Settings › Plugins: typed form values and open forms per plugin, and the tab, kept while the app runs. */
+    val pluginForms = androidx.compose.runtime.mutableStateMapOf<String, Map<String, String>>()
+    val pluginOpen = androidx.compose.runtime.mutableStateMapOf<String, Boolean>()
+    var pluginsCatalogTab by androidx.compose.runtime.mutableStateOf(false)
+
+    /** A plugin went on/off, in or out: perms and plugin-made menu entries may change. */
+    fun afterPluginsChanged() = viewModelScope.launch {
+        val api = api ?: return@launch
+        guard { api.me() }?.let { me -> _state.update { it.copy(me = me) } }
+        refreshConnectionPage()
+        refreshZones()
+    }
+
     /** After Home Assistant is removed: speakers, groups, channels and network info change (`afterHomeAssistantRemoved`). */
     fun afterHomeAssistantRemoved() = viewModelScope.launch {
         refreshSpeakers()
