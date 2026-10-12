@@ -150,7 +150,7 @@ class EndToEndTest {
             find(By.text("New"), "No New preset button").click()
             typeInto(need(By.desc("Preset name"), 10_000, "27-new-preset", "The New preset popover didn't open"), "CI preset")
             find(By.text("OK"), "No OK in the New preset popover").click()
-            need(By.text("Saved"), 10_000, "27-preset-saved", "No toast after New preset")
+            // (the "Saved" toast can sit under Android 8's keyboard: the selected preset is the proof)
             need(By.desc("Preset: CI preset"), 10_000, "27-preset-selected", "The new preset isn't selected")
             screenshot("27-theme-editor-preset")
             // Sequences › Add sequence…: a name and no presets → the web UI's refusal
@@ -287,14 +287,18 @@ class EndToEndTest {
 
     /** Back doesn't always close the shade on newer Android; swipe it up too. */
     private fun closeNotificationShade() {
-        // Back only while the shade shows: a Back that reaches the app leaves the server
-        if (device.currentPackageName == "com.android.systemui") {
-            device.pressBack()
+        // Never Back here: a Back that reaches the app leaves the server for the Servers list
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            instrumentation.uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_DISMISS_NOTIFICATION_SHADE)
             Thread.sleep(800)
         }
-        if (device.currentPackageName == "com.android.systemui" || device.hasObject(By.res("com.android.systemui:id/notification_stack_scroller"))) {
-            device.swipe(device.displayWidth / 2, device.displayHeight - 50, device.displayWidth / 2, 50, 12)
-            Thread.sleep(800)
+        repeat(2) {
+            val shade = device.hasObject(By.text("Manage")) || device.hasObject(By.res("com.android.systemui:id/notification_stack_scroller")) ||
+                device.hasObject(By.pkg("com.android.systemui").res("com.android.systemui:id/quick_settings_panel"))
+            if (shade) {
+                device.swipe(device.displayWidth / 2, device.displayHeight - 50, device.displayWidth / 2, 50, 12)
+                Thread.sleep(800)
+            }
         }
     }
 
