@@ -61,6 +61,7 @@ class ServerActivity : ComponentActivity() {
         data class Connecting(val label: String) : Screen()
         data class Failed(val message: String) : Screen()
         data object Ready : Screen()
+        data class OldWebView(val provider: WebViewSupport.Provider) : Screen()
     }
 
     private val app get() = application as SonoriumApp
@@ -76,6 +77,22 @@ class ServerActivity : ComponentActivity() {
             SonoriumTheme {
                 Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
                     when (val s = screen) {
+                        is Screen.OldWebView -> Centered {
+                            Card {
+                                Text(
+                                    "This phone's web view is too old for Sonorium (version ${s.provider.versionName}). " +
+                                        "Update Android System WebView, then open Sonorium again.",
+                                    color = Palette.text,
+                                )
+                                Row(
+                                    Modifier.fillMaxWidth().padding(top = 16.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                                ) {
+                                    SecondaryButton("Servers") { finish() }
+                                    PrimaryButton("Update") { openStore(s.provider.packageName) }
+                                }
+                            }
+                        }
                         Screen.Ready -> AndroidView(
                             factory = { webView!! },
                             modifier = Modifier.fillMaxSize().safeDrawingPadding(),
@@ -109,6 +126,10 @@ class ServerActivity : ComponentActivity() {
 
     private fun connect() {
         val id = intent.getStringExtra(EXTRA_SERVER_ID) ?: return finish()
+        WebViewSupport.outdated(this)?.let {
+            screen = Screen.OldWebView(it)
+            return
+        }
         lifecycleScope.launch {
             val record = app.servers.find(id) ?: return@launch finish()
             screen = Screen.Connecting(record.label)
@@ -159,9 +180,7 @@ class ServerActivity : ComponentActivity() {
         val view = webView ?: createWebView().also { webView = it }
         installHost(view, started.origin, streamBase.toString().trimEnd('/'))
         screen = Screen.Ready
-        // Load only once the view is on screen with its real size: WebView fixes the
-        // page's viewport units (100vh) at load time, and a 0-height view gives a
-        // 0-height menu and sidebar.
+        // Load once the view is on screen with its real size.
         view.doOnLayoutWithSize { view.loadUrl("${started.origin}/") }
     }
 
@@ -183,8 +202,20 @@ class ServerActivity : ComponentActivity() {
         })
     }
 
+    private fun openStore(packageName: String) {
+        val market = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=$packageName"))
+        val web = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
+        runCatching { startActivity(market) }.onFailure { runCatching { startActivity(web) } }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private fun createWebView(): WebView = WebView(this).apply {
+        // A fixed size, not wrap_content: with wrap_content WebView gives the page
+        // 100vh = 0, and the menu and sidebar (sized from vh) get no height.
+        layoutParams = android.view.ViewGroup.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+        )
         setBackgroundColor(Color.parseColor("#1A1A2E"))
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true

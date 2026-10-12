@@ -1,6 +1,7 @@
 ## What's new in this build
 
-- **Menu fix:** the ☰ menu button opens the menu. Before, it only dimmed the screen: the page loaded before the app had sized it, so the menu had no height. Landscape and tablet sidebars had the same problem.
+- **Menu fix:** the ☰ menu button opens the menu; before, it only dimmed the screen. The app's web view told the page its screen height was 0, so the menu (and the sidebar on wide screens) had no height.
+- **Old phones:** if the phone's Android System WebView is too old for the web UI (older than version 106), the app says so and offers **Update**, which opens it in the Play Store.
 - The server's web UI opens inside the app (since alpha4).
 
 ## What should work

@@ -14,6 +14,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import app.sonorium.web.WebViewSupport
 import java.io.File
 import org.hamcrest.Matchers.containsString
 import org.junit.Assert.assertNotNull
@@ -48,6 +49,16 @@ class EndToEndTest {
             screenshot("01-linked")
             assertNotNull("Linking didn't finish; see 01-linked.png", open)
             open.click()
+
+            // A WebView too old for the web UI (an Android 8 image that was never
+            // updated): the app must say so and offer the update instead.
+            WebViewSupport.outdated(instrumentation.targetContext)?.let { old ->
+                val notice = device.wait(Until.findObject(By.textContains("web view is too old")), 30_000)
+                screenshot("02-old-webview-${old.major}")
+                assertNotNull("No update notice for WebView ${old.versionName}", notice)
+                assertNotNull(device.findObject(By.text("Update")))
+                return
+            }
 
             // 2. The server's web UI loads through the proxy and lists the server's channel.
             waitForWeb(90_000) {
