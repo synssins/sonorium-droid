@@ -1,16 +1,20 @@
 ## What's new in this build
 
+- **Stereo on your device:** themes play in stereo on your device (a stereo file keeps its sides, a mono one plays centred). Settings › Audio Settings on your device has a Stereo switch (on); off plays the mix in mono. Casting stays mono.
+- **Sync now:** a theme saved from your Sonorium that has changed there shows ⋯ › Sync now: new and changed audio files come down and the server's new presets and sequences are added; your presets and settings on your device stay, unless you tick "Overwrite my presets and settings on this phone".
+- **Child Mode:** what was called Kid mode is now Child Mode; the channel card shows only the lock.
+
+## Please test
+
+- My channel on your device with headphones: left and right differ on a stereo theme; Audio Settings › Stereo off makes it mono at once, without getting the theme ready again.
+- A theme saved to your device, then changed on your Sonorium (add a preset): ⋯ › Sync now, with and without the overwrite box.
+
+### Earlier (alpha28)
 - **Themes get ready when they arrive:** a theme saved from your server, imported, created or added with the app is got ready on your device at once, in the background with its progress; Play starts straight away.
 - **Imported zips:** after importing a theme zip you picked, the app asks whether to delete the zip (the theme's music stays).
 - **Space on your device:** each theme on your device shows the space it takes and its ready-to-play copy; ⋯ › Free up space deletes that copy.
 - **Copy into this theme:** a linked track's bar has a download icon (and its ⋯ the item) to copy the file into the theme; the row stays and is no longer linked.
 - The sample theme is one file in the app, easy to swap.
-
-## Please test
-
-- Import a theme zip on your device: it gets ready at once (progress on Themes), then Delete the zip when asked.
-- Themes on your device: the space line; ⋯ › Free up space.
-- Theme Editor › a linked track › the download icon.
 
 ### Earlier (alpha27)
 - **Sleep timer:** a playing channel's ⋯ › Sleep timer… (15 min to 4 h, or Custom…): the channel fades out and stops when it runs out. The state shows a moon and the time left. On your Sonorium's channels and on your device.
