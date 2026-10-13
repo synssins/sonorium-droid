@@ -53,6 +53,21 @@ class PhonePlayerService : MediaSessionService() {
                 PhonePlayer.onLocalPlaying(on)
             }
 
+            // Android 15 refuses audio focus to a player started in the background (lock screen,
+            // headset, a service start) until it runs in the foreground: try again shortly after
+            // instead of staying paused (seen in the device tests: "Focus request DENIED ... hardening")
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (playWhenReady || reason != Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS || !wanted) return
+                if (System.currentTimeMillis() - startedAt > FOCUS_RETRY_WINDOW_MS || focusRetries >= FOCUS_RETRIES) {
+                    if (System.currentTimeMillis() - startedAt <= FOCUS_RETRY_WINDOW_MS) {
+                        PhonePlayer.onError("Android didn't let the sound start. Open Sonorium and press Play.")
+                    }
+                    return
+                }
+                focusRetries++
+                handler.postDelayed({ if (wanted && !exo.playWhenReady) exo.play() }, 700L * focusRetries)
+            }
+
             override fun onPlaybackSuppressionReasonChanged(reason: Int) {
                 if (reason != Player.PLAYBACK_SUPPRESSION_REASON_NONE) android.util.Log.w("PhonePlayer", "Playback held back (reason $reason)")
             }
@@ -100,7 +115,13 @@ class PhonePlayerService : MediaSessionService() {
         return MediaItem.Builder().setUri("sonorium-engine:play").setMimeType(MimeTypes.AUDIO_WAV).setMediaMetadata(metadata).build()
     }
 
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var startedAt = 0L
+    private var focusRetries = 0
+
     private fun start() {
+        startedAt = System.currentTimeMillis()
+        focusRetries = 0
         exo.setMediaItem(item())
         exo.prepare()
         exo.play()
@@ -141,6 +162,8 @@ class PhonePlayerService : MediaSessionService() {
         const val EXTRA_TITLE = "title"
 
         private const val OPEN_REQUEST = 1
+        private const val FOCUS_RETRY_WINDOW_MS = 8_000L
+        private const val FOCUS_RETRIES = 4
 
         @Volatile private var running: PhonePlayerService? = null
 

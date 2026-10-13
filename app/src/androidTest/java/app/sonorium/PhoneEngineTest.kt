@@ -82,6 +82,11 @@ class PhoneEngineTest {
 
         // The media service plays the engine's stream (ExoPlayer accepts the WAV stream and pulls the mix)
         EngineDataSource.served = 0
+        // Play is pressed with the app on screen (Android 15 refuses audio focus to a player started
+        // from the background, as a bare service start from a test is)
+        val app = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        val scenario = androidx.test.core.app.ActivityScenario.launch<MainActivity>(app)
+        Thread.sleep(3_000)
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, "Test Theme"))
         val end = System.currentTimeMillis() + 20_000
         val second = 44_100L * 2
@@ -91,6 +96,7 @@ class PhoneEngineTest {
         val error = PhonePlayer.state.value.error
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_STOP))
         Thread.sleep(500)
+        runCatching { scenario.close() }
         PhoneEngine.close()
         assertTrue("The on-phone player didn't start playing (error: $error)", playing)
         assertTrue("The player took only $served bytes of the engine's mix", served > second)
