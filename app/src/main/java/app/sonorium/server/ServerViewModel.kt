@@ -310,7 +310,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 }
                 return@launch
             }
-            val updated = record.preferring(reached.host).copy(version = reached.info.version)
+            val updated = record.reachedAs(reached.host, reached.info.name, reached.info.version)
             if (updated != record) app.servers.update(updated)
             app.servers.select(record.id)
             client = pinned

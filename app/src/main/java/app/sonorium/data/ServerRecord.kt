@@ -37,6 +37,14 @@ data class ServerRecord(
         const val DEFAULT_NAME = "Sonorium"
     }
 
+    /**
+     * The record after a connection: [host] first, and the server's own name and version as it reports them
+     * now (its "Server name" setting), so the entry follows a rename on the server. A name given in the app
+     * ([customName]) still wins in [displayName].
+     */
+    fun reachedAs(host: String, serverName: String, serverVersion: String): ServerRecord =
+        preferring(host).copy(label = serverName.ifBlank { label }, version = serverVersion)
+
     /** The same record with [host] moved to the front of [hosts]. */
     fun preferring(host: String): ServerRecord =
         copy(hosts = listOf(host) + hosts.filter { it != host })
