@@ -1,6 +1,7 @@
 """
 Playing a theme on the phone: the Kotlin side drives sonorium.engine through these calls.
-PCM crosses to Kotlin as little-endian int16 bytes (44100 Hz mono).
+PCM crosses to Kotlin as little-endian int16 bytes, 44100 Hz, always two channels (interleaved L/R
+frames): a stereo mix as it is, a mono one (Stereo off) on both sides.
 """
 import json
 import os
@@ -31,7 +32,7 @@ class Player:
     set_theme() crossfades to another prepared theme while playing.
     """
 
-    def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0, sequence_id=None):
+    def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0, sequence_id=None, stereo=True):
         self._mirrors = [mirror_lookup(theme_dir, cache_dir)]
         self._roots = [os.path.realpath(theme_dir)]
         # Linked files and playlist entries: other prepared themes beside it, their audio beside its own
@@ -45,7 +46,11 @@ class Player:
             playback_values=package_values(theme_dir),
             seed=int(seed),
             decoder=PcmFileDecoder(lookup=self._lookup),
+            channels=2,
         )
+        # Always a stereo mix; Stereo off folds it to mono at the output (no theme is read again)
+        if not stereo:
+            self.engine.set_channels(1)
         self.engine.set_volume(float(volume))
 
     def _lookup(self, path):
@@ -108,7 +113,15 @@ class Player:
         return json.dumps(self.engine.status(), default=str)
 
     def render(self, n):
-        return self.engine.render(int(n)).tobytes()
+        """n frames as interleaved stereo int16 bytes (a folded mono mix on both sides)."""
+        out = self.engine.render(int(n))
+        if out.ndim == 1:
+            import numpy as np
+            out = np.repeat(out, 2)
+        return out.tobytes()
+
+    def set_stereo(self, on):
+        self.engine.set_channels(2 if on else 1)
 
     def set_preset(self, preset_id):
         self.engine.set_preset(preset_id or None)

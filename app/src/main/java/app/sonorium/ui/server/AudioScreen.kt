@@ -45,11 +45,13 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.put
 
 /** The three audio settings (crossfade s, default volume %, master gain %). */
-data class AudioValues(val crossfade: Double, val volume: Int, val gain: Int) {
+/** [stereo]: null when this Sonorium has no Stereo setting (shown only where it has). */
+data class AudioValues(val crossfade: Double, val volume: Int, val gain: Int, val stereo: Boolean? = null) {
     companion object {
         val DEFAULTS = AudioValues(3.0, 60, 60)
     }
@@ -71,7 +73,10 @@ fun AudioPage(model: ServerViewModel) {
         failed = false
         model.call { it.json("GET", "settings") }.onSuccess { o ->
             fun n(k: String) = (o[k] as? JsonPrimitive)?.doubleOrNull
-            val v = AudioValues(n("crossfade_duration") ?: 3.0, n("default_volume")?.roundToInt() ?: 60, n("master_gain")?.roundToInt() ?: 60)
+            val v = AudioValues(
+                n("crossfade_duration") ?: 3.0, n("default_volume")?.roundToInt() ?: 60, n("master_gain")?.roundToInt() ?: 60,
+                (o["stereo"] as? JsonPrimitive)?.booleanOrNull,
+            )
             // a clean draft follows the server; an unsaved one stays
             if (model.audioDraft == null || model.audioDraft == model.audioSaved) model.audioDraft = v
             model.audioSaved = v
@@ -122,6 +127,7 @@ fun AudioPage(model: ServerViewModel) {
                                 put("crossfade_duration", d.crossfade)
                                 put("default_volume", d.volume)
                                 put("master_gain", d.gain)
+                                d.stereo?.let { put("stereo", it) }
                             }) }.onSuccess {
                                 model.audioSaved = d
                                 model.toast("Audio settings saved", error = false)
@@ -148,6 +154,19 @@ fun AudioPage(model: ServerViewModel) {
                         "Master output gain", "Multiplier for every stream", if (narrow) "All streams · default 60%" else "Default 60%",
                         draft.gain.toFloat(), 0f..100f, 19, "${draft.gain}%", draft.gain != saved.gain,
                     ) { model.audioDraft = draft.copy(gain = (it / 5).roundToInt() * 5) }
+                    // Stereo: where this Sonorium (or this device) has the setting
+                    draft.stereo?.let { on ->
+                        Row(Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.ROW.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.audio_stereo), color = if (on != saved.stereo) Palette.warning else Palette.text, fontSize = 14.sp)
+                                Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.audio_stereo_tip), color = Palette.textSecondary, fontSize = 12.sp)
+                            }
+                            androidx.compose.material3.Switch(
+                                checked = on, onCheckedChange = { model.audioDraft = draft.copy(stereo = it) },
+                                colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
+                            )
+                        }
+                    }
                 }
             }
             Spacer(Modifier.heightIn(min = 24.dp))

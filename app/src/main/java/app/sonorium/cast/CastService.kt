@@ -52,7 +52,8 @@ class CastService : Service() {
                 if (server == null) {
                     address = intent?.getStringExtra(EXTRA_ADDRESS).orEmpty()
                     val bind = address.takeIf { it.isNotEmpty() }?.let { runCatching { InetAddress.getByName(it) }.getOrNull() }
-                    server = runCatching { StreamServer(render = { buf -> PhoneEngine.render(buf, 0, buf.size) }, bind = bind) }
+                    // The cast stream is mono: the engine's stereo frames folded ((L+R)/2)
+                    server = runCatching { StreamServer(render = { buf -> renderMono(buf) }, bind = bind) }
                         .onFailure { android.util.Log.w("CastService", "Couldn't open the stream", it) }.getOrNull()
                     if (server == null) {
                         CastController.onStreamFailed()
@@ -66,6 +67,24 @@ class CastService : Service() {
             }
         }
         return START_NOT_STICKY
+    }
+
+    private var stereoBuf = ByteArray(0)
+
+    /** Fills [mono] with the engine's next frames folded to mono ((L+R)/2), 16-bit; returns the bytes written. */
+    private fun renderMono(mono: ByteArray): Int {
+        val frames = mono.size / 2
+        if (stereoBuf.size < frames * PhoneEngine.FRAME_BYTES) stereoBuf = ByteArray(frames * PhoneEngine.FRAME_BYTES)
+        val n = PhoneEngine.render(stereoBuf, 0, frames * PhoneEngine.FRAME_BYTES) / PhoneEngine.FRAME_BYTES
+        for (f in 0 until n) {
+            val i = f * 4
+            val l = (stereoBuf[i].toInt() and 0xff) or (stereoBuf[i + 1].toInt() shl 8)
+            val r = (stereoBuf[i + 2].toInt() and 0xff) or (stereoBuf[i + 3].toInt() shl 8)
+            val m = (l + r) / 2
+            mono[f * 2] = m.toByte()
+            mono[f * 2 + 1] = (m shr 8).toByte()
+        }
+        return n * 2
     }
 
     private fun notification(title: String, speaker: String): Notification {

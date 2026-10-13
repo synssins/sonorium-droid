@@ -14,7 +14,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Engine prototype: MediaCodec turns a 48 kHz stereo file into the engine's 44.1 kHz mono WAV. */
+/** MediaCodec turns a 48 kHz stereo file into the engine's 44.1 kHz stereo WAV (a stereo file stays stereo). */
 @RunWith(AndroidJUnit4::class)
 class PcmDecoderTest {
     private val dir = File(InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "pcm-test").apply { mkdirs() }
@@ -30,14 +30,14 @@ class PcmDecoderTest {
         val bytes = output.readBytes()
         val b = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
         assertEquals("RIFF", String(bytes, 0, 4))
-        assertEquals(1, b.getShort(22).toInt()) // mono
+        assertEquals(2, b.getShort(22).toInt()) // stereo kept
         assertEquals(44_100, b.getInt(24))
         assertEquals(16, b.getShort(34).toInt())
-        val n = b.getInt(40) / 2
-        assertTrue("about 2 s at 44.1 kHz, got $n samples", abs(n - 88_200) < 600)
+        val n = b.getInt(40) / 4
+        assertTrue("about 2 s at 44.1 kHz, got $n frames", abs(n - 88_200) < 600)
 
-        // Still a 1 kHz tone: count rising zero crossings over the middle second
-        val s = ShortArray(n) { b.getShort(44 + it * 2) }
+        // Still a 1 kHz tone on the left channel: count rising zero crossings over the middle second
+        val s = ShortArray(n) { b.getShort(44 + it * 4) }
         var crossings = 0
         for (i in 22_050 + 1 until 66_150) if (s[i - 1] < 0 && s[i] >= 0) crossings++
         assertTrue("about 1000 Hz, got $crossings", abs(crossings - 1_000) <= 5)

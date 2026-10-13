@@ -40,8 +40,8 @@ class EngineDataSource : BaseDataSource(false) {
         // is the audio it mixed, so an output that drains faster than real time can't speed it up
         val ahead = renderedHere * 1000 / BYTES_PER_SECOND - (android.os.SystemClock.elapsedRealtime() - openedAt)
         if (ahead > LEAD_MS) Thread.sleep(ahead - LEAD_MS)
-        // Whole samples, at most ~0.1 s per call so a preset or volume change is heard soon
-        val n = PhoneEngine.render(buffer, offset, minOf(length, 8192) and 1.inv())
+        // Whole frames, at most ~0.05 s per call so a preset or volume change is heard soon
+        val n = PhoneEngine.render(buffer, offset, minOf(length, 8192) / PhoneEngine.FRAME_BYTES * PhoneEngine.FRAME_BYTES)
         renderedHere += n
         served += n
         bytesTransferred(n)
@@ -56,8 +56,8 @@ class EngineDataSource : BaseDataSource(false) {
     }
 
     companion object {
-        /** 16-bit mono at 44100 Hz. */
-        private const val BYTES_PER_SECOND = 44_100L * 2
+        /** 16-bit stereo at 44100 Hz. */
+        private const val BYTES_PER_SECOND = PhoneEngine.BYTES_PER_SECOND.toLong()
         /** How far the mix may run ahead of real time (the player's buffer is 1.5–3 s). */
         private const val LEAD_MS = 4_000L
 

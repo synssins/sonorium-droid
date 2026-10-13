@@ -286,7 +286,7 @@ class DeviceApi(private val context: Context) : Interceptor {
     // ---------- Audio Settings ----------
 
     private fun audioSettings(): JsonObject = DeviceSettings.get(context).let { a ->
-        buildJsonObject { put("crossfade_duration", a.crossfade); put("default_volume", a.volume); put("master_gain", a.gain) }
+        buildJsonObject { put("crossfade_duration", a.crossfade); put("default_volume", a.volume); put("master_gain", a.gain); put("stereo", a.stereo) }
     }
 
     private fun saveAudioSettings(body: JsonObject): JsonObject {
@@ -296,9 +296,10 @@ class DeviceApi(private val context: Context) : Interceptor {
             crossfade = (n("crossfade_duration") ?: now.crossfade).coerceIn(0.0, 60.0),
             volume = (n("default_volume")?.toInt() ?: now.volume).coerceIn(0, 100),
             gain = (n("master_gain")?.toInt() ?: now.gain).coerceIn(0, 100),
+            stereo = (body["stereo"] as? JsonPrimitive)?.booleanOrNull ?: now.stereo,
         )
         DeviceSettings.set(context, audio)
-        runCatching { app.sonorium.engine.PhoneEngine.setAudio(audio.crossfade, audio.gain) }
+        runCatching { app.sonorium.engine.PhoneEngine.setAudio(audio.crossfade, audio.gain, audio.stereo) }
         changed("settings.changed")
         return audioSettings()
     }

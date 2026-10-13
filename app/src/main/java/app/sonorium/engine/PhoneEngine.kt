@@ -27,9 +27,9 @@ object PhoneEngine {
     /** Opens the engine on a prepared theme (closing any other); returns its presets. */
     fun open(context: Context, prepared: ThemePrep.Prepared, presetId: String?, volume: Float, sequenceId: String? = null): List<Preset> = synchronized(lock) {
         player?.let { old -> player = null; runCatching { old.callAttr("close") } }
-        val p = python(context).getModule("phone").callAttr("Player", prepared.themeDir.path, prepared.pcmDir.path, presetId, volume.toDouble(), System.nanoTime() and 0x7fffffff, sequenceId)
-        player = p
         val audio = app.sonorium.local.DeviceSettings.get(context)
+        val p = python(context).getModule("phone").callAttr("Player", prepared.themeDir.path, prepared.pcmDir.path, presetId, volume.toDouble(), System.nanoTime() and 0x7fffffff, sequenceId, audio.stereo)
+        player = p
         runCatching { p.callAttr("set_audio", audio.crossfade, audio.gain.toDouble()) }
         presetsOf(p)
     }
@@ -123,22 +123,31 @@ object PhoneEngine {
         return (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Preset(it.getString("id"), it.optString("name", it.getString("id")), it.optBoolean("is_default")) } }
     }
 
-    /** Fills [out] with the next 16-bit samples; silence when nothing is open. */
+    /** Fills [out] with the next 16-bit stereo frames (interleaved L/R); silence when nothing is open. */
     fun render(out: ByteArray, offset: Int, length: Int): Int {
-        val samples = length / 2
-        val bytes = synchronized(lock) { player?.callAttr("render", samples)?.toJava(ByteArray::class.java) }
+        val frames = length / FRAME_BYTES
+        val bytes = synchronized(lock) { player?.callAttr("render", frames)?.toJava(ByteArray::class.java) }
         if (bytes == null) {
-            java.util.Arrays.fill(out, offset, offset + samples * 2, 0)
+            java.util.Arrays.fill(out, offset, offset + frames * FRAME_BYTES, 0)
         } else {
-            System.arraycopy(bytes, 0, out, offset, minOf(bytes.size, samples * 2))
+            System.arraycopy(bytes, 0, out, offset, minOf(bytes.size, frames * FRAME_BYTES))
         }
-        return samples * 2
+        return frames * FRAME_BYTES
     }
+
+    /** 44100 Hz, 2 channels, 16 bits. */
+    const val CHANNELS = 2
+    const val FRAME_BYTES = 2 * CHANNELS
+    const val BYTES_PER_SECOND = 44_100 * FRAME_BYTES
 
     fun setPreset(presetId: String?) = synchronized(lock) { player?.callAttr("set_preset", presetId) }
 
     /** Audio Settings changed on this device: the open engine follows. */
-    fun setAudio(crossfade: Double, gain: Int) = synchronized(lock) { player?.callAttr("set_audio", crossfade, gain.toDouble()); Unit }
+    fun setAudio(crossfade: Double, gain: Int, stereo: Boolean = true) = synchronized(lock) {
+        player?.callAttr("set_audio", crossfade, gain.toDouble())
+        player?.callAttr("set_stereo", stereo)
+        Unit
+    }
 
     /**
      * Plays a playlist (the server's JSON) from its first entry; its themes are prepared copies under
@@ -182,10 +191,10 @@ object PhoneEngine {
     /** Bytes of PCM one "file" holds: about 6.7 hours; the player starts a new one when it ends. */
     const val STREAM_BYTES = 0x7FFF_FFF0
 
-    /** A WAV header for a long 44100 Hz mono 16-bit stream. */
+    /** A WAV header for a long 44100 Hz stereo 16-bit stream. */
     fun wavHeader(): ByteArray = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN).apply {
         put("RIFF".toByteArray()); putInt(STREAM_BYTES + 36); put("WAVE".toByteArray())
-        put("fmt ".toByteArray()); putInt(16); putShort(1); putShort(1); putInt(44100); putInt(44100 * 2); putShort(2); putShort(16)
+        put("fmt ".toByteArray()); putInt(16); putShort(1); putShort(CHANNELS.toShort()); putInt(44100); putInt(BYTES_PER_SECOND); putShort(FRAME_BYTES.toShort()); putShort(16)
         put("data".toByteArray()); putInt(STREAM_BYTES)
     }.array()
 }

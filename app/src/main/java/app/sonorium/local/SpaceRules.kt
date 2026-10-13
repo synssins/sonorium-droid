@@ -15,7 +15,7 @@ object SpaceRules {
     fun decodedBytes(path: String, bytes: Long): Long = when (path.substringAfterLast('.', "").lowercase()) {
         "wav" -> bytes
         "flac" -> bytes * 2
-        else -> bytes * 6
+        else -> bytes * 12 // compressed audio decoded to 16-bit stereo at 44.1 kHz
     }
 
     /** Whether [needed] bytes fit in [available] with [MARGIN] left. */

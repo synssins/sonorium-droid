@@ -9,8 +9,8 @@ class SpaceRulesTest {
     @Test fun decodedSizes() {
         assertEquals(1_000L, SpaceRules.decodedBytes("Low/drone.WAV", 1_000))
         assertEquals(2_000L, SpaceRules.decodedBytes("a.flac", 1_000))
-        assertEquals(6_000L, SpaceRules.decodedBytes("a.mp3", 1_000))
-        assertEquals(6_000L, SpaceRules.decodedBytes("a.ogg", 1_000))
+        assertEquals(12_000L, SpaceRules.decodedBytes("a.mp3", 1_000))
+        assertEquals(12_000L, SpaceRules.decodedBytes("a.ogg", 1_000))
     }
 
     @Test fun enoughKeepsAMargin() {

@@ -18,7 +18,7 @@ object PreviewEngine {
     /** Opens a preview of a prepared theme (closing the one before); returns the stream to read. */
     fun open(context: Context, prepared: ThemePrep.Prepared): Source = synchronized(lock) {
         player?.let { old -> player = null; runCatching { old.callAttr("close") } }
-        val p = PhoneEngine.module(context, "phone").callAttr("Player", prepared.themeDir.path, prepared.pcmDir.path, null, 1.0, System.nanoTime() and 0x7fffffff, null)
+        val p = PhoneEngine.module(context, "phone").callAttr("Player", prepared.themeDir.path, prepared.pcmDir.path, null, 1.0, System.nanoTime() and 0x7fffffff, null, app.sonorium.local.DeviceSettings.get(context).stereo)
         player = p
         generation++
         stream(generation)
@@ -34,12 +34,12 @@ object PreviewEngine {
         override fun read(sink: Buffer, byteCount: Long): Long {
             header?.let { h -> header = null; sink.write(h); return h.size.toLong() }
             // Not more than a few seconds ahead of real time (a preview that drains fast stays in step)
-            val ahead = rendered * 1000 / (44_100L * 2) - (android.os.SystemClock.elapsedRealtime() - openedAt)
+            val ahead = rendered * 1000 / PhoneEngine.BYTES_PER_SECOND - (android.os.SystemClock.elapsedRealtime() - openedAt)
             if (ahead > 4_000) Thread.sleep(ahead - 4_000)
             val n = synchronized(lock) {
                 val p = player?.takeIf { generation == mine } ?: return -1
-                val samples = (minOf(byteCount, chunk.size.toLong()).toInt() / 2).coerceAtLeast(1)
-                val bytes = p.callAttr("render", samples).toJava(ByteArray::class.java)
+                val frames = (minOf(byteCount, chunk.size.toLong()).toInt() / PhoneEngine.FRAME_BYTES).coerceAtLeast(1)
+                val bytes = p.callAttr("render", frames).toJava(ByteArray::class.java)
                 System.arraycopy(bytes, 0, chunk, 0, minOf(bytes.size, chunk.size))
                 minOf(bytes.size, chunk.size)
             }

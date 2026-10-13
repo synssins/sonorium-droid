@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sonorium</string>
+    <!-- Settings › Audio Settings -->
+    <string name="audio_stereo">Stereo</string>
+    <string name="audio_stereo_tip">Off: the mix plays in mono (both sides the same)</string>
 </resources>
