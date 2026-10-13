@@ -184,7 +184,6 @@ object HelpTexts {
             HelpLine(HelpKind.P1, "Play / Stop:", "starts or stops the speakers. This phone keeps playing if it listens."),
             HelpLine(HelpKind.P1, "Edit:", "changes the channel's name, theme or playlist, preset, volume and speakers."),
             HelpLine(HelpKind.P1, "Delete:", "removes the channel. You confirm first."),
-            HelpLine(HelpKind.P1, "Recent changes:", "the channel's latest changes with their times: started, stopped, muted, theme, preset, sequence step, playlist entry."),
             HelpLine(HelpKind.H4, "", "New channel"),
             HelpLine(HelpKind.P1, "New Channel:", "makes a channel. Leave the name empty and Sonorium names it Channel and a number, for example Channel 1."),
             HelpLine(HelpKind.P1, "Speakers:", "pick floors, areas or single speakers. Only speakers turned on under Settings › Speakers are listed."),

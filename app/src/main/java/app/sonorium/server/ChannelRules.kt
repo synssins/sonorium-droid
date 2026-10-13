@@ -60,18 +60,6 @@ object ChannelRules {
             ?: runCatching { java.time.LocalDateTime.parse(it).toInstant(java.time.ZoneOffset.UTC) }.getOrNull()
     }
 
-    /** A Recent changes time: HH:MM today, "Yesterday HH:MM", else a short date (12 Oct). */
-    fun recentTime(iso: String, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): String {
-        val at = parseInstant(iso)?.atZone(zone) ?: return ""
-        val hm = DateTimeFormatter.ofPattern("HH:mm").format(at)
-        val days = java.time.temporal.ChronoUnit.DAYS.between(at.toLocalDate(), now.atZone(zone).toLocalDate())
-        return when {
-            days <= 0 -> hm
-            days == 1L -> "Yesterday $hm"
-            else -> DateTimeFormatter.ofPattern("d MMM", Locale.getDefault()).format(at)
-        }
-    }
-
     // ---------- Speaker picker (1.5.6) ----------
 
     class Picker(private val hierarchy: SpeakerHierarchy, private val enabled: Set<String>) {

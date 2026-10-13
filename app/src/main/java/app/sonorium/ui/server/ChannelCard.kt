@@ -304,8 +304,6 @@ fun ChannelCard(
                 )
             }
 
-            RecentChanges(session)
-
             extra?.invoke()
 
             Button(
@@ -625,18 +623,3 @@ private fun NowLine(session: Session, actions: CardActions, onCountdownZero: () 
     }
 }
 
-@Composable
-private fun RecentChanges(session: Session) {
-    Surface(color = Palette.backgroundSecondary, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(12.dp).heightIn(min = 64.dp)) {
-            FieldLabel("Recent changes")
-            Spacer(Modifier.height(4.dp))
-            session.recent.take(5).forEach { entry ->
-                Row {
-                    Text(ChannelRules.recentTime(entry.at), color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.width(96.dp))
-                    Text(entry.text, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-    }
-}

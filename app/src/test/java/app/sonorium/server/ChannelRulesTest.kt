@@ -27,11 +27,6 @@ class ChannelRulesTest {
         assertEquals("13:01", ChannelRules.clock(781))
         assertEquals("1:00:00", ChannelRules.clock(3600))
         assertEquals("0:00", ChannelRules.clock(-3))
-        val now = Instant.parse("2026-10-12T15:00:00Z")
-        assertEquals("03:08", ChannelRules.recentTime("2026-10-12T03:08:57.039075+00:00", now, ZoneOffset.UTC))
-        assertEquals("Yesterday 23:10", ChannelRules.recentTime("2026-10-11T23:10:00+00:00", now, ZoneOffset.UTC))
-        // naive timestamps are UTC (native-api.md 1.1)
-        assertEquals("03:08", ChannelRules.recentTime("2026-10-12T03:08:40.953353", now, ZoneOffset.UTC))
     }
 
     private val hierarchy = SpeakerHierarchy(
