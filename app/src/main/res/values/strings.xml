@@ -4,6 +4,8 @@
     <!-- Settings › Audio Settings -->
     <string name="audio_stereo">Stereo</string>
     <string name="audio_stereo_tip">Off: the mix plays in mono (both sides the same)</string>
+    <!-- Zones: a channel only an admin can change the speakers of (API field kid_mode) -->
+    <string name="child_mode">Child Mode</string>
     <!-- Themes › a server theme's ⋯ › Sync now (the phone's copy) -->
     <string name="sync_title">Sync “%1$s” now?</string>
     <string name="sync_text">New and changed audio files are downloaded, and the server\'s new presets and sequences are added. Your presets and settings on this phone stay as they are.</string>

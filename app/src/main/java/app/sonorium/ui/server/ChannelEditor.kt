@@ -216,7 +216,7 @@ fun ChannelEditor(
                                     }
                                     if (zones != null && edit != null && (zones.admin || kidMode)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text("Kid mode", color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                            Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.child_mode), color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
                                             Switch(
                                                 checked = kidMode, onCheckedChange = { kidMode = it }, enabled = zones.admin,
                                                 colors = SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),

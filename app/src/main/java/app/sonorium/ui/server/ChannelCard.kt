@@ -166,10 +166,15 @@ fun ChannelCard(
                 Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                     Text(session.name, color = Palette.text, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     val zone = zones?.zones?.get(session.id)
-                    val sub = speakerSummary(session) +
-                        (if (zone?.kidMode == true) " · 🔒 Kid mode" else "") +
-                        (zone?.ownerName?.let { " · 👤 $it" } ?: "")
-                    Text(sub, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val sub = speakerSummary(session) + (zone?.ownerName?.let { " · 👤 $it" } ?: "")
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(sub, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                        // Child Mode: the orange lock, no words (it's named for TalkBack)
+                        if (zone?.kidMode == true) {
+                            val label = androidx.compose.ui.res.stringResource(app.sonorium.R.string.child_mode)
+                            Text("🔒", color = Palette.warning, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp).semantics { contentDescription = label })
+                        }
+                    }
                 }
                 StateChip(playing, sleepLeft(session))
                 // A channel's own settings (name, speakers) and Delete: where channels can be made

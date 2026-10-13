@@ -102,7 +102,7 @@ object AdvancedPageRules {
         "plugin_packages" to ("Plugin packages" to "Plugins may install Python packages from the internet. Packages run with Sonorium's rights: allow only for plugins you trust."),
     )
 
-    const val ZONES_DESCRIPTION = "Channels can belong to a user. A speaker playing in one channel can't be taken by another, except by its home channel, the one it was added to first. Kid mode lets only an admin change a channel's speakers. An admin can link channels to play one thing in all of them."
+    const val ZONES_DESCRIPTION = "Channels can belong to a user. A speaker playing in one channel can't be taken by another, except by its home channel, the one it was added to first. Child Mode lets only an admin change a channel's speakers. An admin can link channels to play one thing in all of them."
 
     fun streamUrlOk(text: String): Boolean = text.isEmpty() || Regex("^https?://\\S+$", RegexOption.IGNORE_CASE).matches(text)
 }
