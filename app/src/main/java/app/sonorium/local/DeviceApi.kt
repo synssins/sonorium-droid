@@ -126,6 +126,7 @@ class DeviceApi(private val context: Context) : Interceptor {
                 if (s.getOrNull(2) == "links") {
                     if (s.getOrNull(3) == "source") s.getOrNull(4)?.let { editorFor(it) }
                     if (s.size == 3 && m == "POST") (body(request)["theme"] as? JsonPrimitive)?.contentOrNullSafe()?.let { runCatching { editorFor(it) } }
+                    if (s.size == 5 && s[4] == "copy-in") linkedSource(s[1], s[3])?.let { (src, _) -> runCatching { editorFor(src) } }
                 }
                 // The Theme Editor's routes (and a theme's presets): Core's code on the theme's prepared copy
                 val editor = editorFor(s[1])

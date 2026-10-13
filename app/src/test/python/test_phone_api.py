@@ -228,10 +228,14 @@ class PhoneApiTest(unittest.TestCase):
         self.assertNotIn("links", json.loads(exported["metadata"]))
         self.assertEqual([[key + ".wav", "Other", "Drone.wav"]], exported["linked"])
         self.assertEqual((404, "Source theme not found"), self.err("POST", ["links"], {"theme": "nope", "tracks": ["Drone"]}))
-        self.assertEqual(200, self.call("DELETE", ["links", key])[0])
-        te.remove_link(self.reference, key)
+        # Copy the linked file in: Core copies it (from the linked theme's folder) and the link goes
+        status, body = self.call("POST", ["links", key, "copy-in"], {"group": None})
+        self.assertEqual(200, status, body)
+        copy = next(o for o in self.ops if o["op"] == "copy")
+        self.assertEqual(("Drone.wav", "Other"), (copy["src"], copy["src_theme"]))
+        te.copy_link_in(self.reference, key, self.tmp / "reference" / "Other", None)
         self.same_files()
-        self.same_user_folder()
+        self.assertEqual(400, self.call("POST", ["links", key, "copy-in"], {})[0])
 
     def test_presets(self):
         status, body = self.call("GET", ["presets"])
@@ -305,7 +309,7 @@ class PhoneApiTest(unittest.TestCase):
         self.assertIn("group_crossfade_max", answer["body"]["values"])
 
     def test_not_here(self):
-        for method, segments in (("POST", ["links", "Drone", "copy-in"]),):
+        for method, segments in (("POST", ["settings", "x"]),):
             status, body = self.call(method, segments, {})
             self.assertEqual(501, status, segments)
             self.assertEqual(phone_api.NOT_HERE, body["error"])

@@ -29,8 +29,8 @@ in the user's themes folder. Upload's body here is JSON: {"filename", "path"}
 Themes are loaded without converting (theme_edit.convert_on_load = False):
 nothing is written on open, and the stand-ins' lengths are never read.
 
-What the phone can't do yet answers 501 {"detail"/"error": NOT_HERE}: copying a
-linked file in, and the server-wide category list changes.
+What the phone can't do answers 501 {"detail"/"error": NOT_HERE}: the server-wide
+category list changes.
 """
 import json
 import os
@@ -199,7 +199,26 @@ def _link_route(method, s, data, folder, root, pcm):
         return 200, _source_tracks(folder, root, pcm, s[1])
     if len(s) == 1 and method == "DELETE":
         return 200, te.remove_link(folder, s[0])
+    if len(s) == 2 and s[1] == "copy-in" and method == "POST":
+        return 200, _copy_link_in(folder, root, s[0], _object(data))
     raise _Http(501, NOT_HERE)
+
+
+def _copy_link_in(folder, root, key, body):
+    """
+    POST /themes/{id}/links/{key}/copy-in (api.py copy_link_in): Core's copy_link_in. Its "copy" op's
+    src is relative to the linked theme's folder; "src_theme" names that folder (under root) for the app,
+    whose copy of it holds only stand-ins.
+    """
+    if "group" not in body:
+        raise _Http(400, "'group' is required (a group name, or null for the top level)")
+    link = (te.load(folder).links or {}).get(key)
+    source = intrusions.folder_for_id_in(root)(link.get("theme")) if isinstance(link, dict) else None
+    result = te.copy_link_in(folder, key, source, body["group"])
+    for op in result["ops"]:
+        if op["op"] == "copy" and source is not None:
+            op["src_theme"] = Path(source).name
+    return {"track": result["track"], "ops": result["ops"]}
 
 
 def _source(root, source_id):

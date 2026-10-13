@@ -372,7 +372,7 @@ class ThemeStore(private val context: Context) {
     }
 
     /** One of Core's file operations (theme_edit.FileOps). */
-    data class FileOp(val op: String, val src: String?, val dst: String?)
+    data class FileOp(val op: String, val src: String?, val dst: String?, val srcTheme: String? = null)
 
     /** A new, empty theme folder [folder] holding only [metadata] (metadata.json). Throws [ImportProblem]. */
     suspend fun createTheme(folder: String, metadata: String) = withContext(Dispatchers.IO) {

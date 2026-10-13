@@ -126,7 +126,7 @@ class PhoneThemeApi(
         val ops = (parsed["ops"] as? JsonArray).orEmpty().mapNotNull { e ->
             val o = e as? JsonObject ?: return@mapNotNull null
             fun s(k: String) = (o[k] as? JsonPrimitive)?.takeIf { it.isString }?.content
-            ThemeStore.FileOp(s("op") ?: return@mapNotNull null, s("src"), s("dst"))
+            ThemeStore.FileOp(s("op") ?: return@mapNotNull null, s("src"), s("dst"), s("src_theme"))
         }
         // What changed goes back to the theme's folder (file operations first), and a playing mix follows it
         val written = ops.filter { it.op == "write" }.mapNotNull { it.dst }.toSet()
@@ -252,6 +252,12 @@ class PhoneThemeApi(
                 }
                 override fun apply(ops: List<ThemeStore.FileOp>, from: File) = kotlinx.coroutines.runBlocking {
                     try {
+                        // A linked file copied in: Core copied the other theme's stand-in, the real file is in its folder
+                        ops.filter { it.op == "copy" && it.srcTheme != null && it.src != null && it.dst != null }.forEach { op ->
+                            val source = store.list().firstOrNull { safe(it.folder) == op.srcTheme } ?: throw ThemeStore.ImportProblem("Couldn't find the linked file's theme")
+                            val file = store.files(source).firstOrNull { it.path == op.src } ?: throw ThemeStore.ImportProblem("Couldn't find ${op.src}")
+                            app.contentResolver.openInputStream(file.uri)?.use { input -> File(from, op.dst).outputStream().use { input.copyTo(it) } }
+                        }
                         store.applyOps(theme, ops, from)
                     } finally {
                         // Files moved or added: previews find them where they are now
