@@ -1,5 +1,15 @@
 ## What's new in this build
 
+- **Previews on your device:** the ▶ on a theme in Themes, Preview mix in the Theme Editor, and the ▶ of a linked file all play from the device itself, while My channel keeps playing.
+- **The first Save to phone downloads:** after choosing the themes folder, the theme you asked for is saved (it could be dropped before).
+- My channel on the device refreshes when something changes, not every second.
+
+## Please test
+
+- Your device › Themes › ▶ on a theme; Theme Editor › Preview mix, change a volume: the preview follows.
+- Fresh install: Save to phone on a server theme, choose the folder: that theme arrives with your server's presets.
+
+### Earlier (alpha19)
 - **Your device in the Servers list:** this phone or tablet shows up in the list (with a device icon) next to your Sonorium. Choose it and the whole app works with the device's own themes, presets, sequences and playlists, played on the device; choose your Sonorium to go back. Nothing is copied between them (Save to phone and Update on phone still bring a theme down).
 - **The same screens either way:** Channels, My channel, Playlists, Themes and the Theme Editor look and work as they do with your Sonorium. My channel on the device is a channel card like any other: Theme or Playlist, preset or sequence with its step and Next, volume and mute, recent changes, and Cast.
 - **Playlists on the device:** make, edit, duplicate and delete playlists from the themes on the device, and play them in My channel.
@@ -7,13 +17,6 @@
 - **The whole Theme Editor on the device:** Upload, groups, moving tracks, Add from another theme (linked files play too), Remove link and Export, as with your Sonorium.
 - **Audio Settings on the device:** crossfade between themes, default volume and master gain.
 - **Mix** on every channel card: the Theme Editor on the theme that's playing.
-
-## Please test
-
-- Servers › your device › the main screen: Channels shows My channel; play a theme, change preset, start a sequence (step and Next).
-- Playlists › Add playlist with two of the device's themes; My channel › Play a playlist › pick it: it plays, Next moves to the next entry.
-- Themes › Create theme, Import, Delete on the device. Mix on My channel opens the Theme Editor.
-- Choose your Sonorium again: everything is as before.
 
 ### Earlier (alpha18)
 - Starter themes show their presets before the first Play; the first Save to phone adds the starter themes once; starter copies offer Update on phone; the lock screen follows at once; "update ready" without a restart; the notifications permission is asked at the first Play; more of the Theme Editor on the phone.
