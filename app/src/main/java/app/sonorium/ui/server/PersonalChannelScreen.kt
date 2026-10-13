@@ -1,6 +1,7 @@
 package app.sonorium.ui.server
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -251,6 +252,12 @@ private fun PhoneOffer(
                     colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                     modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
                 ) { Text(if (onPhoneThemes != null) "Go to themes on this phone" else "Choose folder") }
+                // Never a dead end: the app's own folder works without asking anything
+                OutlinedButton(
+                    onClick = { model.useDefaultFolder() },
+                    border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
+                ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default), color = Palette.text) }
             }
             localThemes == null -> {}
             localThemes.isEmpty() -> {

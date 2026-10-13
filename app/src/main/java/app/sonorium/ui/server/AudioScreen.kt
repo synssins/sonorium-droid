@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -183,11 +185,45 @@ fun AudioPage(model: ServerViewModel) {
                 PhoneSwitch(app.sonorium.R.string.stop_on_switch_title, app.sonorium.R.string.stop_on_switch_tip, stopOnSwitch) { model.setStopOnSwitch(it) }
                 // The volume buttons and a server's channel: only where there are server channels
                 if (!onDevice) PhoneSwitch(app.sonorium.R.string.volume_keys_title, app.sonorium.R.string.volume_keys_tip, keys) { model.setVolumeKeys(it) }
+                ThemesFolderRow(model)
             }
             Spacer(Modifier.heightIn(min = 24.dp))
         }
     }
     ask?.let { a -> ConfirmDialog(a.title, a.sub, a.action, a.danger, onConfirm = a.onOk, onDismiss = { ask = null }) }
+}
+
+/**
+ * Where the themes on this device are: the folder, the space they use, Change… (the system folder picker; a
+ * "Sonorium" folder is made inside the one chosen) and Use default (the app's own folder).
+ */
+@Composable
+private fun ThemesFolderRow(model: ServerViewModel) {
+    val themes by model.localThemes.collectAsState()
+    val folderState by model.localFolder.collectAsState()
+    LaunchedEffect(Unit) { model.refreshLocalThemes() }
+    val picker = rememberThemesFolderPicker(model)
+    val store = model.themeStore
+    val where = remember(themes, folderState) { store.location() }
+    val used = bytesText(themes.orEmpty().sumOf { it.bytes })
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp).semantics { testTagsAsResourceId = true }.testTag("themes-folder")) {
+        Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_title), color = Palette.text, fontSize = 14.sp)
+        Text(
+            androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_used, where, used),
+            color = if (folderState == app.sonorium.local.ThemeStore.FolderState.MISSING) Palette.warning else Palette.textSecondary, fontSize = 12.sp,
+        )
+        if (store.isDefault) Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default_note), color = Palette.textMuted, fontSize = 12.sp)
+        Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = { picker.ask(changing = true, then = null) },
+                border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_change), color = Palette.text) }
+            if (!store.isDefault) OutlinedButton(
+                onClick = { model.useDefaultFolder() },
+                border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default), color = Palette.text) }
+        }
+    }
 }
 
 /** One of this phone's own settings (not the server's): label, tip, switch. */

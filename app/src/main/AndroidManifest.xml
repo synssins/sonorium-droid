@@ -101,6 +101,17 @@
             android:name=".cast.CastService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+        <!-- The default themes folder (the app's own storage) as documents, like a folder the user picks -->
+        <provider
+            android:name=".local.AppFolderProvider"
+            android:authorities="${applicationId}.folders"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
         <!-- Home-screen widgets: a channel's Play/Stop (2x1) and its controls (4x2) -->
         <receiver
             android:name=".widget.SmallChannelWidget"

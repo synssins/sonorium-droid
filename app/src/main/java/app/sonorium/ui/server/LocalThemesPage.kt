@@ -164,7 +164,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
             val list = themes
             when {
                 folder == ThemeStore.FolderState.MISSING -> item(span = { GridItemSpan(maxLineSpan) }) {
-                    FolderMissing { folderPicker.ask(changing = false, then = null) }
+                    FolderMissing(onChoose = { folderPicker.ask(changing = false, then = null) }, onDefault = { model.useDefaultFolder() })
                 }
                 list == null -> item(span = { GridItemSpan(maxLineSpan) }) {
                     Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
@@ -209,7 +209,7 @@ internal fun removeText(t: LocalTheme, playing: Boolean, hasServer: Boolean): St
 
 /** The themes folder was picked but can't be found now: say so, and offer to choose it again. */
 @Composable
-private fun FolderMissing(onChoose: () -> Unit) {
+private fun FolderMissing(onChoose: () -> Unit, onDefault: () -> Unit) {
     Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Palette.warning)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,10 +221,17 @@ private fun FolderMissing(onChoose: () -> Unit) {
                 "It may have been moved or deleted, or Sonorium can no longer open it. Choose it again, or choose a new folder for your themes.",
                 color = Palette.textSecondary, fontSize = 14.sp,
             )
-            Button(
-                onClick = onChoose, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-            ) { Text("Choose folder", fontWeight = FontWeight.Medium) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onChoose, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                ) { Text("Choose folder", fontWeight = FontWeight.Medium) }
+                // Never a dead end: the app's own folder works without asking anything
+                OutlinedButton(
+                    onClick = onDefault, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
+                ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default), color = Palette.text) }
+            }
         }
     }
 }
@@ -292,9 +299,9 @@ private fun FolderExplainDialog(changing: Boolean, onChoose: () -> Unit, onDismi
         title = { Text(if (changing) "Change themes folder" else "Choose a folder for your themes", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Sonorium keeps the themes on this phone in a folder you choose, so you can also see them in the Files app.", color = Palette.text, fontSize = 14.sp)
-                Text("On the next screen, open Music, then choose or create a folder named Sonorium, and tap Use this folder.", color = Palette.textSecondary, fontSize = 14.sp)
-                if (changing) Text("Themes in the current folder stay there; they aren't moved.", color = Palette.textSecondary, fontSize = 14.sp)
+                Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_explain), color = Palette.text, fontSize = 14.sp)
+                Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_explain_how), color = Palette.textSecondary, fontSize = 14.sp)
+                if (changing) Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_explain_move), color = Palette.textSecondary, fontSize = 14.sp)
             }
         },
         confirmButton = {

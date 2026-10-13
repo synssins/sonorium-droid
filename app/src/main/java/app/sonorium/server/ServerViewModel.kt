@@ -1117,6 +1117,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
      * can't be used.
      */
     fun useThemesFolder(uri: android.net.Uri, changing: Boolean): Boolean {
+        val before = app.themeStore.current()
+        val hadThemes = _localThemes.value.orEmpty().isNotEmpty()
         val changed = runCatching { app.themeStore.setRoot(uri) }
             .onFailure { android.util.Log.w("LocalThemes", "Couldn't keep the folder", it) }
             .getOrElse {
@@ -1129,12 +1131,54 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         if (changed) {
             // Nothing prepared from the old folder applies any more
             viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
-            if (changing) toast("Themes folder changed. Themes in the old folder weren't moved; they're still there.", error = false)
+            // The themes in the old folder: offered to move along (Chris)
+            if (hadThemes && before != null) _moveOffer.value = before
         }
         refreshLocalThemes()
         // The Save to phone that asked for the folder carries on now
         pending?.let { saveThemeToPhone(it) }
         return true
+    }
+
+    // ---------- The themes folder: default, change, move (Settings › Audio Settings › On this phone) ----------
+
+    private val _moveOffer = MutableStateFlow<Pair<android.net.Uri, String>?>(null)
+    /** The folder the themes were in before a change, while the move is offered. */
+    val moveOffer: StateFlow<Pair<android.net.Uri, String>?> = _moveOffer.asStateFlow()
+    private val _moving = MutableStateFlow<Pair<Int, Int>?>(null)
+    /** Moving themes to the new folder: files done, files (null when not moving). */
+    val moving: StateFlow<Pair<Int, Int>?> = _moving.asStateFlow()
+    private var moveJob: Job? = null
+
+    /** Back to the app's own folder; the themes in the folder before are offered to move along. */
+    fun useDefaultFolder() {
+        val before = app.themeStore.current()
+        val hadThemes = _localThemes.value.orEmpty().isNotEmpty()
+        if (!app.themeStore.useDefault()) return
+        viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
+        if (hadThemes && before != null && app.themeStore.root != null) _moveOffer.value = before
+        refreshLocalThemes()
+    }
+
+    fun answerMove(move: Boolean) {
+        val from = _moveOffer.value ?: return
+        _moveOffer.value = null
+        if (!move) return
+        moveJob = viewModelScope.launch {
+            _moving.value = 0 to 0
+            runCatching { app.themeStore.moveThemes(from) { d, t -> _moving.value = d to t } }
+                .onSuccess { n -> toast(app.resources.getQuantityString(R.plurals.folder_moved, n, n), error = false) }
+                .onFailure { e ->
+                    if (e is kotlinx.coroutines.CancellationException) toast(app.getString(R.string.folder_move_cancelled), error = false)
+                    else toast(e.message ?: app.getString(R.string.folder_move_failed), error = true)
+                }
+            _moving.value = null
+            refreshLocalThemes()
+        }
+    }
+
+    fun cancelMove() {
+        moveJob?.cancel()
     }
 
     private val _zipToDelete = MutableStateFlow<Pair<android.net.Uri, String>?>(null)

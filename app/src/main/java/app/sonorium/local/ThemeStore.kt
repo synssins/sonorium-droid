@@ -54,19 +54,32 @@ class ThemeStore(private val context: Context) {
     private val prefs = context.getSharedPreferences("sonorium", Context.MODE_PRIVATE)
     private val resolver get() = context.contentResolver
 
-    /** No folder picked yet; picked and reachable; or picked but gone (moved, deleted, or access revoked). */
+    /** No folder (unused now: there is always the default); reachable; or picked but gone (moved, deleted, or access revoked). */
     enum class FolderState { NONE, OK, MISSING }
 
     private val saved: Uri? get() = prefs.getString(KEY_ROOT, null)?.let(Uri::parse)
 
-    /** The picked folder (a tree URI) while this app may still use it, or null. */
-    val root: Uri? get() = saved?.takeIf { hasAccess(it) }
+    /** The picked folder's own document inside [saved] (its "Sonorium" folder), when not the tree's top. */
+    private val savedDoc: String? get() = prefs.getString(KEY_ROOT_DOC, null)
 
-    private fun hasAccess(uri: Uri) = resolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission && it.isWritePermission }
+    /** No folder picked: the app's own folder, made without asking (Chris: never "can't be found" on a fresh install). */
+    val isDefault: Boolean get() = saved == null
+
+    /**
+     * The themes folder as a tree URI: the one the user picked while this app may still use it (null when it's
+     * gone), else the app's own default folder.
+     */
+    val root: Uri? get() = if (saved == null) AppFolderProvider.defaultFolder(context).first else saved?.takeIf { hasAccess(it) }
+
+    /** The themes folder's own document in [root]'s tree. */
+    private val rootDoc: String
+        get() = saved.let { s -> if (s == null) AppFolderProvider.defaultFolder(context).second else savedDoc ?: DocumentsContract.getTreeDocumentId(s) }
+
+    private fun hasAccess(uri: Uri) = uri.authority == AppFolderProvider.authority(context) ||
+        resolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission && it.isWritePermission }
 
     /** Whether the themes folder is there (reads it: call off the main thread). */
     suspend fun folderState(): FolderState = withContext(Dispatchers.IO) {
-        if (saved == null) return@withContext FolderState.NONE
         val tree = root ?: return@withContext FolderState.MISSING
         val found = runCatching {
             resolver.query(
@@ -77,19 +90,97 @@ class ThemeStore(private val context: Context) {
         if (found) FolderState.OK else FolderState.MISSING
     }
 
+    /** Where the themes are, readable: "App storage/Sonorium", "Music/Sonorium", ... */
+    fun location(): String {
+        val s = saved ?: return "App storage/" + AppFolderProvider.FOLDER
+        val doc = savedDoc ?: runCatching { DocumentsContract.getTreeDocumentId(s) }.getOrNull() ?: return ""
+        return doc.substringAfter(':', doc).ifEmpty { doc }
+    }
+
     /**
-     * Keeps the folder the user picked (from ACTION_OPEN_DOCUMENT_TREE) and lets go of the one before.
-     * Returns true when it's a different folder from before.
+     * The folder the user picked (ACTION_OPEN_DOCUMENT_TREE): its "Sonorium" folder is the themes folder (made
+     * if needed, or the picked folder itself when it's called Sonorium). Lets go of the folder before. Returns
+     * true when it's a different folder from before. Throws when the folder can't be used.
      */
     fun setRoot(uri: Uri): Boolean {
         val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        resolver.takePersistableUriPermission(uri, flags)
+        if (uri.authority != AppFolderProvider.authority(context)) resolver.takePersistableUriPermission(uri, flags)
+        val top = DocumentsContract.getTreeDocumentId(uri)
+        val topName = runCatching {
+            resolver.query(DocumentsContract.buildDocumentUriUsingTree(uri, top), arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)
+                ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+        }.getOrNull()
+        val doc = if (topName == AppFolderProvider.FOLDER) top else
+            children(uri, top).firstOrNull { it.isDir && it.name == AppFolderProvider.FOLDER }?.id
+                ?: create(uri, top, DocumentsContract.Document.MIME_TYPE_DIR, AppFolderProvider.FOLDER)
         val old = saved
-        prefs.edit { putString(KEY_ROOT, uri.toString()) }
+        val oldDoc = savedDoc
+        prefs.edit { putString(KEY_ROOT, uri.toString()); putString(KEY_ROOT_DOC, doc) }
         if (old != null && old != uri) {
             runCatching { resolver.releasePersistableUriPermission(old, flags) }.onFailure { Log.w(TAG, "Couldn't release the old folder", it) }
         }
-        return old != uri
+        return old != uri || oldDoc != doc
+    }
+
+    /** Back to the app's own folder ("Use default"). Returns true when it was another folder. */
+    fun useDefault(): Boolean {
+        val old = saved ?: return false
+        prefs.edit { remove(KEY_ROOT); remove(KEY_ROOT_DOC) }
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        runCatching { resolver.releasePersistableUriPermission(old, flags) }
+        return true
+    }
+
+    /** The themes folder now, to move its themes from later ([moveThemes]): tree and folder document. */
+    fun current(): Pair<Uri, String>? = root?.let { it to rootDoc }
+
+    /**
+     * Moves every theme from the folder [from] (an earlier [current]) into the themes folder now: each theme copied
+     * file by file, checked by size, then removed from the old folder. A theme already there by name stays in the
+     * old folder. [progress] gets (files done, files). Cancelling stops between files (the theme being copied is
+     * removed from the new folder; the old one is kept). Returns how many themes moved.
+     */
+    suspend fun moveThemes(from: Pair<Uri, String>, progress: (Int, Int) -> Unit): Int = withContext(Dispatchers.IO) {
+        val (srcTree, srcRoot) = from
+        val dstTree = root ?: throw ImportProblem(CANT_WRITE)
+        val dstRoot = rootDoc
+        if (srcTree == dstTree && srcRoot == dstRoot) return@withContext 0
+        val taken = children(dstTree, dstRoot).map { it.name.lowercase() }.toSet()
+        val themes = children(srcTree, srcRoot).filter { it.isDir && !it.name.startsWith(".") && it.name.lowercase() !in taken }
+        fun walk(parent: String, prefix: String): List<Pair<String, FullDoc>> = childrenFull(srcTree, parent).flatMap { d ->
+            if (d.isDir) walk(d.id, prefix + d.name + "/") else listOf(prefix + d.name to d)
+        }
+        val plan = themes.map { t -> t to walk(t.id, "") }
+        val total = plan.sumOf { it.second.size }
+        var done = 0
+        var moved = 0
+        progress(0, total)
+        for ((theme, files) in plan) {
+            val folder = create(dstTree, dstRoot, DocumentsContract.Document.MIME_TYPE_DIR, theme.name)
+            try {
+                val dirs = mutableMapOf("" to folder)
+                for ((rel, doc) in files) {
+                    coroutineContext.ensureActive()
+                    val parts = rel.split('/')
+                    val target = create(dstTree, dirOf(dstTree, dirs, parts.dropLast(1)), mimeOf(parts.last()), parts.last())
+                    val out = resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(dstTree, target), "w") ?: throw ImportProblem(CANT_WRITE)
+                    var written = 0L
+                    out.use { o ->
+                        resolver.openInputStream(DocumentsContract.buildDocumentUriUsingTree(srcTree, doc.id))?.use { input ->
+                            written = input.copyTo(o)
+                        } ?: throw ImportProblem("Couldn't read ${theme.name}/$rel")
+                    }
+                    if (written != doc.size) throw ImportProblem("${theme.name}/$rel didn't copy whole")
+                    progress(++done, total)
+                }
+            } catch (e: Throwable) {
+                delete(dstTree, folder)
+                throw e
+            }
+            delete(srcTree, theme.id)
+            moved++
+        }
+        moved
     }
 
     private data class Doc(val id: String, val name: String, val mime: String, val size: Long) {
@@ -107,7 +198,8 @@ class ThemeStore(private val context: Context) {
         }.orEmpty()
     }
 
-    private fun rootId(tree: Uri): String = DocumentsContract.getTreeDocumentId(tree)
+    /** The themes folder's document in [tree] (the picked "Sonorium" folder, not always the tree's top). */
+    private fun rootId(tree: Uri): String = if (tree == root) rootDoc else DocumentsContract.getTreeDocumentId(tree)
 
     private fun readText(tree: Uri, docId: String): String? = runCatching {
         resolver.openInputStream(DocumentsContract.buildDocumentUriUsingTree(tree, docId))?.use { it.readBytes().decodeToString() }
@@ -473,6 +565,7 @@ class ThemeStore(private val context: Context) {
     companion object {
         private const val TAG = "ThemeStore"
         private const val KEY_ROOT = "themeFolder"
+        private const val KEY_ROOT_DOC = "themeFolderDoc"
         private const val CANT_WRITE = "Couldn't write to the themes folder. Check that it's still there and there's free space."
         /** The sample theme comes with the app and can't be changed. */
         const val SAMPLE_READ_ONLY = "This theme comes with the app and can't be changed."

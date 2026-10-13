@@ -165,6 +165,28 @@ fun ServerScreen(
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, app.sonorium.ui.coach.LocalCoach provides coach, LocalServerButtonRight provides serverButtonRight) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     // An imported zip: the user's own file, so asked before it's deleted
+    // Moving the themes after the themes folder changed: offered, then its progress (cancellable)
+    model.moveOffer.collectAsState().value?.let {
+        ConfirmDialog(
+            androidx.compose.ui.res.stringResource(R.string.folder_move_title), androidx.compose.ui.res.stringResource(R.string.folder_move_text),
+            androidx.compose.ui.res.stringResource(R.string.folder_move_action), danger = false,
+            onConfirm = { model.answerMove(true) }, onDismiss = { model.answerMove(false) },
+        )
+    }
+    model.moving.collectAsState().value?.let { (done, total) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {},
+            containerColor = Palette.card,
+            text = {
+                Column {
+                    Text(androidx.compose.ui.res.stringResource(R.string.folder_moving, done, total), color = Palette.text, fontSize = 14.sp)
+                    Spacer(Modifier.height(8.dp))
+                    androidx.compose.material3.LinearProgressIndicator(progress = { if (total == 0) 0f else done.toFloat() / total }, color = Palette.accent, modifier = Modifier.fillMaxWidth())
+                }
+            },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { model.cancelMove() }) { Text(androidx.compose.ui.res.stringResource(R.string.cancel), color = Palette.accent) } },
+        )
+    }
     model.importProblem.collectAsState().value?.let { text ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { model.importProblemSeen() },
@@ -254,7 +276,7 @@ fun ServerScreen(
                                 if (state.onDevice) Column(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) { ReadyingLine() }
                                 // Unlocked but no themes folder yet: the sample still shows, with the way to a folder (R6)
                                 if (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK) {
-                                    ChooseFolderLine(missing = localFolder == app.sonorium.local.ThemeStore.FolderState.MISSING) { folderPicker.ask(changing = false, then = null) }
+                                    ChooseFolderLine(missing = localFolder == app.sonorium.local.ThemeStore.FolderState.MISSING, onChoose = { folderPicker.ask(changing = false, then = null) }, onDefault = { model.useDefaultFolder() })
                                 }
                                 ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                             }
@@ -663,7 +685,7 @@ private val NEW_LINK = app.sonorium.net.ChannelLink(id = "")
 
 /** This device unlocked, its themes folder not chosen (or gone): a line with Choose folder above its themes. */
 @Composable
-private fun ChooseFolderLine(missing: Boolean, onChoose: () -> Unit) {
+private fun ChooseFolderLine(missing: Boolean, onChoose: () -> Unit, onDefault: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp).background(Palette.card, RoundedCornerShape(12.dp))
             .then(Modifier.border(1.dp, Palette.border, RoundedCornerShape(12.dp))).padding(12.dp),
@@ -678,6 +700,13 @@ private fun ChooseFolderLine(missing: Boolean, onChoose: () -> Unit) {
             onClick = onChoose, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
         ) { Text(androidx.compose.ui.res.stringResource(R.string.folder_choose), fontWeight = FontWeight.Medium) }
+        if (missing) {
+            Spacer(Modifier.width(8.dp))
+            OutlinedButton(
+                onClick = onDefault, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) { Text(androidx.compose.ui.res.stringResource(R.string.folder_default), color = Palette.text) }
+        }
     }
 }
 
