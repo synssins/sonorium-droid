@@ -97,6 +97,8 @@ class DeviceApi(private val context: Context) : Interceptor {
             s.firstOrNull() == "categories" -> return ok(JsonObject(mapOf("status" to JsonPrimitive("ok"))))
             s.firstOrNull() == "playlists" -> return ok(playlists(m, s.getOrNull(1), request), if (m == "POST") 201 else 200)
             s == listOf("groups") && m == "GET" -> return ok(JsonArray(emptyList()))
+            s == listOf("settings") && m == "GET" -> return ok(audioSettings())
+            s == listOf("settings") && m == "PUT" -> return ok(saveAudioSettings(body(request)))
             s == listOf("extensions") -> return ok(buildJsonObject { put("connections", JsonArray(emptyList())); put("pages", JsonArray(emptyList())) })
             s.size == 2 && s[0] == "themes" && m == "DELETE" -> return ok(deleteTheme(s[1]))
             s.size == 3 && s[0] == "themes" && s[2] == "favorite" && m == "POST" -> return ok(favorite(s[1]))
@@ -211,6 +213,26 @@ class DeviceApi(private val context: Context) : Interceptor {
         }
         changed("channel.updated")
         return session()
+    }
+
+    // ---------- Audio Settings ----------
+
+    private fun audioSettings(): JsonObject = DeviceSettings.get(context).let { a ->
+        buildJsonObject { put("crossfade_duration", a.crossfade); put("default_volume", a.volume); put("master_gain", a.gain) }
+    }
+
+    private fun saveAudioSettings(body: JsonObject): JsonObject {
+        val now = DeviceSettings.get(context)
+        fun n(k: String) = (body[k] as? JsonPrimitive)?.content?.toDoubleOrNull()
+        val audio = DeviceSettings.Audio(
+            crossfade = (n("crossfade_duration") ?: now.crossfade).coerceIn(0.0, 60.0),
+            volume = (n("default_volume")?.toInt() ?: now.volume).coerceIn(0, 100),
+            gain = (n("master_gain")?.toInt() ?: now.gain).coerceIn(0, 100),
+        )
+        DeviceSettings.set(context, audio)
+        runCatching { app.sonorium.engine.PhoneEngine.setAudio(audio.crossfade, audio.gain) }
+        changed("settings.changed")
+        return audioSettings()
     }
 
     // ---------- themes ----------
@@ -392,10 +414,10 @@ class DeviceApi(private val context: Context) : Interceptor {
         private const val MY_CHANNEL = "My channel"
 
         /** What the device offers of the capabilities a Sonorium server can have (none of the server-only ones). */
-        val CAPABILITIES = listOf<String>()
+        val CAPABILITIES = listOf("audio_settings")
 
         /** Everything a device's own user may do with its channel and themes. */
-        private val PERMS = listOf("ch.view", "ch.play", "th.edit", "pl.edit")
+        private val PERMS = listOf("ch.view", "ch.play", "th.edit", "pl.edit", "st.change")
 
         /** A device theme's id: its metadata.json id, else its folder (as the server's ids). */
         fun themeId(t: LocalTheme) = t.metaId ?: PhoneThemeApi.safe(t.folder)

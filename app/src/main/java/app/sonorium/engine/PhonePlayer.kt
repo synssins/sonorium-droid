@@ -84,7 +84,7 @@ object PhonePlayer {
     private fun restore(context: Context) {
         if (restored) return
         restored = true
-        val volume = prefs(context).getInt(KEY_VOLUME, 80).coerceIn(0, 100)
+        val volume = prefs(context).getInt(KEY_VOLUME, app.sonorium.local.DeviceSettings.get(context).volume).coerceIn(0, 100)
         val p = prefs(context)
         _state.update { it.copy(volume = volume, playlistMode = p.getBoolean(KEY_PLAYLIST_MODE, false), playlistId = p.getString(KEY_PLAYLIST, null)) }
     }

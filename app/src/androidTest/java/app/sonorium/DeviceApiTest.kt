@@ -27,7 +27,7 @@ class DeviceApiTest {
         val info = api.info()
         assertEquals(SonoriumApp.DEVICE_ID, info.id)
         assertTrue(info.personalChannel)
-        assertEquals(emptyList<String>(), info.capabilities)
+        assertEquals(listOf("audio_settings"), info.capabilities)
         assertTrue("ch.play" in api.me().perms)
 
         // Its one channel: what this device plays, also as My channel

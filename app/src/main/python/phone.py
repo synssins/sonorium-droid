@@ -78,6 +78,11 @@ class Player:
     def stop_playlist(self):
         return bool(self.engine.stop_playlist())
 
+    def set_audio(self, crossfade, gain):
+        """Audio Settings on this device: the crossfade between themes (s) and the master output gain (%)."""
+        self.engine.crossfade_seconds = max(0.0, float(crossfade))
+        self.engine.set_master_gain(float(gain))
+
     def sequences(self):
         """[{"id", "name"}] as JSON."""
         return json.dumps([{"id": sid, "name": name or sid} for sid, name in (self.engine.sequences or {}).items()])

@@ -29,6 +29,8 @@ object PhoneEngine {
         player?.let { old -> player = null; runCatching { old.callAttr("close") } }
         val p = python(context).getModule("phone").callAttr("Player", prepared.themeDir.path, prepared.pcmDir.path, presetId, volume.toDouble(), System.nanoTime() and 0x7fffffff, sequenceId)
         player = p
+        val audio = app.sonorium.local.DeviceSettings.get(context)
+        runCatching { p.callAttr("set_audio", audio.crossfade, audio.gain.toDouble()) }
         presetsOf(p)
     }
 
@@ -134,6 +136,9 @@ object PhoneEngine {
     }
 
     fun setPreset(presetId: String?) = synchronized(lock) { player?.callAttr("set_preset", presetId) }
+
+    /** Audio Settings changed on this device: the open engine follows. */
+    fun setAudio(crossfade: Double, gain: Int) = synchronized(lock) { player?.callAttr("set_audio", crossfade, gain.toDouble()); Unit }
 
     /**
      * Plays a playlist (the server's JSON) from its first entry; its themes are prepared copies under
