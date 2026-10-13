@@ -208,8 +208,10 @@ jobs:
           SONORIUM_VERSION_CODE: ${{ github.run_number }}
         run: |
           export SONORIUM_VERSION_NAME="${SONORIUM_VERSION_NAME#v}"
-          ./gradlew --stacktrace :app:assembleRelease
+          ./gradlew --stacktrace :app:assembleRelease :app:bundleRelease
           cp app/build/outputs/apk/release/app-release.apk "sonorium-${SONORIUM_VERSION_NAME}.apk"
+          # The bundle for Google Play (same signature: the upload key)
+          cp app/build/outputs/bundle/release/app-release.aab "sonorium-${SONORIUM_VERSION_NAME}.aab"
           "$(ls -d "$ANDROID_HOME"/build-tools/* | tail -1)/apksigner" verify --print-certs "sonorium-${SONORIUM_VERSION_NAME}.apk" | grep -i sha-256 || true
 
       - name: Publish the GitHub release
@@ -222,7 +224,7 @@ jobs:
             git tag "$TAG" "$GITHUB_SHA"
             git push origin "refs/tags/$TAG"
           fi
-          gh release create "$TAG" sonorium-*.apk --verify-tag \
+          gh release create "$TAG" sonorium-*.apk sonorium-*.aab --verify-tag \
             --title "Sonorium $TAG" --notes-file .github/release-notes.md \
             $([[ "$TAG" == *-* ]] && echo --prerelease) || {
               echo "::group::What this token may do"

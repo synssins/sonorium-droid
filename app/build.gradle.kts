@@ -35,7 +35,11 @@ android {
         versionName = System.getenv("SONORIUM_VERSION_NAME") ?: "0.1.0-dev"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // The engine's Python and numpy are per ABI: phones (arm64) and the CI emulators (x86_64)
-        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+            // Google Play: native symbols in the bundle (for crash reports of the engine's native libraries)
+            debugSymbolLevel = "SYMBOL_TABLE"
+        }
     }
 
     signingConfigs {
