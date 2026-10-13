@@ -94,6 +94,15 @@ object PhonePlayer {
         if (restored) return
         restored = true
         // The themes got ready before (their versions), so a restart doesn't get them ready again
+        // Files are read live now: the copies made to play them go (once), and every theme is listed again
+        if (!prefs(context).getBoolean(KEY_LIVE, false)) {
+            prefs(context).edit {
+                prefs(context).all.keys.filter { it.startsWith(KEY_READY) || it.startsWith(KEY_FREED) }.forEach { remove(it) }
+                putBoolean(KEY_LIVE, true)
+            }
+            val app = context.applicationContext
+            scope.launch { runCatching { ThemePrep.dropOldCopies(app) } }
+        }
         prefs(context).all.forEach { (k, v) -> if (k.startsWith(KEY_READY) && v is String) ready[k.removePrefix(KEY_READY)] = v }
         // Full volume: the phone's media volume is the loudness (item 15)
         val volume = 100
@@ -295,12 +304,10 @@ object PhonePlayer {
                 if (openFor != theme.version) {
                     // This theme's files changed since the engine opened it: let go of them before they're rebuilt
                     if (openFolder == theme.folder) closeEngine()
-                    // Got ready when it arrived: straight to playing; else (or changed since) now, with progress
+                    // Listed (settings and stand-ins, in moments); the files are read live as the mix plays them
                     val prepared = if (isReady(app, theme)) ThemePrep.prepared(app, theme.folder) else {
-                        _state.update { it.copy(preparing = 0 to theme.tracks, preparingName = null, error = null, notice = null) }
-                        ThemePrep.prepare(app, app.themeStore, theme) { done, total ->
-                            if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = done to total) else it }
-                        }
+                        _state.update { it.copy(error = null, notice = null) }
+                        ThemePrep.prepare(app, app.themeStore, theme) { _, _ -> }
                     }
                     ensureActive()
                     prepareLinked(app, theme)
@@ -403,6 +410,8 @@ object PhonePlayer {
     fun prepareInBackground(context: Context, themes: List<LocalTheme>) {
         val app = context.applicationContext as SonoriumApp
         restore(app)
+        // Nothing to get ready ahead any more: files are read live while the mix plays
+        if (LIVE) return
         val p = prefs(app)
         // A theme whose space was freed on purpose waits for its next Play
         val todo = themes.filter { !isReady(app, it) && it.tracks > 0 && it.folder != openFolder && p.getString(KEY_FREED + it.folder, null) != it.version }
@@ -425,7 +434,7 @@ object PhonePlayer {
 
     /** [theme] was got ready at its current version and its prepared copy is still there. */
     private fun isReady(context: Context, theme: LocalTheme): Boolean =
-        ready[theme.folder] == theme.version && ThemePrep.prepared(context, theme.folder).let { it.themeDir.isDirectory && it.pcmDir.isDirectory }
+        ready[theme.folder] == theme.version && ThemePrep.prepared(context, theme.folder).themeDir.isDirectory
 
     /** [theme]'s prepared copy is current (kept across restarts, so nothing is got ready twice). */
     private fun markReady(context: Context, theme: LocalTheme) {
@@ -481,10 +490,8 @@ object PhonePlayer {
                 for (t in now) {
                     if (isReady(t)) continue
                     val before = done
-                    _state.update { it.copy(preparing = before to total, preparingName = t.name, error = null, notice = null) }
-                    ThemePrep.prepare(app, app.themeStore, t) { d, _ ->
-                        if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = (before + d) to total) else it }
-                    }
+                    _state.update { it.copy(error = null, notice = null) }
+                    ThemePrep.prepare(app, app.themeStore, t) { _, _ -> }
                     done = before + t.tracks
                     ready[t.folder] = t.version
                     ensureActive()
@@ -809,6 +816,9 @@ object PhonePlayer {
     private const val KEY_PLAYLIST_MODE = "playlist_mode"
     private const val KEY_SAMPLE_DAY = "sample_day"
     private const val KEY_READY = "ready:"
+    private const val KEY_LIVE = "liveDecoding"
+    /** Files are read live while mixing (no ready-to-play copy): nothing is got ready in the background. */
+    private const val LIVE = true
     private const val KEY_FREED = "freed:"
     private const val KEY_SAMPLE_SECONDS = "sample_seconds"
     private const val KEY_CHOICE = "choice:"

@@ -20,6 +20,7 @@ object PhoneEngine {
     private val lock = Any()
 
     private fun python(context: Context): Python {
+        app.sonorium.audio.LiveDecoder.init(context)
         if (!Python.isStarted()) Python.start(AndroidPlatform(context.applicationContext))
         return Python.getInstance()
     }

@@ -123,7 +123,8 @@ def _route(method, s, query, data, root, pcm_root, current):
     if raw is not None and not raw.get("intrusions_retired") and any(
             isinstance(g, dict) and g.get("mode") == "intrusion" for g in (raw.get("groups") or {}).values()):
         raise _Http(409, OLD_FORMAT)  # Core's conversion moves audio files: the server does it
-    decoder = decoders.PcmFileDecoder(lookup=decoders.mirror_lookup(folder, pcm)) if pcm else None
+    # On the device the files are read live (phone.LiveDecoder); old decoded copies only off the device (tests)
+    decoder = _live_decoder() or (decoders.PcmFileDecoder(lookup=decoders.mirror_lookup(folder, pcm)) if pcm else None)
     with decoders.use_decoder(decoder), _values.use_values(package_values(str(folder))):
         return _theme_route(method, s[1], s[2:], query, data, folder, root, pcm, decoder)
 
@@ -240,7 +241,7 @@ def _source_tracks(folder, root, pcm, source_id):
     tracks = []
     for path in _audio_files(source):
         key = track_key(source, path)
-        seconds = _seconds(_wav(source, source_pcm, path)) if source_pcm is not None else None
+        seconds = _length(source, source_pcm, path)
         tracks.append({
             "id": key, "name": key, "display_name": track_display_name(key),
             "group": key.split("/", 1)[0] if "/" in key else None,
@@ -345,7 +346,7 @@ def _tracks(theme_id, folder, root, pcm):
     lengths = {}
     for path in _audio_files(folder):
         from sonorium.theme_files import track_key
-        lengths[track_key(folder, path)] = _seconds(_wav(folder, pcm, path)) if pcm else None
+        lengths[track_key(folder, path)] = _length(folder, pcm, path)
     folder_for_id = intrusions.folder_for_id_in(root)
     groups = metadata.groups or {}
     threshold = metadata.short_file_threshold
@@ -516,6 +517,25 @@ def _sequences_with(folder, sequence_id):
 def _audio_files(folder):
     from sonorium.theme_files import theme_audio_files
     return theme_audio_files(Path(folder))
+
+
+def _live_decoder():
+    """The device's live decoder, or None off the device (no Java)."""
+    try:
+        import java  # noqa: F401
+    except ImportError:
+        return None
+    import phone
+    return phone.LiveDecoder()
+
+
+def _length(folder, pcm, path):
+    """A file's length in seconds: from its header on the device, else from a decoded copy, else None."""
+    import phone
+    seconds = phone.live_seconds(path)
+    if seconds is not None:
+        return seconds
+    return _seconds(_wav(folder, pcm, path)) if pcm is not None else None
 
 
 def _wav(folder, pcm, path):

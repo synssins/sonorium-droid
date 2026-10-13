@@ -9,7 +9,7 @@ import os
 os.environ.setdefault("SONORIUM_LOG_LEVEL", "warning")
 
 from sonorium import playback_values as _values  # noqa: E402
-from sonorium.engine import Engine, PcmFileDecoder, mirror_lookup  # noqa: E402
+from sonorium.engine import Engine  # noqa: E402
 
 MARKER = ".sonorium-package.json"
 
@@ -26,26 +26,84 @@ def package_values(theme_dir):
         return {}
 
 
+class _LiveAudio:
+    """One file read live through the device's decoder (app.sonorium.audio.LiveDecoder.Stream)."""
+
+    def __init__(self, stream, channels):
+        self._stream = stream
+        self.channels = channels
+        self._closed = False
+
+    @property
+    def has_audio(self):
+        return True
+
+    def header_length(self):
+        frames = int(self._stream.getHeaderFrames())
+        return frames if frames >= 0 else None
+
+    def blocks(self, flush=True):
+        import numpy as np
+        try:
+            while True:
+                chunk = self._stream.read()
+                if chunk is None:
+                    break
+                block = np.frombuffer(bytes(chunk), dtype="<i2")
+                if self.channels == 2:
+                    block = block.reshape(-1, 2).T
+                if block.size:
+                    yield block
+        finally:
+            self.close()
+
+    def close(self):
+        if not self._closed:
+            self._closed = True
+            self._stream.close()
+
+
+class LiveDecoder:
+    """
+    Core's decoder hook (sonorium.decoders): theme files read live while the engine mixes, by the
+    device's own decoder (MediaCodec), 44100 Hz, mono or stereo as the mix asks. A prepared copy's
+    stand-in names the real file (a document in the user's themes folder); a real file is read as it is.
+    """
+    accepts_channels = True
+
+    def open(self, path, channels=1):
+        from java import jclass
+        stream = jclass("app.sonorium.audio.LiveDecoder").open(str(path), int(channels))
+        return _LiveAudio(stream, 2 if channels >= 2 else 1)
+
+    def __repr__(self):
+        return "LiveDecoder()"
+
+
+def live_seconds(path):
+    """A file's length from its header (the device's extractor), or None."""
+    try:
+        from java import jclass
+        seconds = float(jclass("app.sonorium.audio.LiveDecoder").durationSeconds(str(path)))
+        return seconds if seconds >= 0 else None
+    except Exception:  # noqa: BLE001  (off the device: no Java)
+        return None
+
+
 class Player:
     """
-    One engine on prepared theme folders: each theme's `cache_dir` holds its predecoded WAVs.
-    set_theme() crossfades to another prepared theme while playing.
+    One engine on prepared theme folders (settings and stand-ins); the files are read live while it mixes.
+    set_theme() crossfades to another prepared theme while playing. cache_dir is no longer used.
     """
 
-    def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0, sequence_id=None, stereo=True):
-        self._mirrors = [mirror_lookup(theme_dir, cache_dir)]
-        self._roots = [os.path.realpath(theme_dir)]
-        # Linked files and playlist entries: other prepared themes beside it, their audio beside its own
-        themes_root, pcm_root = os.path.dirname(os.path.realpath(theme_dir)), os.path.dirname(os.path.realpath(cache_dir))
-        self._roots.append(themes_root)
-        self._mirrors.append(mirror_lookup(themes_root, pcm_root))
+    def __init__(self, theme_dir, cache_dir=None, preset_id=None, volume=1.0, seed=0, sequence_id=None, stereo=True):
         self.engine = Engine(
             theme_dir,
             preset_id=preset_id or None,
             sequence_id=sequence_id or None,
             playback_values=package_values(theme_dir),
             seed=int(seed),
-            decoder=PcmFileDecoder(lookup=self._lookup),
+            decoder=LiveDecoder(),
             channels=2,
         )
         # Always a stereo mix; Stereo off folds it to mono at the output (no theme is read again)
@@ -53,31 +111,12 @@ class Player:
             self.engine.set_channels(1)
         self.engine.set_volume(float(volume))
 
-    def _lookup(self, path):
-        real = os.path.realpath(str(path))
-        for root, mirror in zip(self._roots, self._mirrors):
-            if real == root or real.startswith(root + os.sep):
-                return mirror(path)
-        return path
-
-    def set_theme(self, theme_dir, cache_dir, preset_id=None, sequence_id=None):
+    def set_theme(self, theme_dir, cache_dir=None, preset_id=None, sequence_id=None):
         """Crossfades to another prepared theme (its default preset when preset_id is None)."""
-        root = os.path.realpath(theme_dir)
-        if root not in self._roots:
-            self._roots.insert(0, root)
-            self._mirrors.insert(0, mirror_lookup(theme_dir, cache_dir))
         self.engine.set_theme(theme_dir, preset_id=preset_id, sequence_id=sequence_id or None)
 
-    def start_playlist(self, playlist_json, themes_root, pcm_root):
-        """
-        Plays a playlist (the server's JSON) from its first entry. Its themes are prepared copies under
-        themes_root, their decoded audio in the same layout under pcm_root.
-        """
-        root = os.path.realpath(themes_root)
-        if root not in self._roots:
-            # After every theme's own mirror: any prepared theme's files map to its decoded audio
-            self._roots.append(root)
-            self._mirrors.append(mirror_lookup(themes_root, pcm_root))
+    def start_playlist(self, playlist_json, themes_root, pcm_root=None):
+        """Plays a playlist (the server's JSON) from its first entry. Its themes are prepared copies under themes_root."""
         return json.dumps(self.engine.start_playlist(json.loads(playlist_json), themes_root=themes_root), default=str)
 
     def stop_playlist(self):

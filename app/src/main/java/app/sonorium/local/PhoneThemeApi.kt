@@ -3,6 +3,7 @@ package app.sonorium.local
 import android.content.Context
 import android.util.Log
 import app.sonorium.engine.PhoneEngine
+import app.sonorium.engine.StandIns
 import app.sonorium.engine.ThemePrep
 import app.sonorium.net.SonoriumApi
 import app.sonorium.net.ThemeSummary
@@ -136,10 +137,7 @@ class PhoneThemeApi(
         }
         if (changed.isNotEmpty() || ops.isNotEmpty()) {
             try {
-                if (ops.isNotEmpty()) {
-                    source.apply(ops, themeDir)
-                    afterOps(ops)
-                }
+                if (ops.isNotEmpty()) source.apply(ops, themeDir)
                 changed.forEach { (name, bytes) -> source.write(name, bytes) }
             } catch (e: Exception) {
                 Log.e(TAG, "Couldn't write the theme's files back", e)
@@ -148,34 +146,6 @@ class PhoneThemeApi(
             if (PhoneEngine.isOpen) runCatching { PhoneEngine.reloadTheme() }.onFailure { Log.w(TAG, "The engine couldn't reload the theme", it) }
         }
         status to out
-    }
-
-    /**
-     * The prepared copy after its file operations reached the theme's folder: an uploaded file goes back
-     * to an empty stand-in, and decoded audio follows moved files and folders (nothing is decoded again).
-     */
-    private fun afterOps(ops: List<ThemeStore.FileOp>) {
-        val pcm = File(pcmRoot, folder)
-        ops.forEach { op ->
-            val src = op.src
-            val dst = op.dst
-            when (op.op) {
-                "write", "copy" -> if (dst != null && ThemeStore.isAudio(dst)) runCatching { File(themeDir, dst).writeBytes(ByteArray(0)) }
-                "move" -> if (src != null && dst != null) runCatching {
-                    val dir = File(pcm, src)
-                    if (dir.isDirectory) {
-                        File(pcm, dst).parentFile?.mkdirs()
-                        dir.renameTo(File(pcm, dst))
-                    } else if (ThemeStore.isAudio(src)) {
-                        val wav = File(pcm, src.substringBeforeLast('.') + ".wav")
-                        val to = File(pcm, dst.substringBeforeLast('.') + ".wav")
-                        to.parentFile?.mkdirs()
-                        if (wav.exists()) wav.renameTo(to)
-                    }
-                }
-                "delete" -> if (src != null) runCatching { File(pcm, src).takeIf { it.isDirectory }?.delete() }
-            }
-        }
     }
 
     /** A track's own audio file as the answer to [request] (404 when it has none). */
@@ -260,8 +230,12 @@ class PhoneThemeApi(
                         }
                         store.applyOps(theme, ops, from)
                     } finally {
-                        // Files moved or added: previews find them where they are now
-                        audio = store.files(theme).filter { ThemeStore.isAudio(it.path) }.associateBy { it.path.substringBeforeLast('.') }
+                        // Files moved or added: previews find them where they are now, and the stand-ins name them
+                        // there (an uploaded file in the prepared copy becomes a stand-in again)
+                        val now = store.files(theme)
+                        audio = now.filter { ThemeStore.isAudio(it.path) }.associateBy { it.path.substringBeforeLast('.') }
+                        ops.mapNotNull { it.dst }.filter { ThemeStore.isAudio(it) }.forEach { File(dir, it).delete() }
+                        StandIns.write(dir, now)
                     }
                 }
             })
@@ -300,9 +274,9 @@ class PhoneThemeApi(
         }
 
         /**
-         * The prepared copy's settings files from the theme's folder, and an empty stand-in for each audio
+         * The prepared copy's settings files from the theme's folder, and a stand-in (naming the file) for each audio
          * file (stand-ins of files no longer there are removed). Nothing is deleted otherwise, so an engine
-         * playing this theme keeps its files; decoded audio is left as it is.
+         * playing this theme keeps its files.
          */
         private fun prepareSettings(context: Context, dir: File, files: List<ThemeStore.ThemeFile>) {
             dir.mkdirs()
@@ -312,9 +286,7 @@ class PhoneThemeApi(
                 out.parentFile?.mkdirs()
                 resolver.openInputStream(f.uri)?.use { input -> out.outputStream().use { input.copyTo(it) } }
             }
-            val audio = files.filter { ThemeStore.isAudio(it.path) }.map { it.path }.toSet()
-            audio.forEach { p -> File(dir, p).apply { parentFile?.mkdirs(); if (!exists()) createNewFile() } }
-            dir.walkTopDown().filter { it.isFile && it.length() == 0L && ThemeStore.isAudio(it.name) && it.relativeTo(dir).path !in audio }.forEach { it.delete() }
+            StandIns.write(dir, files)
         }
     }
 }
