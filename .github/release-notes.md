@@ -1,15 +1,19 @@
 ## What's new in this build
 
+- **Tablets:** Add playlist and Create theme stay open when the keyboard comes up (they closed themselves on a tablet).
+- **Add from another theme** lists the other theme's tracks also before that theme has been played on your device (it said "Can't reach the server.").
+
+## Please test
+
+- On a tablet: Playlists › Add playlist, type a name; Themes › Create theme.
+- Your device › a theme › Edit › Add from another theme › a theme you haven't played yet: its tracks are listed.
+
+### Earlier (alpha24)
 - **Playlists from the Channels page:** picking a playlist on a channel card plays it (it did nothing before).
 - **Your preset shows at once** when the app starts, not after a few seconds.
 - **Linked files get ready quickly:** a theme that uses a file from another theme gets only that file ready, not the whole other theme.
 - After a restart with a playlist chosen, the channel shows the playlist's first entry and Mix opens its theme.
 - Add from another theme: each preview button names its track (for TalkBack).
-
-## Please test
-
-- Channels › a channel card › Play a playlist › pick one: it plays.
-- Close the app fully and open it: My channel shows your preset right away.
 
 ### Earlier (alpha23)
 - **Your preset is kept again:** the preset or sequence you chose comes back after the app is closed fully.
