@@ -322,7 +322,7 @@ class DeviceApi(private val context: Context) : Interceptor {
                 add(SonoriumApi.json.encodeToJsonElement(ThemeSummary.serializer(), ThemeSummary(
                     id = idOf(t), name = t.name, icon = t.icon, totalTracks = t.tracks, hasAudio = t.tracks > 0,
                     isFavorite = idOf(t) in favorites, categories = t.categories, description = t.description,
-                    sizeBytes = t.bytes, cacheBytes = cacheBytes(t),
+                    sizeBytes = t.bytes, cacheBytes = cacheBytes(t), readOnly = t.sample,
                 )))
             }
         }
@@ -422,10 +422,14 @@ class DeviceApi(private val context: Context) : Interceptor {
     }
 
     /** Favorites: kept on this device (not in the theme's files, so they don't change its package). */
-    /** The theme's ready-to-play copy on this device (its decoded audio and prepared folder), in bytes. */
+    /**
+     * A ready-to-play copy left from before files were read live (its decoded audio), in bytes: 0 once it's
+     * gone (the listing of settings and stand-ins is a few KB and isn't counted), so Free up space shows only
+     * while there's an old copy.
+     */
     private fun cacheBytes(t: LocalTheme): Long {
         val p = app.sonorium.engine.ThemePrep.prepared(context, t.folder)
-        return listOf(p.pcmDir, p.themeDir).sumOf { d -> d.walkTopDown().filter { it.isFile }.sumOf { it.length() } }
+        return if (p.pcmDir.isDirectory) p.pcmDir.walkTopDown().filter { it.isFile }.sumOf { it.length() } else 0L
     }
 
     /** DELETE /themes/{id}/cache: frees the ready-to-play copy (made again in the background, or at the next Play). */

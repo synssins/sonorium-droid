@@ -180,6 +180,8 @@ data class ThemeSummary(
     /** Space on this device (its own entry): the theme's files, and its ready-to-play copy (the cache). */
     @SerialName("size_bytes") val sizeBytes: Long? = null,
     @SerialName("cache_bytes") val cacheBytes: Long? = null,
+    /** Can't be changed or deleted (the sample theme that comes with the app). */
+    @SerialName("read_only") val readOnly: Boolean = false,
 )
 
 @Serializable

@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.border
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -158,6 +159,14 @@ fun ServerScreen(
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, LocalHelpInTopBar provides true, app.sonorium.ui.coach.LocalCoach provides coach) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     // An imported zip: the user's own file, so asked before it's deleted
+    model.importProblem.collectAsState().value?.let { text ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { model.importProblemSeen() },
+            containerColor = Palette.card,
+            text = { Text(text, color = Palette.text, fontSize = 14.sp) },
+            confirmButton = { androidx.compose.material3.TextButton(onClick = { model.importProblemSeen() }) { Text("OK", color = Palette.accent) } },
+        )
+    }
     model.zipToDelete.collectAsState().value?.let { (_, name) ->
         ConfirmDialog(
             title = "Delete “$name”?",
@@ -233,12 +242,16 @@ fun ServerScreen(
                             page == Page.Advanced -> AdvancedSettingsPage(state, model)
                             // Themes: the server's, or the ones on this phone (the only ones without a server)
                             // Themes: the active entry's (this device's need its themes folder first)
-                            page == Page.Themes && (state.record == null || (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK)) ->
+                            page == Page.Themes && state.record == null ->
                                 LocalThemesPage(model, hasServer = false)
                             page == Page.Themes && state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { model.useDevice() })
                             page == Page.Themes -> Column(Modifier.fillMaxSize()) {
                                 // A theme that just arrived on this device getting ready, with its progress
                                 if (state.onDevice) Column(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) { ReadyingLine() }
+                                // Unlocked but no themes folder yet: the sample still shows, with the way to a folder (R6)
+                                if (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK) {
+                                    ChooseFolderLine(missing = localFolder == app.sonorium.local.ThemeStore.FolderState.MISSING) { folderPicker.ask(changing = false, then = null) }
+                                }
                                 ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                             }
                             else -> ChannelsPage(
@@ -660,6 +673,26 @@ private fun ChannelsPage(
 }
 
 private val NEW_LINK = app.sonorium.net.ChannelLink(id = "")
+
+/** This device unlocked, its themes folder not chosen (or gone): a line with Choose folder above its themes. */
+@Composable
+private fun ChooseFolderLine(missing: Boolean, onChoose: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp).background(Palette.card, RoundedCornerShape(12.dp))
+            .then(Modifier.border(1.dp, Palette.border, RoundedCornerShape(12.dp))).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            androidx.compose.ui.res.stringResource(if (missing) R.string.folder_missing_line else R.string.folder_choose_line),
+            color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(8.dp))
+        Button(
+            onClick = onChoose, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+        ) { Text(androidx.compose.ui.res.stringResource(R.string.folder_choose), fontWeight = FontWeight.Medium) }
+    }
+}
 
 @Composable
 private fun LinkBar(state: ServerState, link: app.sonorium.net.ChannelLink, admin: Boolean, onChange: () -> Unit, onUnlink: () -> Unit) {

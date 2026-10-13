@@ -961,7 +961,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             toast("Imported \"${r.themeFolder}\" (${r.filesExtracted} files)", error = false)
             source?.let { _zipToDelete.value = it to fileName }
         } catch (e: Exception) {
-            failOr(e, "Failed to import theme")
+            // Said in a dialog, not a toast that may pass unseen (R3: "already on this device")
+            _importProblem.value = messageOf(e, "Couldn't import “$fileName”")
         }
     }
 
@@ -1110,12 +1111,25 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     val zipToDelete: StateFlow<Pair<android.net.Uri, String>?> = _zipToDelete.asStateFlow()
 
     /** Deletes the imported zip ([delete] true) or keeps it. */
+    private val _importProblem = MutableStateFlow<String?>(null)
+    /** Why an import didn't happen, until dismissed. */
+    val importProblem: StateFlow<String?> = _importProblem.asStateFlow()
+
+    fun importProblemSeen() {
+        _importProblem.value = null
+    }
+
     fun answerZip(delete: Boolean) {
         val (uri, name) = _zipToDelete.value ?: return
         _zipToDelete.value = null
         if (!delete) return
         viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
-            val ok = runCatching { android.provider.DocumentsContract.deleteDocument(getApplication<Application>().contentResolver, uri) }.getOrDefault(false)
+            val resolver = getApplication<Application>().contentResolver
+            // The document way first; some providers (Downloads) only delete through the resolver (R2)
+            val ok = runCatching { android.provider.DocumentsContract.deleteDocument(resolver, uri) }
+                .onFailure { android.util.Log.w("LocalThemes", "deleteDocument refused $uri", it) }.getOrDefault(false) ||
+                runCatching { resolver.delete(uri, null, null) > 0 }
+                    .onFailure { android.util.Log.w("LocalThemes", "delete refused $uri", it) }.getOrDefault(false)
             toast(if (ok) "Deleted “$name”" else "Couldn't delete “$name”. Delete it in the Files app.", error = !ok)
         }
     }

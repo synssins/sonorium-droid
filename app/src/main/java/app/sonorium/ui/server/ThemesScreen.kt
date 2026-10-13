@@ -123,7 +123,11 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     }
     val pickZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            val name = uri.lastPathSegment?.substringAfterLast('/')?.let { if (it.endsWith(".zip")) it else "$it.zip" } ?: "theme.zip"
+            // The file's own name (a document id like "msf:388" isn't one: R2)
+            val name = runCatching {
+                context.contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
+                    ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+            }.getOrNull()?.ifBlank { null } ?: "theme.zip"
             runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
                 ?.let { model.importTheme(name, it, uri) } ?: model.toast("Couldn’t import the theme", error = true)
         }
@@ -249,7 +253,11 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
         SyncDialog(t.name, onSync = { overwrite -> updating = null; model.saveThemeToPhone(t.id, overwrite) }, onDismiss = { updating = null })
     }
     deleting?.let { t ->
-        ConfirmDialog("Delete “${t.name}”?", "The theme and its tracks are removed from the server.", "Delete", onConfirm = { model.deleteTheme(t) }, onDismiss = { deleting = null })
+        ConfirmDialog(
+            "Delete “${t.name}”?",
+            if (LocalOnDevice.current) "The theme and its tracks are removed from this device." else "The theme and its tracks are removed from the server.",
+            "Delete", onConfirm = { model.deleteTheme(t) }, onDismiss = { deleting = null },
+        )
     }
 }
 
@@ -416,7 +424,8 @@ private fun ThemeCard(
                     phoneBlocked?.let { MenuAction(it, SIcons.Headphones, enabled = false) {} },
                     MenuAction("Export", SIcons.Download, onClick = onExport),
                     t.cacheBytes?.takeIf { it > 0 }?.let { MenuAction("Free up space (${bytesText(it)})", SIcons.Refresh, onClick = onClearCache) },
-                    MenuAction("Delete…", SIcons.Trash, danger = true, separatorBefore = true, onClick = onDelete),
+                    // The sample comes with the app and can't be changed or deleted (R1)
+                    if (t.readOnly) null else MenuAction("Delete…", SIcons.Trash, danger = true, separatorBefore = true, onClick = onDelete),
                 )) }
             }
             if (downloading != null) {
