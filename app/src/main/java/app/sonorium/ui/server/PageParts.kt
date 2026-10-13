@@ -249,7 +249,8 @@ fun EmptyState(title: String, sub: String?) {
 /** A page's ? button: its `PAGE_HELP` text in a help panel. */
 @Composable
 fun PageHelpButton(view: String) {
-    val (title, lines) = HelpTexts.PAGES[view] ?: return
+    val (title, all) = HelpTexts.PAGES[view] ?: return
+    val lines = if (LocalOnDevice.current) HelpTexts.forDevice(all) else all
     var open by remember { mutableStateOf(false) }
     IconBox(SIcons.Help, "Help: $title", { open = true }, size = app.sonorium.ui.UiSize.STANDARD)
     if (open) HelpPanel(title, lines) { open = false }

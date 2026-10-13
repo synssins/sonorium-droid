@@ -28,8 +28,22 @@ enum class HelpKind { H4, H5, H6, P1, P2, P3 }
 /** One line of a help panel: a heading, or a paragraph with its bold lead. */
 data class HelpLine(val kind: HelpKind, val bold: String, val text: String)
 
+/** This device's own entry is the one shown: help and labels describe the device, not a server's speakers. */
+val LocalOnDevice = androidx.compose.runtime.staticCompositionLocalOf { false }
+
 /** The help panels' texts, from the web UI's `index.html` (`#te-help`, `#tx-help`), worded for a touch screen. */
 object HelpTexts {
+    /** Lines about what only a Sonorium has (speakers, making channels, Save to phone): not shown on the device. */
+    private val SERVER_ONLY = setOf(
+        "Speakers:", "Volume:", "Speaker button:", "Headphones button:", "Play / Stop:", "Edit:", "Delete:",
+        "New Channel:", "Speaker group:", "Playing count:", "⋯ › Save to phone:", "Save to phone:",
+    )
+
+    /** [lines] as the device shows them: the server-only lines left out, and no sentences about speakers. */
+    fun forDevice(lines: List<HelpLine>): List<HelpLine> = lines
+        .filterNot { it.bold in SERVER_ONLY || (it.kind == HelpKind.H4 && it.text == "New channel") || (it.bold.isEmpty() && "speakers" in it.text) }
+        .map { it.copy(text = it.text.replace(" The speakers are not changed.", "")) }
+
     val THEME_EDITOR = listOf(
         HelpLine(HelpKind.P1, "", "A theme is a set of tracks (sound files) mixed together. This help follows the editor from top to bottom."),
         HelpLine(HelpKind.H4, "", "Tracks"),

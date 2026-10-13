@@ -221,7 +221,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
         }
     }
 
-    if (help) HelpPanel("How a theme plays", HelpTexts.THEME_EDITOR) { help = false }
+    if (help) HelpPanel("How a theme plays", if (state.onDevice) HelpTexts.forDevice(HelpTexts.THEME_EDITOR) else HelpTexts.THEME_EDITOR) { help = false }
     ask?.let { a -> ConfirmDialog(a.title, a.sub, a.action, a.danger, onConfirm = a.onOk, onDismiss = { ask = null }) }
     prompt?.let { p -> NamePromptDialog(p) { prompt = null } }
     if (importing) ImportPresetDialog(editor) { importing = false }
@@ -414,7 +414,7 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload:
         if (ui.waiting) Text("Updating…", color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
         if (editor.onPhone) {
             val phone = app.sonorium.engine.PhonePlayer.state.collectAsState().value
-            val playing = phone.playing && phone.theme?.folder?.let(app.sonorium.local.PhoneThemeApi::safe) == editor.themeId
+            val playing = phone.playing && phone.theme?.let { t -> editor.themeId == app.sonorium.local.PhoneThemeApi.safe(t.folder) || editor.themeId == app.sonorium.local.DeviceApi.themeId(t) } == true
             Text(
                 if (playing) "Changes are heard at once while it plays in My channel." else "Play it in My channel to hear your changes as you make them.",
                 color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp),

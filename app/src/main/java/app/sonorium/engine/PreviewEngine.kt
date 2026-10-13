@@ -28,8 +28,14 @@ object PreviewEngine {
         private var header: ByteArray? = PhoneEngine.wavHeader()
         private val chunk = ByteArray(8192)
 
+        private val openedAt = android.os.SystemClock.elapsedRealtime()
+        private var rendered = 0L
+
         override fun read(sink: Buffer, byteCount: Long): Long {
             header?.let { h -> header = null; sink.write(h); return h.size.toLong() }
+            // Not more than a few seconds ahead of real time (a preview that drains fast stays in step)
+            val ahead = rendered * 1000 / (44_100L * 2) - (android.os.SystemClock.elapsedRealtime() - openedAt)
+            if (ahead > 4_000) Thread.sleep(ahead - 4_000)
             val n = synchronized(lock) {
                 val p = player?.takeIf { generation == mine } ?: return -1
                 val samples = (minOf(byteCount, chunk.size.toLong()).toInt() / 2).coerceAtLeast(1)
@@ -38,6 +44,7 @@ object PreviewEngine {
                 minOf(bytes.size, chunk.size)
             }
             sink.write(chunk, 0, n)
+            rendered += n
             return n.toLong()
         }
 

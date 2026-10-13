@@ -126,7 +126,7 @@ class PhonePlayerService : MediaSessionService() {
         // The title and subtitle follow the theme, preset and sequence step
         scope.launch {
             PhonePlayer.state.collect { st ->
-                val name = st.theme?.name?.takeIf { it.isNotBlank() }
+                val name = PhonePlayer.title(st)
                 val sub = PhonePlayer.subtitle(st)
                 if ((name != null && name != title) || sub != subtitle) {
                     launch(Dispatchers.Main) {

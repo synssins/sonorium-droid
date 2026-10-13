@@ -93,6 +93,11 @@ class PhoneEngineTest {
         while (!(PhonePlayer.state.value.playing && EngineDataSource.served > second) && System.currentTimeMillis() < end) Thread.sleep(200)
         val playing = PhonePlayer.state.value.playing
         val served = EngineDataSource.served
+        // The mix keeps to real time (the engine's clock times sequences and playlists), even where the
+        // output drains faster (the emulators have no sound): 6 s later, at most 6 s more plus the allowed lead
+        val before = EngineDataSource.served
+        Thread.sleep(6_000)
+        val inSix = EngineDataSource.served - before
         // What the lock screen sees: a live stream (no seek bar, no length), the title, Next theme and Stop
         val token = androidx.media3.session.SessionToken(context, android.content.ComponentName(context, PhonePlayerService::class.java))
         val controller = androidx.media3.session.MediaController.Builder(context, token).buildAsync().get(10, java.util.concurrent.TimeUnit.SECONDS)
@@ -118,6 +123,7 @@ class PhoneEngineTest {
         PhoneEngine.close()
         assertTrue("The on-phone player didn't start playing (error: $error)", playing)
         assertTrue("The player took only $served bytes of the engine's mix", served > second)
+        assertTrue("The mix ran ahead of real time: ${inSix / second} s of audio in 6 s", inSix <= second * (6 + 4 + 1))
         val seen = live.get()
         listOf("duration=true", "live=true", "seekable=false", "next=true", "title=Test Theme", "artwork=true", "Next theme", "Stop").forEach {
             assertTrue("Lock-screen control: expected $it in [$seen]", seen.contains(it))

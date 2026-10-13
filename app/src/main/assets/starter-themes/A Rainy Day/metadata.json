@@ -9,46 +9,6 @@
   ],
   "short_file_threshold": 15.0,
   "tracks": {
-    "Light_rain_2_37.mp3": {
-      "presence": 1.0,
-      "muted": false,
-      "volume": 1.0,
-      "playback_mode": "auto",
-      "seamless_loop": false,
-      "exclusive": false
-    },
-    "Light_thunder_right_to_center_38.mp3": {
-      "presence": 1.0,
-      "muted": false,
-      "volume": 1.0,
-      "playback_mode": "auto",
-      "seamless_loop": false,
-      "exclusive": false
-    },
-    "Distant_rolling_thunder_39.mp3": {
-      "presence": 1.0,
-      "muted": false,
-      "volume": 1.0,
-      "playback_mode": "auto",
-      "seamless_loop": false,
-      "exclusive": false
-    },
-    "Thunder_crispy_bang_40.mp3": {
-      "presence": 1.0,
-      "muted": false,
-      "volume": 1.0,
-      "playback_mode": "auto",
-      "seamless_loop": false,
-      "exclusive": false
-    },
-    "Pre_thunderstorm_41.mp3": {
-      "presence": 1.0,
-      "muted": false,
-      "volume": 1.0,
-      "playback_mode": "auto",
-      "seamless_loop": false,
-      "exclusive": false
-    },
     "Thunder_crispy_bang_40": {
       "presence": 0.36,
       "muted": false,

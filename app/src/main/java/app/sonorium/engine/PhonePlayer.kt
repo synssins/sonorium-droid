@@ -82,6 +82,7 @@ object PhonePlayer {
 
     /** The volume and theme used last (once per process). */
     private fun restore(context: Context) {
+        appContext = context.applicationContext
         if (restored) return
         restored = true
         val volume = prefs(context).getInt(KEY_VOLUME, app.sonorium.local.DeviceSettings.get(context).volume).coerceIn(0, 100)
@@ -128,7 +129,16 @@ object PhonePlayer {
         scope.launch {
             val (presets, sequences) = readLists(app, theme) ?: (emptyList<PhoneEngine.Preset>() to emptyList())
             if (_state.value.theme?.docId == theme.docId && _state.value.presets.isEmpty()) {
-                _state.update { it.copy(presets = presets, sequences = sequences, presetId = it.presetId ?: presets.firstOrNull { p -> p.isDefault }?.id) }
+                // The preset or sequence chosen last for this theme (kept like the volume), else its default
+                val kept = prefs(app).getString(KEY_CHOICE + theme.docId, null)
+                val keptSeq = kept?.removePrefix("seq:")?.takeIf { kept.startsWith("seq:") && sequences.any { q -> q.id == it } }
+                val keptPreset = kept?.takeIf { !it.startsWith("seq:") && (it.isEmpty() || presets.any { p -> p.id == it }) }
+                _state.update {
+                    it.copy(
+                        presets = presets, sequences = sequences, sequenceId = it.sequenceId ?: keptSeq,
+                        presetId = it.presetId ?: keptPreset?.ifEmpty { null } ?: if (keptPreset == null && keptSeq == null) presets.firstOrNull { p -> p.isDefault }?.id else null,
+                    )
+                }
             }
         }
         if (switching) play(context)
@@ -288,6 +298,9 @@ object PhonePlayer {
             return
         }
         job?.cancel()
+        // The sequence playing before stops at once (the playlist's first entry follows when it's ready)
+        if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.stopSequence() } }
+        _state.update { it.copy(sequenceId = null, step = null, sequenceFinished = false, now = it.now.copy(sequence = null)) }
         job = scope.launch {
             val self = coroutineContext[Job]
             try {
@@ -302,8 +315,8 @@ object PhonePlayer {
                 if (total > 0) _state.update { it.copy(preparing = 0 to total, error = null, notice = null) }
                 for (t in inIt) {
                     if (ready[t.folder] == t.version) continue
-                    // The theme playing now keeps its files while it plays
-                    if (openFolder == t.folder && openFor == t.version) { ready[t.folder] = t.version; continue }
+                    // The theme playing now keeps its files while it plays (even updated meanwhile: the next Play gets it ready)
+                    if (openFolder == t.folder) continue
                     val before = done
                     ThemePrep.prepare(app, app.themeStore, t) { d, _ ->
                         if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = (before + d) to total) else it }
@@ -468,6 +481,7 @@ object PhonePlayer {
 
     /** Runs one of the theme's sequences (from its first preset); a preset pick stops it. */
     fun startSequence(sequenceId: String) {
+        keepChoice("seq:$sequenceId")
         resetSequenceWatch()
         _state.update { it.copy(sequenceId = sequenceId, step = null, sequenceFinished = false) }
         if (openFor != null) scope.launch(Dispatchers.IO) {
@@ -556,8 +570,14 @@ object PhonePlayer {
         }
     }
 
-    /** What the lock screen shows under the theme's name: the sequence step, else the preset. */
+    /** What the lock screen shows as the title: the playlist entry's theme while a playlist plays, else the theme. */
+    fun title(s: State = _state.value): String? =
+        (if (s.playlistMode) s.now.playlist?.themeName else null)?.takeIf { it.isNotBlank() } ?: s.theme?.name?.takeIf { it.isNotBlank() }
+
+    /** What the lock screen shows under the theme's name: the playlist entry, the sequence step, else the preset. */
     fun subtitle(s: State = _state.value): String = when {
+        s.playlistMode && s.now.playlist?.entries != null && s.now.playlist.entries > 0 ->
+            "Entry ${(s.now.playlist.position ?: 0) + 1} of ${s.now.playlist.entries}"
         s.sequenceId != null && s.step != null -> s.step.let { st -> "Step ${st.step} of ${st.steps} · ${st.name}" }
         s.sequenceId != null -> s.sequences.firstOrNull { it.id == s.sequenceId }?.name ?: "Sequence"
         s.presetId != null -> s.presets.firstOrNull { it.id == s.presetId }?.name ?: "On this phone"
@@ -566,6 +586,7 @@ object PhonePlayer {
 
     fun setPreset(presetId: String?) {
         _state.update { it.copy(presetId = presetId, sequenceId = null, step = null, sequenceFinished = false) }
+        keepChoice(presetId.orEmpty())
         if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.setPreset(presetId) } }
     }
 
@@ -602,6 +623,15 @@ object PhonePlayer {
 
     private const val KEY_VOLUME = "volume"
     private const val KEY_PLAYLIST_MODE = "playlist_mode"
+    private const val KEY_CHOICE = "choice:"
+    @Volatile private var appContext: Context? = null
+
+    /** The preset ("" = default settings) or "seq:<id>" chosen for the current theme, kept for the next start. */
+    private fun keepChoice(choice: String) {
+        val ctx = appContext ?: return
+        val doc = _state.value.theme?.docId ?: return
+        prefs(ctx).edit { putString(KEY_CHOICE + doc, choice) }
+    }
     private const val KEY_PLAYLIST = "playlist"
     private const val KEY_THEME_DOC = "theme_doc"
     private const val KEY_THEME_FOLDER = "theme_folder"

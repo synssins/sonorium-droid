@@ -142,7 +142,7 @@ fun ServerScreen(
     androidx.activity.compose.BackHandler(enabled = drawer.isOpen || drawer.targetValue == DrawerValue.Open) { scope.launch { drawer.close() } }
     val folderPicker = rememberOwnThemesFolderPicker(model)
     val themeImport = rememberOwnThemeImport(model, folderPicker)
-    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
@@ -299,7 +299,7 @@ private fun TopBar(
             shape = RoundedCornerShape(8.dp),
             border = if (live || record == null) null else androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
             modifier = Modifier.height(TOP_BAR_CONTROL.dp).widthIn(max = 200.dp)
-                .semantics { contentDescription = "Servers: $label" + (status?.let { ", $it" } ?: "") }
+                .semantics { contentDescription = if (record?.device == true) "$label, this device" else "Servers: $label" + (status?.let { ", $it" } ?: "") }
                 .clickable(onClick = onServers),
         ) {
             Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -248,7 +248,8 @@ fun ChannelCard(
                 val muted = session.speakersMuted
                 IconBox(
                     if (muted) SIcons.Muted else SIcons.Volume,
-                    if (muted) "Unmute the speakers" else "Mute the speakers",
+                    // This device mutes its own mix (it has no speakers of its own to name)
+                    if (state.offers("speakers")) (if (muted) "Unmute the speakers" else "Mute the speakers") else (if (muted) "Unmute" else "Mute"),
                     { actions.toggleMuted(session) },
                     tint = when { muted -> Palette.danger; playing -> Palette.accent; else -> Palette.textSecondary },
                     border = if (muted) Palette.danger else Palette.border,
