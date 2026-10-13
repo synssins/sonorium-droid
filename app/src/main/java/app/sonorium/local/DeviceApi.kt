@@ -205,6 +205,8 @@ class DeviceApi(private val context: Context) : Interceptor {
             sequence = if (!playlistOn) now.sequence?.takeIf { st.sequenceId != null } else null,
             playlist = if (playlistOn) playlistStatus else null,
             speakersMuted = st.muted,
+            sleepSecondsLeft = PhonePlayer.sleepSecondsLeft(),
+            sleepUntil = PhonePlayer.sleepSecondsLeft()?.let { java.time.Instant.now().plusSeconds(it.toLong()).toString() },
             recent = now.recent,
             announcements = false,
             personal = true,
@@ -237,6 +239,19 @@ class DeviceApi(private val context: Context) : Interceptor {
             rest == listOf("play") && m == "POST" -> runOnMain { PhonePlayer.play(context) }
             rest == listOf("stop") && m == "POST" -> runOnMain { PhonePlayer.stop(context) }
             rest == listOf("next") && m == "POST" -> PhonePlayer.next()
+            rest == listOf("sleep") && m == "GET" -> return sleepAnswer()
+            rest == listOf("sleep") && m == "PUT" -> {
+                val minutes = (body(request)["minutes"] as? JsonPrimitive)?.content?.toDoubleOrNull()
+                    ?.takeIf { it > 0 && it <= 240 } ?: throw Answer(400, "'minutes' must be more than 0 and at most 240")
+                if (!PhonePlayer.setSleep(minutes)) throw Answer(409, "The channel isn't playing")
+                changed("channel.sleep_timer")
+                return sleepAnswer()
+            }
+            rest == listOf("sleep") && m == "DELETE" -> {
+                val had = PhonePlayer.cancelSleep()
+                changed("channel.sleep_timer")
+                return buildJsonObject { put("cancelled", had); put("channel_id", CHANNEL_ID); put("sleep_until", JsonNull); put("seconds_left", JsonNull) }
+            }
             rest == listOf("speakers-muted") && m == "PUT" -> {
                 val muted = (body(request)["muted"] as? JsonPrimitive)?.booleanOrNull ?: false
                 if (muted != PhonePlayer.state.value.muted) PhonePlayer.toggleMute()
@@ -285,6 +300,15 @@ class DeviceApi(private val context: Context) : Interceptor {
         runCatching { app.sonorium.engine.PhoneEngine.setAudio(audio.crossfade, audio.gain) }
         changed("settings.changed")
         return audioSettings()
+    }
+
+    private fun sleepAnswer(): JsonObject {
+        val left = PhonePlayer.sleepSecondsLeft()
+        return buildJsonObject {
+            put("channel_id", CHANNEL_ID)
+            if (left == null) { put("sleep_until", JsonNull); put("seconds_left", JsonNull) }
+            else { put("sleep_until", java.time.Instant.now().plusSeconds(left.toLong()).toString()); put("seconds_left", left) }
+        }
     }
 
     // ---------- themes ----------

@@ -276,4 +276,5 @@ private fun deviceCardActions(model: ServerViewModel) = CardActions(
     delete = {},
     stopCasting = { _, _ -> },
     mix = { s -> s.themeId?.let { id -> model.state.value.theme(id)?.let(model::openThemeEditor) } },
+    sleep = model::setSleep,
 )

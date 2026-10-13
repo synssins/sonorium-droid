@@ -58,6 +58,10 @@ object PhonePlayer {
         val now: Now = Now(),
         /** Muted: the volume is kept, the mix is silent. */
         val muted: Boolean = false,
+        /** Today's free listening to the sample is used up (it plays again tomorrow, or with Pro). */
+        val sampleEnded: Boolean = false,
+        /** Sleep timer: when it ends (elapsed-realtime ms), null without one. */
+        val sleepAt: Long? = null,
     )
 
     /** The engine's status as a server channel reports it (sequence step, playlist entry, recent changes). */
@@ -198,9 +202,80 @@ object PhonePlayer {
         return fromMeta to sequences
     }
 
+    // ---------- The free sample's daily time ----------
+
+    /** How long the sample plays per day without Pro (counted only while it plays; a new day starts at local midnight). */
+    const val SAMPLE_SECONDS_PER_DAY = 30 * 60
+
+    private fun isPro(): Boolean = (appContext as? SonoriumApp)?.entitlement?.isPro?.value == true
+
+    /** Seconds of the sample played today (and the day they're for). */
+    private fun sampleUsed(context: Context): Int {
+        val p = prefs(context)
+        return if (p.getString(KEY_SAMPLE_DAY, null) == java.time.LocalDate.now().toString()) p.getInt(KEY_SAMPLE_SECONDS, 0) else 0
+    }
+
+    /** Without Pro, playing the sample: today's time used up. */
+    private fun sampleUsedUp(context: Context): Boolean =
+        !isPro() && _state.value.theme?.sample == true && sampleUsed(context) >= SAMPLE_SECONDS_PER_DAY
+
+    /** Once a second while playing: counts the sample's time; at the day's end of it, the mix fades out and stops. */
+    private suspend fun countSample() {
+        val ctx = appContext ?: return
+        val s = _state.value
+        if (isPro() || !s.playing || s.theme?.sample != true || s.sampleEnded) return
+        val used = sampleUsed(ctx) + 1
+        prefs(ctx).edit { putString(KEY_SAMPLE_DAY, java.time.LocalDate.now().toString()).putInt(KEY_SAMPLE_SECONDS, used) }
+        if (used < SAMPLE_SECONDS_PER_DAY) return
+        // The normal stop: a fade over the crossfade time, then stopped; the screen says why
+        val fade = app.sonorium.local.DeviceSettings.get(ctx).crossfade.coerceIn(1.0, 10.0)
+        _state.update { it.copy(sampleEnded = true) }
+        runCatching { PhoneEngine.fadeOut(fade) }
+        delay((fade * 1000).toLong())
+        withContext(Dispatchers.Main) { stop(ctx) }
+    }
+
+    // ---------- Sleep timer ----------
+
+    /** Sleep timer: the playing mix fades out and stops after [minutes] (0 < minutes <= 240); false when it isn't playing. */
+    fun setSleep(minutes: Double): Boolean {
+        if (!_state.value.playing) return false
+        _state.update { it.copy(sleepAt = android.os.SystemClock.elapsedRealtime() + (minutes * 60_000).toLong()) }
+        return true
+    }
+
+    fun cancelSleep(): Boolean {
+        val had = _state.value.sleepAt != null
+        _state.update { it.copy(sleepAt = null) }
+        return had
+    }
+
+    /** Seconds left on the sleep timer, or null. */
+    fun sleepSecondsLeft(): Int? = _state.value.sleepAt?.let { ((it - android.os.SystemClock.elapsedRealtime()) / 1000).toInt().coerceAtLeast(0) }
+
+    /** Once a second while playing: at the timer's end, the normal stop (a fade over the crossfade time). */
+    private suspend fun checkSleep() {
+        val at = _state.value.sleepAt ?: return
+        if (android.os.SystemClock.elapsedRealtime() < at) return
+        val ctx = appContext ?: return
+        _state.update { it.copy(sleepAt = null) }
+        val fade = app.sonorium.local.DeviceSettings.get(ctx).crossfade.coerceIn(1.0, 10.0)
+        runCatching { PhoneEngine.fadeOut(fade) }
+        delay((fade * 1000).toLong())
+        withContext(Dispatchers.Main) { stop(ctx) }
+    }
+
+    /** The sample ended message goes (Pro unlocked, or another day). */
+    fun clearSampleEnded() = _state.update { it.copy(sampleEnded = false) }
+
     /** Play: prepares the theme the first time (decoding its audio once), opens the engine, starts playback. */
     fun play(context: Context) {
         restore(context)
+        if (sampleUsedUp(context)) {
+            _state.update { it.copy(sampleEnded = true) }
+            return
+        }
+        if (_state.value.sampleEnded) _state.update { it.copy(sampleEnded = false) }
         if (_state.value.playlistMode) {
             _state.value.playlistId?.let { playPlaylist(context, it) }
             return
@@ -492,6 +567,8 @@ object PhonePlayer {
     fun stop(context: Context?) {
         job?.cancel()
         job = null
+        // Stopped any way: the sleep timer goes with it (as on a server)
+        _state.update { it.copy(sleepAt = null) }
         laterPrep?.cancel()
         _state.update { it.copy(preparing = null) }
         if (CastController.casting) {
@@ -580,6 +657,8 @@ object PhonePlayer {
         if (!on) return
         stepPoll = scope.launch(Dispatchers.IO) {
             while (true) {
+                runCatching { countSample() }.onFailure { Log.w(TAG, "Couldn't count the sample's time", it) }
+                runCatching { checkSleep() }.onFailure { Log.w(TAG, "Couldn't check the sleep timer", it) }
                 // One bad status never stops the step line, the card and the notification from following
                 runCatching { refreshStep() }.onFailure { Log.w(TAG, "Couldn't read the sequence's step", it) }
                 runCatching { refreshNow() }.onFailure { Log.w(TAG, "Couldn't read the engine's status", it) }
@@ -674,6 +753,8 @@ object PhonePlayer {
 
     private const val KEY_VOLUME = "volume"
     private const val KEY_PLAYLIST_MODE = "playlist_mode"
+    private const val KEY_SAMPLE_DAY = "sample_day"
+    private const val KEY_SAMPLE_SECONDS = "sample_seconds"
     private const val KEY_CHOICE = "choice:"
     @Volatile private var appContext: Context? = null
 

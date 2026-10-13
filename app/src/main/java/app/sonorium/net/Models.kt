@@ -156,6 +156,9 @@ data class Session(
     val outputs: List<CastOutput> = emptyList(),
     /** Personal channel: how many of the account's devices listen. */
     val devices: Int = 0,
+    /** Sleep timer: when it ends (the server's clock) and the seconds left when this was read; null without one. */
+    @SerialName("sleep_until") val sleepUntil: String? = null,
+    @SerialName("sleep_seconds_left") val sleepSecondsLeft: Int? = null,
 ) {
     /** What the preset field shows: "seq:<id>" while a sequence is set, else the preset; "" = default settings. */
     val choice: String get() = presetChoice ?: presetId ?: ""

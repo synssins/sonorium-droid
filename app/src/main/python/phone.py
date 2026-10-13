@@ -78,6 +78,10 @@ class Player:
     def stop_playlist(self):
         return bool(self.engine.stop_playlist())
 
+    def fade_out(self, seconds):
+        """The whole mix fades to silence over `seconds` (as a channel's stop)."""
+        self.engine.fade_out(float(seconds))
+
     def set_audio(self, crossfade, gain):
         """Audio Settings on this device: the crossfade between themes (s) and the master output gain (%)."""
         self.engine.crossfade_seconds = max(0.0, float(crossfade))

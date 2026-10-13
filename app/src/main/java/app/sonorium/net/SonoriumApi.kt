@@ -69,6 +69,15 @@ class SonoriumApi(
         execute(request("sessions/$id/playlist").delete().build())
     }
 
+    /** Sleep timer: the playing channel fades out and stops after [minutes] (at most 240). */
+    suspend fun setSleep(id: String, minutes: Double) {
+        sendRaw("PUT", "sessions/$id/sleep", buildJsonObject { put("minutes", minutes) })
+    }
+
+    suspend fun cancelSleep(id: String) {
+        execute(request("sessions/$id/sleep").delete().build())
+    }
+
     suspend fun next(id: String) {
         execute(request("sessions/$id/next").post(EMPTY).build())
     }

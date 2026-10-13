@@ -197,6 +197,19 @@ fun DeviceOutput(model: ServerViewModel = androidx.lifecycle.viewmodel.compose.v
     }
     s.error?.let { Text(it, color = Palette.danger, fontSize = 13.sp) }
     s.notice?.let { Text(it, color = Palette.textSecondary, fontSize = 13.sp) }
+    // The free sample's time for today is used up: said here only (no notification, no sound)
+    val pro by model.entitlement.isPro.collectAsState()
+    if (s.sampleEnded && !pro) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Sample ended for today. It plays again tomorrow, or unlock Pro to keep listening.", color = Palette.text, fontSize = 14.sp)
+            Button(
+                onClick = { model.proOrAsk() },
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
+            ) { Text("Unlock Pro", fontWeight = FontWeight.SemiBold) }
+        }
+    }
     if (s.sequenceFinished) Text("Sequence finished. It stays on its last preset.", color = Palette.textSecondary, fontSize = 13.sp)
     CastRow(s.theme?.name.orEmpty(), allow = model::proOrAsk)
 }

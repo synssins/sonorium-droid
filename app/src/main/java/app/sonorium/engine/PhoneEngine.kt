@@ -152,6 +152,9 @@ object PhoneEngine {
 
     fun stopPlaylist() = synchronized(lock) { player?.callAttr("stop_playlist"); Unit }
 
+    /** The mix fades to silence over [seconds] (then the caller stops), as a channel's stop. */
+    fun fadeOut(seconds: Double) = synchronized(lock) { player?.callAttr("fade_out", seconds); Unit }
+
     /** The engine's whole status (theme, preset, sequence, playlist, recent changes), or null when nothing is open. */
     fun status(): org.json.JSONObject? = synchronized(lock) {
         val p = player ?: return null

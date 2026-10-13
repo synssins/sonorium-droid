@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -71,6 +72,8 @@ class CardActions(
     val rejoinLink: (Session, String) -> Unit = { _, _ -> },
     /** Mix: the Theme Editor on the channel's theme (null: no Mix button). */
     val mix: ((Session) -> Unit)? = null,
+    /** Sleep timer: minutes, or null to cancel (null: no Sleep timer item). */
+    val sleep: ((Session, Double?) -> Unit)? = null,
 )
 
 /** The preset menu (1.2): Default settings, presets, a separator, then sequences. */
@@ -118,6 +121,7 @@ fun ChannelCard(
     val linked = link != null && session.id in link.channels && session.id !in link.left
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var sleepOpen by remember { mutableStateOf(false) }
 
     Surface(
         color = Palette.card,
@@ -167,16 +171,23 @@ fun ChannelCard(
                         (zone?.ownerName?.let { " · 👤 $it" } ?: "")
                     Text(sub, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                StateChip(playing)
+                StateChip(playing, sleepLeft(session))
                 // A channel's own settings (name, speakers) and Delete: where channels can be made
                 if (state.offers(CAP_CHANNELS)) {
                 Spacer(Modifier.width(8.dp))
                 IconBox(SIcons.Edit, "Edit", { actions.edit(session) }, size = app.sonorium.ui.UiSize.SMALL)
+                }
+                if (state.offers(CAP_CHANNELS) || (actions.sleep != null && playing)) {
                 Spacer(Modifier.width(6.dp))
                 Box {
                     IconBox(SIcons.More, "More for ${session.name}", { menuOpen = true }, size = app.sonorium.ui.UiSize.SMALL)
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = Palette.card) {
-                        DropdownMenuItem(
+                        // Sleep timer: only a playing channel takes one
+                        if (actions.sleep != null && playing) DropdownMenuItem(
+                            text = { Text("Sleep timer…", color = Palette.text) },
+                            onClick = { menuOpen = false; sleepOpen = true },
+                        )
+                        if (state.offers(CAP_CHANNELS)) DropdownMenuItem(
                             text = { Text("Delete…", color = Palette.danger) },
                             leadingIcon = { Icon(SIcons.Trash, null, tint = Palette.danger, modifier = Modifier.size(16.dp)) },
                             onClick = { menuOpen = false; confirmDelete = true },
@@ -291,6 +302,8 @@ fun ChannelCard(
         }
     }
 
+    if (sleepOpen) SleepTimerDialog(running = session.sleepSecondsLeft != null, onPick = { actions.sleep?.invoke(session, it) }) { sleepOpen = false }
+
     if (confirmDelete) {
         ConfirmDialog(
             title = "Delete “${session.name}”?",
@@ -381,12 +394,76 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
 }
 
 @Composable
-private fun StateChip(playing: Boolean) {
+private fun StateChip(playing: Boolean, sleepLeft: Int? = null) {
     Box(
         Modifier
             .background(if (playing) Palette.accent.copy(alpha = 0.15f) else Palette.backgroundSecondary, RoundedCornerShape(50))
-            .padding(horizontal = 10.dp, vertical = 3.dp),
-    ) { Text(if (playing) "Playing" else "Stopped", color = if (playing) Palette.accent else Palette.textMuted, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium) }
+            .padding(horizontal = 10.dp, vertical = 3.dp)
+            .semantics { if (playing && sleepLeft != null) contentDescription = "Sleep timer: ${ChannelRules.clock(sleepLeft.toLong())} left" },
+    ) {
+        // While a sleep timer runs: a moon and the time left instead of Playing (as the web UI's pill)
+        Text(
+            if (playing && sleepLeft != null) "☾ ${ChannelRules.clock(sleepLeft.toLong())}" else if (playing) "Playing" else "Stopped",
+            color = if (playing) Palette.accent else Palette.textMuted, fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.Medium,
+        )
+    }
+}
+
+/** A sleep timer's seconds left now: counted down from what the server said when the channel was read. */
+@Composable
+private fun sleepLeft(session: Session): Int? {
+    val given = session.sleepSecondsLeft ?: return null
+    val readAt = remember(session.sleepSecondsLeft, session.sleepUntil) { android.os.SystemClock.elapsedRealtime() }
+    var now by remember { mutableLongStateOf(android.os.SystemClock.elapsedRealtime()) }
+    LaunchedEffect(readAt) {
+        while (true) {
+            now = android.os.SystemClock.elapsedRealtime()
+            delay(1_000)
+        }
+    }
+    return (given - ((now - readAt) / 1000).toInt()).coerceAtLeast(0)
+}
+
+/** Sleep timer… (the web UI's): 15 min to 4 h, Custom… (1–240 minutes), and Cancel timer while one runs. */
+@Composable
+private fun SleepTimerDialog(running: Boolean, onPick: (Double?) -> Unit, onClose: () -> Unit) {
+    var custom by remember { mutableStateOf<String?>(null) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onClose) {
+        Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Palette.border)) {
+            Column(Modifier.padding(16.dp).widthIn(min = 260.dp)) {
+                Text("Sleep timer", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(8.dp))
+                val c = custom
+                if (c == null) {
+                    listOf("15 min" to 15.0, "30 min" to 30.0, "45 min" to 45.0, "1 h" to 60.0, "2 h" to 120.0, "3 h" to 180.0, "4 h" to 240.0).forEach { (label, minutes) ->
+                        TextButton(onClick = { onPick(minutes); onClose() }, modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.ROW.dp)) {
+                            Text(label, color = Palette.text, modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                    TextButton(onClick = { custom = "" }, modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.ROW.dp)) {
+                        Text("Custom…", color = Palette.text, modifier = Modifier.fillMaxWidth())
+                    }
+                    if (running) TextButton(onClick = { onPick(null); onClose() }, modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.ROW.dp)) {
+                        Text("Cancel timer", color = Palette.danger, modifier = Modifier.fillMaxWidth())
+                    }
+                } else {
+                    val minutes = c.trim().toDoubleOrNull()
+                    val ok = minutes != null && minutes >= 1 && minutes <= 240
+                    SField(
+                        value = c, onValueChange = { custom = it.take(5) }, singleLine = true,
+                        placeholder = { Text("Minutes (1–240)", color = Palette.textMuted) },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Minutes (1–240)" },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { custom = null }, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Cancel", color = Palette.textSecondary) }
+                        TextButton(onClick = { if (ok) { onPick(minutes); onClose() } }, enabled = ok, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Set", color = if (ok) Palette.accent else Palette.textMuted) }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

@@ -520,6 +520,7 @@ private fun ChannelsPage(
             leaveLink = model::leaveLink,
             rejoinLink = model::rejoinLink,
             mix = { s -> s.themeId?.let { id -> model.state.value.theme(id)?.let(model::openThemeEditor) } },
+            sleep = model::setSleep,
         )
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {

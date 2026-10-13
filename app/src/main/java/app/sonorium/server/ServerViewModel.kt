@@ -569,6 +569,13 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    /** Sleep timer on a playing channel ([minutes] 1–240); null cancels it. */
+    fun setSleep(session: Session, minutes: Double?) = act(if (minutes == null) "Sleep timer cancelled" else "Sleep timer set") {
+        if (minutes == null) it.cancelSleep(session.id) else it.setSleep(session.id, minutes)
+        refreshSessions()
+        if (_state.value.personalChannel) refreshPersonal()
+    }
+
     /** The playlist button: local playlist mode until a playlist is picked (1.2, Mode buttons). */
     fun enterPlaylistMode(session: Session) {
         if (session.playlistId == null) _state.update { it.copy(playlistMode = it.playlistMode + session.id) }
