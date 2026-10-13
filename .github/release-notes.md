@@ -1,5 +1,17 @@
 ## What's new in this build
 
+- **Lock screen and notification control** while playing on the phone: Sonorium artwork, the theme as the title and the preset or sequence step under it, updated as they change. Shown as a live stream (no seek bar, no length). Previous / Next go through the presets (Default settings included) or the running sequence's steps, also from headsets, cars and watches; plus **Next theme** and **Stop** buttons.
+- **Edit themes on this phone:** Themes › On this phone › a theme's **Edit**, or **Mix** next to the theme picker in My channel. The same Theme Editor as on a server: track and group volumes, mutes, modes and intervals, presets (New, Save, Rename, Set as default, Delete) and sequences. Changes are saved into the theme's folder and heard at once while it plays. Not on the phone (they need a server): Upload, links to other themes' files, moving tracks, creating, renaming or deleting groups, Preview mix and Export.
+- **Edited on the phone, seen at once:** closing the editor updates My channel's preset and sequence lists. **Update on phone** (a server theme's ⋯) asks first, since it replaces the phone's copy and the changes made on the phone.
+- **Save to phone on tablets and foldables:** the themes folder picked the first time is kept (it used to be lost on a large screen, so the save didn't start).
+
+## Please test
+
+- Play a theme on the phone, lock the screen: the Sonorium artwork, theme and preset show; Next / Previous change the preset, Next theme changes the theme, Stop stops. Try a headset's buttons.
+- My channel › **Mix**: move a track's volume while it plays (you hear it), mute one, **Save preset**; close and open again: the changes stay.
+- On a tablet or foldable: Themes › ⋯ › Save to phone on a fresh install: pick or create the folder, the theme downloads.
+
+### Earlier (alpha16)
 A full QA pass over every screen (code review plus screenshots of every screen on emulators in each connection state), and the fixes:
 
 - **Starter themes:** Tavern, A Rainy Day and Sleigh Ride come with the app; they're added to your themes folder when you choose it.
@@ -9,7 +21,7 @@ A full QA pass over every screen (code review plus screenshots of every screen o
 - **Cast:** "No speakers found" after 10 s with Look again; switching speakers doesn't end the new cast; the phone's Wi-Fi address is used.
 - **Everywhere:** consistent dialogs (named actions, Cancel first), touch targets of 44–48 dp, sizes and wording, help texts written for a phone, accessibility labels. Floors & Areas' buttons fit on phones. Tapping the playing notification opens My channel.
 
-## Please test
+Tested in alpha16:
 
 - Remove your server (Servers › Remove), press Back: "No server connected", and "Connect" on the top-bar button.
 - Wi-Fi off with the app open, then on again: the line clears by itself.
