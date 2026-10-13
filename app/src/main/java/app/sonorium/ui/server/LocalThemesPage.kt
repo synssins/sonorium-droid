@@ -258,6 +258,7 @@ fun rememberOwnThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
         val request = pending
         pending = null
         if (uri == null) {
+            model.folderNotChosen()
             if (request?.changing != true) model.toast("Sonorium needs a folder to keep themes on this phone. Choose one to continue.", error = true)
             return@rememberLauncherForActivityResult
         }

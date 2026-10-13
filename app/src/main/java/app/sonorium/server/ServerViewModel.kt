@@ -398,8 +398,13 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             type == "theme.changed" -> {
                 field("theme_id")?.let { id -> _state.update { it.copy(presets = it.presets - id) }; loadPresets(id) }
                 api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } } }
+                // A changed theme has a new package: "update ready" shows without a restart
+                refreshPackages()
             }
-            type.startsWith("theme.") -> api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } } }
+            type.startsWith("theme.") -> {
+                api?.let { a -> guard { a.themes() }?.let { t -> _state.update { it.copy(themes = t.filter { th -> th.id !in deletedThemes }) } } }
+                refreshPackages()
+            }
             type.startsWith("playlist.") -> api?.let { a -> guard { a.playlists() }?.let { p -> _state.update { it.copy(playlists = p) } } }
             type.startsWith("group.") -> api?.let { a -> guard { a.groups() }?.let { g -> _state.update { it.copy(groups = g) } } }
             type.startsWith("spaces.") -> {
@@ -938,13 +943,30 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 toast("Sonorium can't use that folder. Choose another one, such as Music › Sonorium.", error = true)
                 return false
             }
+        val pending = pendingSave.takeIf { !changing }
+        pendingSave = null
         if (changed) {
             // Nothing prepared from the old folder applies any more
             viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
             if (changing) toast("Themes folder changed. Themes in the old folder weren't moved; they're still there.", error = false)
         }
         refreshLocalThemes()
+        // The Save to phone that asked for the folder carries on now
+        pending?.let { saveThemeToPhone(it) }
         return true
+    }
+
+    /** A Save to phone waiting for the themes folder: kept here, so it survives the picker. */
+    private var pendingSave: String? = null
+
+    /** Save to phone once the themes folder has been chosen ([useThemesFolder]). */
+    fun saveToPhoneAfterFolder(themeId: String) {
+        pendingSave = themeId
+    }
+
+    /** The folder picker was closed without a folder: the Save to phone waiting for it is dropped. */
+    fun folderNotChosen() {
+        pendingSave = null
     }
 
     /** Imports a theme zip (the server's Export) into the themes folder. */
@@ -1009,17 +1031,20 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         if (!reachableOrSay()) return
         val api = api ?: return
         val name = phoneThemeName(themeId)
+        android.util.Log.i("LocalThemes", "Save to phone: $themeId started")
         _downloads.update { it + (themeId to 0f) }
         downloadJobs[themeId] = viewModelScope.launch {
             try {
                 when (app.themeStore.folderState()) {
                     ThemeStore.FolderState.OK -> {}
                     ThemeStore.FolderState.MISSING -> {
+                        android.util.Log.w("LocalThemes", "Save to phone: $themeId stopped, the themes folder is missing")
                         _localFolder.value = ThemeStore.FolderState.MISSING
                         toast("Your themes folder can't be found. Choose it again in Themes › On this phone.", error = true)
                         return@launch
                     }
                     ThemeStore.FolderState.NONE -> {
+                        android.util.Log.w("LocalThemes", "Save to phone: $themeId stopped, no themes folder")
                         toast("Choose a folder for themes first", error = true)
                         return@launch
                     }
@@ -1037,6 +1062,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                         _downloads.update { if (themeId in it) it + (themeId to if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else 1f) else it }
                     }
                 }
+                android.util.Log.i("LocalThemes", "Save to phone: $themeId done, in ${saved.folder}" + if (replacing != null) " (replaced ${replacing.folder})" else "")
                 toast(if (replacing != null) "Updated “${saved.name}” on this phone" else "Saved “${saved.name}” to this phone", error = false)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e

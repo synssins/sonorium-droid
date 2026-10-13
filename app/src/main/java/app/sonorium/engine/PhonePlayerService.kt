@@ -133,6 +133,8 @@ class PhonePlayerService : MediaSessionService() {
                         if (name != null) title = name
                         subtitle = sub
                         if (exo.mediaItemCount > 0) exo.replaceMediaItem(0, item())
+                        // The notification and lock screen at once, not at the next playback change
+                        session?.let { s -> runCatching { onUpdateNotification(s, false) } }
                     }
                 }
             }
