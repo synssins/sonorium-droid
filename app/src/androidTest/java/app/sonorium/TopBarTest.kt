@@ -62,20 +62,28 @@ class TopBarTest {
 
     /** Opens [title] from the menu (the side panel on phones, the sidebar on wide screens); false when it isn't there. */
     private fun openPage(title: String): Boolean {
-        device.findObject(By.desc("Menu"))?.let { it.click(); Thread.sleep(800) }
-        var item = device.findObject(By.text(title))
-        if (item == null) {
-            device.findObject(By.text("Settings"))?.let { it.click(); Thread.sleep(600) }
-            item = device.findObject(By.text(title))
+        // The menu redraws while it slides in: find and click again when a found item went stale
+        repeat(3) {
+            try {
+                device.findObject(By.desc("Menu"))?.let { it.click(); Thread.sleep(1_000) }
+                var item = device.wait(Until.findObject(By.text(title)), 1_500)
+                if (item == null) {
+                    device.findObject(By.text("Settings"))?.let { it.click(); Thread.sleep(800) }
+                    item = device.wait(Until.findObject(By.text(title)), 1_500)
+                }
+                if (item == null) {
+                    device.pressBack()
+                    Thread.sleep(500)
+                    return false
+                }
+                item.click()
+                Thread.sleep(2_000)
+                return true
+            } catch (e: androidx.test.uiautomator.StaleObjectException) {
+                Thread.sleep(800)
+            }
         }
-        if (item == null) {
-            device.pressBack()
-            Thread.sleep(500)
-            return false
-        }
-        item.click()
-        Thread.sleep(2_000)
-        return true
+        return false
     }
 
     private fun check(what: String, id: String) {
