@@ -93,7 +93,7 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
         val side = if (narrow) 12.dp else 24.dp
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = side)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = side)) {
             item {
                 PageHeader("Playlists", state.playlists.size, help = "playlists") {
                     // Playlists live on the server: nothing to add to without one (R15)

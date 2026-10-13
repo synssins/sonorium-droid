@@ -138,7 +138,7 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = if (narrow) 12.dp else 24.dp)) {
             item { PageHeader("Connection", null, help = "settings-connection") }
             if (loaded && rows.isEmpty()) item { EmptyState("No connections", "Home Assistant, MQTT and plugin connections show here") }
             items(rows, key = { rowKey(it) }) { r ->

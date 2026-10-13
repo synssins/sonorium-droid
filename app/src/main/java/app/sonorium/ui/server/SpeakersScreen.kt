@@ -128,7 +128,7 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Speakers", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)

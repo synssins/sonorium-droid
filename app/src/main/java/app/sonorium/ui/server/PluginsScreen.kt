@@ -132,7 +132,7 @@ fun PluginsPage(model: ServerViewModel) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
                 PageHeader("Plugins", plugins?.size, help = "settings-plugins") {
                     if (uploading) Text("Uploading…", color = Palette.textSecondary, fontSize = 13.sp, modifier = Modifier.padding(end = 8.dp))

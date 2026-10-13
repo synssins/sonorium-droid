@@ -116,7 +116,7 @@ fun StatusPage(state: ServerState, model: ServerViewModel) {
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
-        LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
                 PageHeader("Status", null, help = "status") {
                     Column(horizontalAlignment = Alignment.End) {

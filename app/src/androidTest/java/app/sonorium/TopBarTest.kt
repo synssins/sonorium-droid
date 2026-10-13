@@ -21,6 +21,14 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class TopBarTest {
+    private companion object {
+        /** Every page with a title row (those this entry has; the others are skipped). */
+        val PAGES = listOf(
+            "My Channel", "Playlists", "Themes", "Connection", "Audio Settings", "Backups", "Floors & Areas", "Speakers",
+            "Speaker Groups", "Plugins", "Logs", "Advanced", "Status",
+        )
+    }
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val device = UiDevice.getInstance(instrumentation)
     private val sonorium = instrumentation.targetContext.applicationContext as SonoriumApp
@@ -42,6 +50,34 @@ class TopBarTest {
         }
     }
 
+    private fun helpAligned(where: String) {
+        val top = device.findObject(By.res("top-bar"))
+        val help = device.wait(Until.findObject(By.descStartsWith("Help: ")), 5_000)
+        assertNotNull("No help on the page ($where)", help)
+        val server = top.findObject(By.descContains("Servers:")) ?: top.findObject(By.descContains(", this device"))
+        assertNotNull("No server button ($where)", server)
+        val gap = help.visibleBounds.right - server.visibleBounds.right
+        assertTrue("Help's right edge is $gap px off the server button's ($where)", kotlin.math.abs(gap) <= 2)
+    }
+
+    /** Opens [title] from the menu (the side panel on phones, the sidebar on wide screens); false when it isn't there. */
+    private fun openPage(title: String): Boolean {
+        device.findObject(By.desc("Menu"))?.let { it.click(); Thread.sleep(800) }
+        var item = device.findObject(By.text(title))
+        if (item == null) {
+            device.findObject(By.text("Settings"))?.let { it.click(); Thread.sleep(600) }
+            item = device.findObject(By.text(title))
+        }
+        if (item == null) {
+            device.pressBack()
+            Thread.sleep(500)
+            return false
+        }
+        item.click()
+        Thread.sleep(2_000)
+        return true
+    }
+
     private fun check(what: String, id: String) {
         runBlocking { sonorium.servers.select(id) }
         val intent = Intent(instrumentation.targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -52,13 +88,12 @@ class TopBarTest {
             val top = device.findObject(By.res("top-bar"))
             assertTrue("A My Channel button in the top bar ($what)", top.findObject(By.desc("My Channel")) == null)
             assertTrue("A help button in the top bar ($what)", top.findObject(By.descStartsWith("Help")) == null)
-            // The page's help is on its title row, its right edge under the server button's (Chris: exactly)
-            val help = device.findObject(By.descStartsWith("Help: "))
-            assertNotNull("No help on the page ($what)", help)
-            val server = top.findObject(By.descContains("Servers:")) ?: top.findObject(By.descContains(", this device"))
-            assertNotNull("No server button ($what)", server)
-            val gap = help.visibleBounds.right - server.visibleBounds.right
-            assertTrue("Help's right edge is $gap px off the server button's ($what)", kotlin.math.abs(gap) <= 2)
+            // Every page in the menu: its help on its title row, right edge under the server button's (Chris: exactly)
+            helpAligned("$what, Channels")
+            for (page in PAGES) {
+                if (!openPage(page)) continue
+                helpAligned("$what, $page")
+            }
         }
     }
 }
