@@ -91,6 +91,11 @@ class ThemeEditor(
     private val toast: (String, Boolean) -> Unit,
     /** After Save theme: refresh the Themes page and theme pickers. */
     private val onThemeSaved: () -> Unit,
+    /**
+     * A theme on this phone ([app.sonorium.local.PhoneThemeApi] answers [api]): the screens hide what
+     * the phone can't do yet (upload, linked files, moving tracks, group create/rename/delete, Preview mix).
+     */
+    val onPhone: Boolean = false,
 ) {
     val themeId = theme.id
     private val _ui = MutableStateFlow(
@@ -777,7 +782,7 @@ class ThemeEditor(
 
     private fun message(e: Exception, fallback: String): String = when {
         e is ApiException -> e.firstMessage ?: e.detail.takeIf { it.isNotBlank() && !it.startsWith("{") } ?: fallback
-        else -> fallback.ifEmpty { "Can't reach the server." }
+        else -> fallback.ifEmpty { if (onPhone) "Something went wrong on this phone." else "Can't reach the server." }
     }
 
     private companion object {

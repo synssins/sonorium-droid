@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.sonorium.SonoriumApp
 import app.sonorium.local.LocalTheme
+import app.sonorium.local.PhoneThemeApi
 import app.sonorium.local.StarterThemes
 import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
@@ -1191,6 +1192,31 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             },
             toast = { text, error -> toast(text, error) },
             onThemeSaved = { viewModelScope.launch { refreshThemeList() } },
+        )
+    }
+
+    /**
+     * The same Theme Editor on a theme on this phone: its requests are answered on the phone
+     * ([PhoneThemeApi], the server's Core code), saved to the theme's folder, and heard at once while it plays.
+     */
+    fun openPhoneThemeEditor(theme: LocalTheme) = viewModelScope.launch {
+        closePreview()
+        _editor.value?.close()
+        _editor.value = null
+        val phone = try {
+            PhoneThemeApi.open(getApplication(), app.themeStore, theme)
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            android.util.Log.w("ServerViewModel", "Couldn't open ${theme.folder} for editing", e)
+            toast(e.message ?: "Couldn't open “${theme.name}” for editing", true)
+            return@launch
+        }
+        _editor.value = ThemeEditor(
+            phone.theme, phone.api, viewModelScope, getApplication(), phone.client,
+            mixUrl = { null },
+            toast = { text, error -> toast(text, error) },
+            onThemeSaved = { refreshLocalThemes() },
+            onPhone = true,
         )
     }
 

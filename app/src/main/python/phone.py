@@ -85,6 +85,10 @@ class Player:
     def set_volume(self, volume):
         self.engine.set_volume(float(volume))
 
+    def reload_theme(self):
+        """After the Theme Editor changed the theme's files (phone_api.py): the playing mix follows them."""
+        self.engine.reload_theme()
+
     def name(self):
         return self.engine.theme_name
 

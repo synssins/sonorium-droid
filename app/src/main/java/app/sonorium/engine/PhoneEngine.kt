@@ -128,6 +128,15 @@ object PhoneEngine {
 
     fun setVolume(volume: Float) = synchronized(lock) { player?.callAttr("set_volume", volume.toDouble()) }
 
+    /**
+     * The open engine re-reads its themes' metadata.json and presets.json (after the Theme Editor saved
+     * them); the playing mix follows, its preset gliding to the saved values. Nothing when nothing is open.
+     */
+    fun reloadTheme() = synchronized(lock) { player?.callAttr("reload_theme"); Unit }
+
+    /** A module of the app's Python (starting Python the first time), e.g. `phone_api`. */
+    fun module(context: Context, name: String): PyObject = python(context).getModule(name)
+
     fun close() = synchronized(lock) {
         val p = player
         player = null

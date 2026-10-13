@@ -272,6 +272,23 @@ class ThemeStore(private val context: Context) {
         runCatching { children(tree, theme.docId) }.getOrDefault(emptyList()).firstOrNull { it.name == name && !it.isDir }?.let { readText(tree, it.id) }
     }
 
+    /**
+     * Writes a file at the top of [theme]'s folder (metadata.json, presets.json), replacing it or making
+     * it. Throws [ImportProblem] when the folder can't be written.
+     */
+    suspend fun writeFile(theme: LocalTheme, name: String, bytes: ByteArray) = withContext(Dispatchers.IO) {
+        val tree = root ?: throw ImportProblem(CANT_WRITE)
+        val existing = runCatching { children(tree, theme.docId) }.getOrDefault(emptyList()).firstOrNull { it.name == name && !it.isDir }
+        // "wt" replaces the content; a provider without it gets a new file instead (plain "w" may leave a longer old tail)
+        val out = existing?.let { e -> runCatching { resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, e.id), "wt") }.getOrNull() }
+            ?: run {
+                existing?.let { delete(tree, it.id) }
+                resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, create(tree, theme.docId, mimeOf(name), name)), "w")
+            }
+            ?: throw ImportProblem(CANT_WRITE)
+        out.use { it.write(bytes) }
+    }
+
     /** Removes a theme folder from the phone. */
     suspend fun remove(theme: LocalTheme): Boolean = withContext(Dispatchers.IO) {
         val tree = root ?: return@withContext false
