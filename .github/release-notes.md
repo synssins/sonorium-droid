@@ -1,9 +1,15 @@
 ## What's new in this build
 
+- **Fixed: nothing played on your device in alpha30.** Themes on your device play again.
+- **Stop My Channel when switching between server and device** now stops My Channel on the one you leave, also when you switch in the Servers list.
+- **Help:** its button sits exactly under the server button on every page and screen size, and My Channel and Backups have help too.
+- **First start:** the guide shows on a new install only (not after an update), and leaves out "Add a server" when a server is already linked.
 - **Your server's name:** a Sonorium renamed in its settings (Server name) shows under that name in the server button and the Servers list after the next connection; a name you gave it in the app stays. Servers found on your network show their names too.
 
 ## Please test
 
+- Play a theme on your device (My Channel): it plays.
+- Play My Channel on your device, then choose your Sonorium in the Servers list: your device stops (and the other way round).
 - Give your Sonorium a name in its settings (Server name), then open the app: the server button and the Servers list show the new name.
 
 ### Earlier (alpha30)
