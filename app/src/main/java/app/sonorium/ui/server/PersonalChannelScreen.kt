@@ -157,7 +157,7 @@ fun PersonalChannelScreen(
                         )
                     }
                     // A new personal channel has no theme yet: listening needs one
-                    if (channel.themeId == null) Text("Choose a theme", color = Palette.textSecondary, fontSize = 13.sp)
+                    if (channel.themeId == null) Text("Pick a theme above to play your channel", color = Palette.textSecondary, fontSize = 13.sp)
                     Button(
                         onClick = { model.toggleListen(channel, personal = true) },
                         enabled = on || channel.themeId != null,

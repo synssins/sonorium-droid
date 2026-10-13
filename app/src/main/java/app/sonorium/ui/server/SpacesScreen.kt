@@ -73,23 +73,28 @@ fun SpacesPage(state: ServerState, model: ServerViewModel) {
         val narrow = maxWidth < 600.dp
         LazyColumn(Modifier.fillMaxSize().padding(horizontal = if (narrow) 12.dp else 24.dp)) {
             item {
-                PageHeader("Floors & Areas", null, help = "settings-spaces") {
-                    if (editable) {
-                        OutlinedButton(onClick = { adding = "floor" }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
+                // Phones: the add buttons get their own row (in the header they squeezed "Add area" to letters)
+                val addButtons: @Composable (Modifier) -> Unit = { m ->
+                        OutlinedButton(onClick = { adding = "floor" }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = m.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) {
                             Icon(SIcons.Plus, null, tint = Palette.text, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Add floor", color = Palette.text)
+                            Text("Add floor", color = Palette.text, maxLines = 1)
                         }
                         Spacer(Modifier.width(8.dp))
                         Button(
-                            onClick = { adding = "area" }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                            onClick = { adding = "area" }, shape = RoundedCornerShape(8.dp), modifier = m.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                         ) {
                             Icon(SIcons.Plus, null, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Add area")
+                            Text("Add area", maxLines = 1)
                         }
-                    }
+                }
+                PageHeader("Floors & Areas", null, help = "settings-spaces") {
+                    if (editable && !narrow) addButtons(Modifier)
+                }
+                if (editable && narrow) {
+                    androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(bottom = 12.dp)) { addButtons(Modifier.weight(1f)) }
                 }
                 Text(
                     when {
