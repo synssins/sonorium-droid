@@ -156,8 +156,8 @@ private fun TrackRow(t: EditorTrack, section: Section, group: TrackGroup?, ui: E
                 if (previewing) SIcons.Stop else SIcons.Play,
                 if (t.missing) "File missing" else if (previewing) "Stop preview" else "Preview",
                 { editor.toggleFilePreview(t.name) },
-                // On this phone a linked file's source is another theme's folder: no preview yet
-                enabled = enabled && !(editor.onPhone && t.linked != null), size = app.sonorium.ui.UiSize.SMALL,
+                // The old on-phone editor has no other themes to play a linked file from
+                enabled = enabled && !(editor.onPhone && !editor.linksHere && t.linked != null), size = app.sonorium.ui.UiSize.SMALL,
                 tint = if (previewing) Palette.accent else Palette.textSecondary,
             )
             Spacer(Modifier.width(8.dp))

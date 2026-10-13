@@ -178,7 +178,8 @@ class PhoneThemeApi(
         }
     }
 
-    private fun audio(request: okhttp3.Request, key: String): Response {
+    /** A track's own audio file as the answer to [request] (404 when it has none). */
+    fun audio(request: okhttp3.Request, key: String): Response {
         val found = runCatching { source.audio(key) }.onFailure { Log.w(TAG, "No audio for $key", it) }.getOrNull()
             ?: return Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(404).message("Not found")
                 .body(error(404, "Track not found").second.toResponseBody(JSON)).build()

@@ -96,6 +96,8 @@ class ThemeEditor(
      * the phone can't do yet (Preview mix, a linked file's ▶ preview).
      */
     val onPhone: Boolean = false,
+    /** Linked files work here (a server, or this device's own entry with its other themes). */
+    val linksHere: Boolean = !onPhone,
 ) {
     val themeId = theme.id
     private val _ui = MutableStateFlow(

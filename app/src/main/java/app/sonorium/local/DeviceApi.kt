@@ -31,6 +31,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
+import okio.buffer
 
 /**
  * This device as an entry of its own: the app's usual `/api/...` requests (the same screens as for a
@@ -79,6 +80,19 @@ class DeviceApi(private val context: Context) : Interceptor {
         fun ok(body: JsonElement, status: Int = 200) = respond(request, status, body.toString())
         when {
             s == listOf("info") -> return ok(info())
+            // A theme's live mix for previews (the server's /stream/<id>): a second engine on this device
+            s.size == 2 && s[0] == "stream" && m == "GET" -> {
+                val t = theme(s[1])
+                val prepared = runBlocking { PhonePlayer.ensurePrepared(sapp, t) }
+                val source = app.sonorium.engine.PreviewEngine.open(context, prepared)
+                return Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                    .body(object : okhttp3.ResponseBody() {
+                        override fun contentType() = "audio/wav".toMediaType()
+                        override fun contentLength() = -1L
+                        private val buffered = source.buffer()
+                        override fun source(): okio.BufferedSource = buffered
+                    }).build()
+            }
             s == listOf("auth", "me") -> return ok(buildJsonObject {
                 put("kind", "device")
                 put("perms", buildJsonArray { PERMS.forEach { add(JsonPrimitive(it)) } })
@@ -103,6 +117,10 @@ class DeviceApi(private val context: Context) : Interceptor {
             s.size == 2 && s[0] == "themes" && m == "DELETE" -> return ok(deleteTheme(s[1]))
             s.size == 3 && s[0] == "themes" && s[2] == "favorite" && m == "POST" -> return ok(favorite(s[1]))
             s.size == 3 && s[0] == "themes" && s[2] == "export" && m == "GET" -> return export(request, s[1])
+            // A linked file's ▶ preview: the file in the theme it comes from
+            s.size == 5 && s[0] == "themes" && s[2] == "tracks" && s[4] == "audio" && m == "GET" -> linkedSource(s[1], s[3])?.let { (src, key) ->
+                return editorFor(src).audio(request, key)
+            }
             s.size >= 3 && s[0] == "themes" -> {
                 // Linking from another theme: its prepared copy is where Core reads it
                 if (s.getOrNull(2) == "links") {
@@ -213,6 +231,15 @@ class DeviceApi(private val context: Context) : Interceptor {
         }
         changed("channel.updated")
         return session()
+    }
+
+    /** The source (theme id, track key) of linked file [key] of theme [id], or null when it isn't a linked file. */
+    private fun linkedSource(id: String, key: String): Pair<String, String>? {
+        val meta = runBlocking { runCatching { store.readFile(theme(id), "metadata.json") }.getOrNull() } ?: return null
+        val link = runCatching { org.json.JSONObject(meta).optJSONObject("links")?.optJSONObject(key) }.getOrNull() ?: return null
+        val src = link.optString("theme").ifEmpty { return null }
+        val track = link.optString("track").ifEmpty { return null }
+        return src to track
     }
 
     // ---------- Audio Settings ----------

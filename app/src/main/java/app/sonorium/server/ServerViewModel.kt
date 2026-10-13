@@ -907,12 +907,23 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val _preview = MutableStateFlow<Preview?>(null)
     val preview: StateFlow<Preview?> = _preview.asStateFlow()
     private var previewPlayer: androidx.media3.exoplayer.ExoPlayer? = null
+    private var previewOnDevice = false
 
+    @androidx.annotation.OptIn(markerClass = [androidx.media3.common.util.UnstableApi::class])
     fun togglePreview(theme: ThemeSummary) {
         if (_preview.value?.themeId == theme.id) return closePreview()
-        val host = host ?: return
-        val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort ?: return
-        val player = previewPlayer ?: androidx.media3.exoplayer.ExoPlayer.Builder(getApplication()).build().also { p ->
+        val onDevice = _state.value.onDevice
+        val url = if (onDevice) "${PhoneThemeApi.BASE_URL}stream/${android.net.Uri.encode(theme.id)}"
+        else {
+            val host = host ?: return
+            val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort ?: return
+            "http://$host:$port/stream/${android.net.Uri.encode(theme.id)}"
+        }
+        // This device's previews come from its own engine, through the app's client
+        if (onDevice != previewOnDevice) { previewPlayer?.release(); previewPlayer = null; previewOnDevice = onDevice }
+        val builder = androidx.media3.exoplayer.ExoPlayer.Builder(getApplication())
+        if (onDevice) client?.let { c -> builder.setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(c))) }
+        val player = previewPlayer ?: builder.build().also { p ->
             previewPlayer = p
             p.addListener(object : androidx.media3.common.Player.Listener {
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
@@ -923,7 +934,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         }
         val volume = _preview.value?.volume ?: 80
         _preview.value = Preview(theme.id, theme.name, volume = volume)
-        player.setMediaItem(androidx.media3.common.MediaItem.fromUri("http://$host:$port/stream/${android.net.Uri.encode(theme.id)}"))
+        player.setMediaItem(androidx.media3.common.MediaItem.fromUri(url))
         player.volume = volume / 100f
         player.prepare()
         player.play()
@@ -1268,7 +1279,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _editor.value = ThemeEditor(
             fresh, api, viewModelScope, getApplication(), client,
             onPhone = _state.value.onDevice,
+            linksHere = true,
             mixUrl = { id ->
+                if (_state.value.onDevice) return@ThemeEditor "${PhoneThemeApi.BASE_URL}stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}"
                 val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort
                 host?.let { h -> port?.let { "http://$h:$it/stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}" } }
             },

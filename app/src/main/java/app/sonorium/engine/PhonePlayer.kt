@@ -245,6 +245,17 @@ object PhonePlayer {
         }
     }
 
+    /** [theme] ready for an engine (its prepared copy and decoded audio), getting it ready only when needed. */
+    suspend fun ensurePrepared(app: SonoriumApp, theme: LocalTheme): ThemePrep.Prepared {
+        if (ready[theme.folder] == theme.version || (openFolder == theme.folder && openFor == theme.version)) {
+            return ThemePrep.prepared(app, theme.folder)
+        }
+        val prepared = ThemePrep.prepare(app, app.themeStore, theme) { _, _ -> }
+        ready[theme.folder] = theme.version
+        prepareLinked(app, theme)
+        return prepared
+    }
+
     /** The themes [theme] links files from, got ready too (their decoded audio plays the linked tracks). */
     private suspend fun prepareLinked(app: SonoriumApp, theme: LocalTheme) {
         val meta = runCatching { app.themeStore.readFile(theme, "metadata.json") }.getOrNull() ?: return
