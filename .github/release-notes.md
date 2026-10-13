@@ -1,12 +1,20 @@
 ## What's new in this build
 
-- **Sleep timer:** a playing channel's ⋯ › Sleep timer… (15 min to 4 h, or Custom…): the channel fades out and stops when it runs out. The state shows a moon and the time left. On your Sonorium's channels and on your device.
-- **The sample's daily time:** the sample theme plays up to 30 minutes a day; then it fades out and the card says so.
+- **Themes get ready when they arrive:** a theme saved from your server, imported, created or added with the app is got ready on your device at once, in the background with its progress; Play starts straight away.
+- **Imported zips:** after importing a theme zip you picked, the app asks whether to delete the zip (the theme's music stays).
+- **Space on your device:** each theme on your device shows the space it takes and its ready-to-play copy; ⋯ › Free up space deletes that copy.
+- **Copy into this theme:** a linked track's bar has a download icon (and its ⋯ the item) to copy the file into the theme; the row stays and is no longer linked.
+- The sample theme is one file in the app, easy to swap.
 
 ## Please test
 
-- A playing channel › ⋯ › Sleep timer… › 15 min: the moon and the countdown show; Cancel timer stops it.
-- Your device › My channel: a custom sleep timer of 1 minute: the mix fades out and stops.
+- Import a theme zip on your device: it gets ready at once (progress on Themes), then Delete the zip when asked.
+- Themes on your device: the space line; ⋯ › Free up space.
+- Theme Editor › a linked track › the download icon.
+
+### Earlier (alpha27)
+- **Sleep timer:** a playing channel's ⋯ › Sleep timer… (15 min to 4 h, or Custom…): the channel fades out and stops when it runs out. The state shows a moon and the time left. On your Sonorium's channels and on your device.
+- **The sample's daily time:** the sample theme plays up to 30 minutes a day; then it fades out and the card says so.
 
 ### Earlier (alpha26)
 - **A sample theme for everyone:** right after installing, with no internet, no server and nothing unlocked, your device shows up with one theme (Tavern) ready to play in My channel, with its presets and sequences, Next, volume and the lock screen.
