@@ -22,7 +22,7 @@ adb shell am instrument -w -r -e class app.sonorium.ScreenTourTest#offline "$RUN
 adb shell am instrument -w -r \
   -e linkUri "$LINK_URI_B64" \
   -e channelName "'$CHANNEL_NAME'" \
-  -e class app.sonorium.EndToEndTest,app.sonorium.PcmDecoderTest,app.sonorium.PhoneEngineTest,app.sonorium.PhoneThemeEditorTest,app.sonorium.PackageDownloadTest,app.sonorium.CastStreamTest,app.sonorium.DeviceApiTest,app.sonorium.FlacCacheBenchmark \
+  -e class app.sonorium.EndToEndTest,app.sonorium.PcmDecoderTest,app.sonorium.PhoneEngineTest,app.sonorium.PhoneThemeEditorTest,app.sonorium.PackageDownloadTest,app.sonorium.BackupApiTest,app.sonorium.CastStreamTest,app.sonorium.DeviceApiTest,app.sonorium.FlacCacheBenchmark \
   "$RUNNER" | tee e2e-out/instrumentation.txt
 grep -q "^OK (" e2e-out/instrumentation.txt
 e2e=$?

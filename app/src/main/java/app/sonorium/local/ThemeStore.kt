@@ -405,7 +405,7 @@ class ThemeStore(private val context: Context) {
      * puts the new one in its place, then removes the old one (put back if anything fails before that).
      * Returns the folder name.
      */
-    suspend fun install(source: File, paths: List<String>, name: String, marker: String, replacing: LocalTheme?): String = withContext(Dispatchers.IO) {
+    suspend fun install(source: File, paths: List<String>, name: String, marker: String?, replacing: LocalTheme?): String = withContext(Dispatchers.IO) {
         val tree = root ?: throw ImportProblem("Choose a folder for themes first")
         val rootId = rootId(tree)
         val taken = children(tree, rootId).map { it.name.lowercase() }.toSet()
@@ -427,9 +427,12 @@ class ThemeStore(private val context: Context) {
                     out.use { o -> File(source, path).inputStream().use { it.copyTo(o) } }
                 }
                 // Without the marker the theme wouldn't show as saved from the server: fail the install
-                val doc = create(tree, folder, "application/json", MARKER)
-                val out = resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, doc)) ?: throw ImportProblem(CANT_WRITE)
-                out.use { it.write(marker.toByteArray()) }
+                // (none for a theme of the phone's own, restored from a backup)
+                if (marker != null) {
+                    val doc = create(tree, folder, "application/json", MARKER)
+                    val out = resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, doc)) ?: throw ImportProblem(CANT_WRITE)
+                    out.use { it.write(marker.toByteArray()) }
+                }
             } catch (e: Throwable) {
                 delete(tree, folder)
                 throw e

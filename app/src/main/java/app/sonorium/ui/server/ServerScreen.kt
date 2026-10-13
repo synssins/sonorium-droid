@@ -81,6 +81,7 @@ enum class Page(val title: String, val icon: ImageVector, val webView: String?, 
     Groups("Speaker Groups", SIcons.Speakers, null, "sp.set", "speaker_groups"),
     Spaces("Floors & Areas", SIcons.Grid, null, "st.change", "spaces"),
     Audio("Audio Settings", SIcons.Volume, null, "st.change", "audio_settings"),
+    Backups("Backups", SIcons.Upload, null, cap = "theme_backup"),
     Advanced("Advanced", SIcons.Settings, null, "st.change", "advanced"),
     Logs("Logs", SIcons.Activity, null, "st.view", "logs"),
     Plugins("Plugins", SIcons.Settings, null, "admin.plugins", "plugins"),
@@ -92,7 +93,7 @@ enum class Page(val title: String, val icon: ImageVector, val webView: String?, 
 private const val TOP_BAR_CONTROL = app.sonorium.ui.UiSize.STANDARD
 
 // The web UI's order (slots.js): Connection, Audio Settings, Floors & Areas, Speakers, Speaker Groups, Plugins, Logs, Advanced
-private val SETTINGS = listOf(Page.Connection, Page.Audio, Page.Spaces, Page.Speakers, Page.Groups, Page.Plugins, Page.Logs, Page.Advanced)
+private val SETTINGS = listOf(Page.Connection, Page.Audio, Page.Backups, Page.Spaces, Page.Speakers, Page.Groups, Page.Plugins, Page.Logs, Page.Advanced)
 
 @Composable
 fun ServerScreen(
@@ -214,6 +215,7 @@ fun ServerScreen(
                             page == Page.Status -> StatusPage(state, model)
                             page == Page.Connection -> ConnectionPage(state, model)
                             page == Page.Audio -> AudioPage(model)
+                            page == Page.Backups -> BackupsPage(state, model)
                             page == Page.Plugins -> PluginsPage(model)
                             page == Page.Logs -> LogsPage(model)
                             page == Page.Advanced -> AdvancedSettingsPage(state, model)
@@ -366,7 +368,8 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
         MenuItem(Page.Playlists, current, onOpen)
         Section("Configuration")
         MenuItem(Page.Themes, current, onOpen)
-        val settings = SETTINGS.filter { (it.perm == null || it.perm in perms) && state.offers(it.cap) && (it != Page.Connection || state.connectionPage) }
+        val settings = SETTINGS.filter { (it.perm == null || it.perm in perms) && state.offers(it.cap) && (it != Page.Connection || state.connectionPage) &&
+            (it != Page.Backups || state.info?.capabilities?.contains("theme_backup") == true) }
         MenuRow(SIcons.Settings, "Settings", selected = false, trailing = if (settingsOpen) SIcons.ChevronDown else SIcons.ChevronRight) { settingsOpen = !settingsOpen }
         if (settingsOpen) {
             settings.forEach { MenuItem(it, current, onOpen, indent = true) }

@@ -11,4 +11,51 @@
     <string name="sync_text">New and changed audio files are downloaded, and the server\'s new presets and sequences are added. Your presets and settings on this phone stay as they are.</string>
     <string name="sync_overwrite">Overwrite my presets and settings on this phone</string>
     <string name="sync_action">Sync</string>
+    <!-- Settings › Backups (a Sonorium that keeps backups: info capability theme_backup) -->
+    <string name="backups_title">Backups</string>
+    <string name="backup_switch">Back up to %1$s</string>
+    <string name="backup_switch_tip">While this phone is connected: your presets, sequences and track settings of this server\'s themes, the themes of your own, and your playlists</string>
+    <string name="backup_load">Load my phone presets into themes</string>
+    <string name="backup_load_tip">Your presets and sequences from your phones become presets of this server\'s themes, named after the phone</string>
+    <string name="backup_now">Back up now</string>
+    <string name="backup_running">Backing up…</string>
+    <string name="backup_last">Last backup %1$s</string>
+    <string name="backup_never">Not backed up yet</string>
+    <string name="backup_done">Backed up</string>
+    <string name="backup_failed">Couldn\'t back up</string>
+    <string name="backup_full">Your backup space on this server is full</string>
+    <plurals name="backup_skipped">
+        <item quantity="one">%d file wasn\'t backed up: its type isn\'t supported</item>
+        <item quantity="other">%d files weren\'t backed up: their type isn\'t supported</item>
+    </plurals>
+    <string name="backup_space">%1$s used of %2$s</string>
+    <string name="backup_space_nolimit">%1$s used</string>
+    <string name="backup_devices">Backups on this server</string>
+    <string name="backup_none">No backups yet</string>
+    <string name="backup_this_device">This device</string>
+    <string name="backup_not_linked">not linked</string>
+    <plurals name="backup_themes">
+        <item quantity="one">%d theme</item>
+        <item quantity="other">%d themes</item>
+    </plurals>
+    <plurals name="backup_playlists">
+        <item quantity="one">%d playlist</item>
+        <item quantity="other">%d playlists</item>
+    </plurals>
+    <string name="backup_restore">Restore to this phone</string>
+    <string name="backup_restore_title">Restore the backup of %1$s?</string>
+    <string name="backup_restore_text">Its themes and playlists come onto this phone. Themes already here take the backup\'s presets and settings.</string>
+    <string name="backup_restore_action">Restore</string>
+    <string name="backup_restoring">Restoring %1$s…</string>
+    <string name="backup_restored">Restored %1$d themes and %2$d playlists.</string>
+    <string name="backup_restore_missing">Not on this server any more: %1$s.</string>
+    <string name="backup_restore_failed">Couldn\'t restore the backup</string>
+    <string name="backup_restore_folder">Choose a folder for themes on this phone first.</string>
+    <string name="backup_delete">Delete…</string>
+    <string name="backup_delete_title">Delete the backups of %1$s?</string>
+    <string name="backup_delete_text">They are removed from this server. Nothing changes on the phone.</string>
+    <string name="backup_delete_action">Delete</string>
+    <string name="backup_deleted">Backups deleted</string>
+    <string name="backup_load_failed">Couldn\'t load your backups</string>
+    <string name="try_again">Try again</string>
 </resources>

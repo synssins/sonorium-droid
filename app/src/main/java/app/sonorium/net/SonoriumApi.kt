@@ -430,10 +430,13 @@ class SonoriumApi(
      * Downloads one file of a theme package into [dest], resuming after the bytes already there
      * (`Range` + `If-Range` with the file's ETag, the sha256 the package lists). [onBytes] gets each chunk's size.
      */
-    suspend fun downloadThemeFile(themeId: String, file: PackageFile, dest: java.io.File, onBytes: (Long) -> Unit) = withContext(Dispatchers.IO) {
+    suspend fun downloadThemeFile(themeId: String, file: PackageFile, dest: java.io.File, onBytes: (Long) -> Unit) =
+        download(theme(themeId, "files", *file.path.split('/').toTypedArray()), file, dest, onBytes)
+
+    private suspend fun download(request: Request.Builder, file: PackageFile, dest: java.io.File, onBytes: (Long) -> Unit) = withContext(Dispatchers.IO) {
         val have = if (dest.exists()) dest.length() else 0L
         if (have == file.size) return@withContext
-        val req = theme(themeId, "files", *file.path.split('/').toTypedArray()).get().apply {
+        val req = request.get().apply {
             if (have in 1 until file.size) {
                 header("Range", "bytes=$have-")
                 header("If-Range", "\"${file.sha256}\"")
@@ -455,6 +458,80 @@ class SonoriumApi(
             }
         }
     }
+
+    // ---------- Backups to this server (`/api/me/backups`, info capability "theme_backup") ----------
+
+    /** `/api/me/backups/<segments…>`, each segment encoded as one path part (keys and paths may hold anything but "/"). */
+    private fun backupRequest(vararg segments: String): Request.Builder {
+        val url = baseUrl.newBuilder().addPathSegment("api").addPathSegment("me").addPathSegment("backups")
+            .apply { segments.forEach { addPathSegment(it) } }.build()
+        return Request.Builder().url(url).apply { token?.let { header("Authorization", "Bearer $it") } }
+    }
+
+    private suspend fun backupJson(method: String, body: JsonObject?, vararg segments: String): JsonObject {
+        val b = body?.toString()?.toRequestBody(JSON) ?: if (method == "GET" || method == "DELETE") null else EMPTY
+        return json.parseToJsonElement(execute(backupRequest(*segments).method(method, b).build())) as? JsonObject ?: JsonObject(emptyMap())
+    }
+
+    /** Your backups by phone, the space used and the settings. */
+    suspend fun backups(): JsonObject = backupJson("GET", null)
+
+    suspend fun setBackupLoadIntoThemes(on: Boolean): JsonObject =
+        backupJson("PUT", buildJsonObject { put("load_into_themes", on) }, "settings")
+
+    /** This phone's mix of the server theme [key]. */
+    suspend fun putBackupMix(key: String, mix: JsonObject): JsonObject = backupJson("PUT", mix, "self", "themes", key)
+
+    /** Starts or resumes a whole-theme backup: answers `complete` and the `missing` files. */
+    suspend fun putBackupPackage(key: String, manifest: JsonObject): JsonObject = backupJson("PUT", manifest, "self", "themes", key, "package")
+
+    suspend fun putBackupPlaylists(body: JsonObject): JsonObject = backupJson("PUT", body, "self", "playlists")
+
+    suspend fun backupTheme(deviceId: String, key: String): JsonObject = backupJson("GET", null, deviceId, "themes", key)
+
+    suspend fun backupPackage(deviceId: String, key: String): ThemePackage {
+        val o = backupJson("GET", null, deviceId, "themes", key, "package")
+        return json.decodeFromJsonElement(ThemePackage.serializer(), JsonObject(o + ("theme_id" to JsonPrimitive(key))))
+    }
+
+    suspend fun backupPlaylists(deviceId: String): JsonObject = backupJson("GET", null, deviceId, "playlists")
+
+    suspend fun deleteBackupDevice(deviceId: String): JsonObject = backupJson("DELETE", null, deviceId)
+
+    /**
+     * One file of a whole-theme backup, from byte [from] on ([open] gives the file from its start).
+     * Answers the server's `{received, complete, missing, …}`.
+     */
+    suspend fun uploadBackupFile(key: String, path: String, size: Long, from: Long, open: () -> java.io.InputStream): JsonObject = withContext(Dispatchers.IO) {
+        val body = object : okhttp3.RequestBody() {
+            override fun contentType() = "application/octet-stream".toMediaType()
+            override fun contentLength() = size - from
+            override fun writeTo(sink: okio.BufferedSink) {
+                open().use { input ->
+                    var skip = from
+                    while (skip > 0) {
+                        val n = input.skip(skip)
+                        if (n <= 0) break
+                        skip -= n
+                    }
+                    val buf = ByteArray(64 * 1024)
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        sink.write(buf, 0, n)
+                    }
+                }
+            }
+        }
+        val req = backupRequest("self", "themes", key, "files", *path.split('/').toTypedArray()).put(body).apply {
+            if (from > 0) header("Content-Range", "bytes $from-${size - 1}/$size")
+        }.build()
+        json.parseToJsonElement(execute(req)) as? JsonObject ?: JsonObject(emptyMap())
+    }
+
+    /** One file of a whole-theme backup into [dest] (resuming what's there), as [downloadThemeFile]. */
+    suspend fun downloadBackupFile(deviceId: String, key: String, file: PackageFile, dest: java.io.File, onBytes: (Long) -> Unit) =
+        download(backupRequest(deviceId, "themes", key, "files", *file.path.split('/').toTypedArray()), file, dest, onBytes)
 
     // ---------- The personal channel (planned: /api/info.personal_channel) ----------
 

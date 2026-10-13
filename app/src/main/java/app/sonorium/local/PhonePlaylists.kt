@@ -87,6 +87,32 @@ object PhonePlaylists {
         }
     }
 
+    /** The playlists as kept on this phone (`{id: playlist}`), for a backup; null when there are none. */
+    suspend fun stored(context: Context): JsonObject? = lock.withLock {
+        withContext(Dispatchers.IO) {
+            val file = store(context)
+            if (!file.isFile) return@withContext null
+            runCatching { (SonoriumApi.json.parseToJsonElement(file.readText()) as? JsonObject)?.get("playlists") as? JsonObject }.getOrNull()?.takeIf { it.isNotEmpty() }
+        }
+    }
+
+    /**
+     * Playlists from a backup ([playlists]: `{id: playlist}`) added to the ones on this phone; one with the
+     * same id is replaced by the backup's. Returns how many came in. [refresh] afterwards shows them.
+     */
+    suspend fun restore(context: Context, playlists: JsonObject): Int = lock.withLock {
+        withContext(Dispatchers.IO) {
+            val file = store(context)
+            // The file Core keeps: {"playlists": {id: playlist}, …}
+            val doc = runCatching { SonoriumApi.json.parseToJsonElement(file.readText()) as? JsonObject }.getOrNull() ?: JsonObject(emptyMap())
+            val mine = doc["playlists"] as? JsonObject ?: JsonObject(emptyMap())
+            val incoming = playlists.filterValues { it is JsonObject }
+            file.parentFile?.mkdirs()
+            file.writeText(JsonObject(doc + ("playlists" to JsonObject(mine + incoming))).toString())
+            incoming.size
+        }
+    }
+
     /** One request through phone_api.playlists; its body, or [Problem] for an error answer. */
     private fun call(context: Context, method: String, id: String, body: String): kotlinx.serialization.json.JsonElement {
         val answer = PhoneEngine.module(context, "phone_api").callAttr("playlists", method, id, body, store(context).path, catalog(context).path).toString()

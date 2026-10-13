@@ -15,6 +15,9 @@ import app.sonorium.local.StarterThemes
 import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
 import app.sonorium.local.ThemeSync
+import app.sonorium.local.ThemeBackup
+import app.sonorium.local.PhonePlaylists
+import app.sonorium.R
 import app.sonorium.net.PackageSummary
 import app.sonorium.data.ServerRecord
 import app.sonorium.ui.server.bytesText
@@ -282,6 +285,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             loadAll()
             startEvents()
             startPolling()
+            backUpIfDue()
         }
     }
 
@@ -487,8 +491,10 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun onResume() {
         visible = true
-        if (api != null) viewModelScope.launch { refreshSessions() }
-        else if (serverId != null && !_state.value.connecting && !_state.value.unlinked) connect(quiet = true)
+        if (api != null) {
+            viewModelScope.launch { refreshSessions() }
+            backUpIfDue()
+        } else if (serverId != null && !_state.value.connecting && !_state.value.unlinked) connect(quiet = true)
     }
 
     fun onPause() {
@@ -1708,6 +1714,141 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _toasts.value = Toast(text, error)
     }
 
+    // ---------- Backups to this server (Settings › Backups; the server's /api/me/backups) ----------
+
+    /**
+     * [on]: "Back up to this server"; [running]: a backup under way; [listing]: the server's `GET /api/me/backups`
+     * (null until loaded); [restoring]: what a restore is bringing back now.
+     */
+    data class BackupState(
+        val serverId: String? = null,
+        val on: Boolean = false,
+        val running: Boolean = false,
+        val lastDone: Long = 0,
+        val problem: String? = null,
+        val listing: JsonObject? = null,
+        val loadFailed: Boolean = false,
+        val restoring: String? = null,
+    )
+
+    private val _backup = MutableStateFlow(BackupState())
+    val backup: StateFlow<BackupState> = _backup.asStateFlow()
+    private var backupJob: Job? = null
+    private var backupStarted = 0L
+
+    /** This server keeps backups (its capabilities say so) and it's a Sonorium, not this device. */
+    val backupsOffered: Boolean get() = _state.value.info?.capabilities?.contains(CAP_BACKUP) == true && !_state.value.onDevice
+
+    private fun backupFor(id: String?): BackupState = _backup.value.let { b ->
+        if (b.serverId == id) b else BackupState(serverId = id, on = id != null && ThemeBackup.isOn(app, id),
+            lastDone = id?.let { ThemeBackup.lastDone(app, it) } ?: 0)
+    }
+
+    /** Reads the server's backups again for the Backups page. */
+    fun loadBackups() = viewModelScope.launch {
+        val id = serverId
+        _backup.value = backupFor(id).copy(loadFailed = false)
+        call { it.backups() }
+            .onSuccess { l -> if (serverId == id) _backup.update { it.copy(listing = l, loadFailed = false) } }
+            .onFailure { if (serverId == id) _backup.update { it.copy(loadFailed = true) } }
+    }
+
+    fun setBackupOn(on: Boolean) {
+        val id = serverId ?: return
+        ThemeBackup.setOn(app, id, on)
+        _backup.value = backupFor(id).copy(on = on)
+        if (on) backUpNow()
+    }
+
+    /** A backup now ([quiet]: started by the app, only a failure shows on the Backups page). */
+    fun backUpNow(quiet: Boolean = false) {
+        val id = serverId ?: return
+        if (!backupsOffered || backupJob?.isActive == true) return
+        val api = api ?: return
+        backupStarted = System.currentTimeMillis()
+        _backup.value = backupFor(id).copy(running = true, problem = null)
+        backupJob = viewModelScope.launch {
+            val serverThemes = _state.value.themes.map { it.id }.toSet()
+            val result = runCatching { ThemeBackup.backUp(app, app.themeStore, api, id, serverThemes) }
+            if (serverId != id) return@launch
+            result.onSuccess { r ->
+                val problem = when {
+                    r.full -> app.getString(R.string.backup_full)
+                    r.skipped.isNotEmpty() -> app.resources.getQuantityString(R.plurals.backup_skipped, r.skipped.size, r.skipped.size)
+                    else -> null
+                }
+                _backup.update { it.copy(running = false, lastDone = ThemeBackup.lastDone(app, id), problem = problem) }
+                if (!quiet) toast(if (r.full) problem.orEmpty() else app.getString(R.string.backup_done), error = r.full)
+            }.onFailure { e ->
+                android.util.Log.w("ThemeBackup", "Backup to $id failed", e)
+                val text = messageOf(e, app.getString(R.string.backup_failed))
+                _backup.update { it.copy(running = false, problem = text) }
+                if (!quiet) toast(text, error = true)
+            }
+            loadBackups()
+        }
+    }
+
+    /** After connecting and when the app comes back: a backup when it's on and the last one is a while ago. */
+    private fun backUpIfDue() {
+        val id = serverId ?: return
+        if (!backupsOffered || !ThemeBackup.isOn(app, id)) return
+        if (System.currentTimeMillis() - backupStarted < BACKUP_GAP_MS) return
+        backUpNow(quiet = true)
+    }
+
+    fun setLoadIntoThemes(on: Boolean) = viewModelScope.launch {
+        call { it.setBackupLoadIntoThemes(on) }
+            .onSuccess { loadBackups() }
+            .onFailure { toast(messageOf(it, app.getString(R.string.backup_failed)), error = true) }
+    }
+
+    /** Brings phone [deviceId]'s backup onto this phone (themes, then playlists). */
+    fun restoreBackup(deviceId: String) {
+        val id = serverId ?: return
+        val api = api ?: return
+        if (!proOrAsk()) return
+        if (app.themeStore.root == null) {
+            toast(app.getString(R.string.backup_restore_folder), error = true)
+            return
+        }
+        val row = (_backup.value.listing?.get("devices") as? kotlinx.serialization.json.JsonArray)?.mapNotNull { it as? JsonObject }
+            ?.firstOrNull { (it["device_id"] as? JsonPrimitive)?.content == deviceId } ?: return
+        viewModelScope.launch {
+            _backup.update { it.copy(restoring = "") }
+            val serverThemes = _state.value.themes.map { it.id }.toSet()
+            runCatching {
+                ThemeBackup.restore(app, app.themeStore, downloader, api, id, deviceId, row, serverThemes) { name ->
+                    _backup.update { it.copy(restoring = name) }
+                }
+            }.onSuccess { r ->
+                refreshLocalThemes()
+                val local = runCatching { app.themeStore.list() }.getOrDefault(emptyList())
+                runCatching { PhonePlaylists.refresh(app, app.themeStore, local) }
+                val text = app.getString(R.string.backup_restored, r.themes, r.playlists) +
+                    if (r.missing.isEmpty()) "" else " " + app.getString(R.string.backup_restore_missing, r.missing.joinToString(", "))
+                toast(text, error = false)
+            }.onFailure { e ->
+                android.util.Log.w("ThemeBackup", "Restore from $deviceId failed", e)
+                toast(messageOf(e, app.getString(R.string.backup_restore_failed)).ifEmpty { e.message.orEmpty() }, error = true)
+            }
+            _backup.update { it.copy(restoring = null) }
+        }
+    }
+
+    fun deleteBackups(deviceId: String) = viewModelScope.launch {
+        call { it.deleteBackupDevice(deviceId) }
+            .onSuccess {
+                // What this phone sent there is gone: the next backup sends everything again
+                if (_backup.value.listing?.let { l -> (l["devices"] as? kotlinx.serialization.json.JsonArray)?.any { d -> (d as? JsonObject)?.let { (it["device_id"] as? JsonPrimitive)?.content == deviceId && (it["this_device"] as? JsonPrimitive)?.content == "true" } == true } } == true) {
+                    serverId?.let { ThemeBackup.forget(app, it) }
+                }
+                toast(app.getString(R.string.backup_deleted), error = false)
+                loadBackups()
+            }
+            .onFailure { toast(messageOf(it, app.getString(R.string.backup_failed)), error = true) }
+    }
+
     override fun onCleared() {
         _editor.value?.close()
         previewPlayer?.release()
@@ -1718,6 +1859,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private companion object {
+        const val CAP_BACKUP = "theme_backup"
+        /** A backup started by the app at most this often (ms); the Backups page's Back up now any time. */
+        const val BACKUP_GAP_MS = 5 * 60_000L
         const val EVENT_TYPES =
             "channel.*,sequence.*,playlist.*,theme.*,zone.*,link.*,group.*,spaces.*,settings.*,speaker.*,plugin.*,sonorium.started"
     }
