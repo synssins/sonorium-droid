@@ -1,13 +1,27 @@
 ## What's new in this build
 
-- **Stereo on your device:** themes play in stereo on your device (a stereo file keeps its sides, a mono one plays centred). Settings › Audio Settings on your device has a Stereo switch (on); off plays the mix in mono. Casting stays mono.
-- **Sync now:** a theme saved from your Sonorium that has changed there shows ⋯ › Sync now: new and changed audio files come down and the server's new presets and sequences are added; your presets and settings on your device stay, unless you tick "Overwrite my presets and settings on this phone".
-- **Child Mode:** what was called Kid mode is now Child Mode; the channel card shows only the lock.
+- **Themes play straight away on your device:** theme files are read as they play (no ready-to-play copy any more, no "Getting ready" wait, nothing done in the background). The copies made before are deleted once, which frees their space. Known: on Android 8 this takes much more of the processor than on current Android; Android 8 devices suit controlling a Sonorium's channels best.
+- **My Channel:** one playback at a time (listening to a server's My Channel stops your device's, and the other way round). Audio Settings › On this phone: "Stop My Channel when switching between server and device" (on). When your server can't be reached, My Channel offers "Play on this device"; the app tries the server again every minute, and choosing it in the Servers list tries at once. Before the unlock, a line at the bottom of your device's My Channel says what unlocking adds there.
+- **Volume:** playback on your device plays at full volume; your phone's volume buttons set how loud. Optional (Audio Settings, on a server): "Control theme playback volume in sync with device volume" makes the volume buttons move the open channel's speakers by 5%.
+- **Backups** (Settings › Backups, on a Sonorium that keeps them): back your device up to that server while connected (off until you turn it on): your presets, sequences and track settings of its themes, your own themes and your playlists. Restore a backup onto a device, or delete it.
+- **Guides:** a short guide on the first start (Play a theme, Connections, Add a server) and on the first visit of Themes, Playlists, a channel card and the Theme Editor; each page's help can show its guide again.
+- **Help** sits at the right of each page's title; the top bar has only the menu, the logo and the server button.
+- **Servers found on your network** show in the Servers list, one tap to add; the address field shows https://sonorium.local:8808/ as an example.
+- **Widgets:** a channel's Play/Stop (2×1) and a channel with what plays and previous / Play / next (4×2).
+- Sync now removes a file the server replaced with another format (x.wav → x.mp3).
+- Fixes: the sample theme has no Delete…; deleting on your device says "from this device"; the zip question after an import names the file and deletes it; an import that doesn't happen says why; unlocked without a themes folder, Themes keeps showing the sample with a Choose folder line.
 
 ## Please test
 
-- My Channel on your device with headphones: left and right differ on a stereo theme; Audio Settings › Stereo off makes it mono at once, without getting the theme ready again.
-- A theme saved to your device, then changed on your Sonorium (add a preset): ⋯ › Sync now, with and without the overwrite box.
+- Play themes on your device: they start at once; Themes shows no cache figure.
+- My Channel: play on your device, switch to your server with the server button (it stops; with the setting off it keeps playing); the server's My Channel stops your device's.
+- Settings › Backups: Back up now, then Restore on another device.
+- The first-start guide (after a reinstall) and the widgets.
+
+### Earlier (alpha29)
+- **Stereo on your device:** themes play in stereo on your device (a stereo file keeps its sides, a mono one plays centred). Settings › Audio Settings on your device has a Stereo switch (on); off plays the mix in mono. Casting stays mono.
+- **Sync now:** a theme saved from your Sonorium that has changed there shows ⋯ › Sync now: new and changed audio files come down and the server's new presets and sequences are added; your presets and settings on your device stay, unless you tick "Overwrite my presets and settings on this phone".
+- **Child Mode:** what was called Kid mode is now Child Mode; the channel card shows only the lock.
 
 ### Earlier (alpha28)
 - **Themes get ready when they arrive:** a theme saved from your server, imported, created or added with the app is got ready on your device at once, in the background with its progress; Play starts straight away.
