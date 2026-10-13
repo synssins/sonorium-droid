@@ -1,15 +1,20 @@
 ## What's new in this build
 
+- **Your preset is kept again:** the preset or sequence you chose comes back after the app is closed fully.
+- **Playlists start at once:** picking a playlist plays its first entry right away; the other entries' themes get ready in the background while it plays, and the progress line names the theme being got ready.
+- Add from another theme: each track's checkbox is named by its track (for TalkBack).
+
+## Please test
+
+- Your device › My channel: choose a preset, close the app fully, open it again: the preset is still chosen.
+- While a sequence plays, pick a playlist whose second entry is a theme you haven't played yet: the first entry plays at once.
+
+### Earlier (alpha22)
 - **The first Save to phone works:** after choosing the themes folder, the save waits for the connection to your Sonorium instead of giving up, then downloads the theme you asked for.
 - **Picking a playlist while a sequence plays:** the card shows the playlist's first entry at once, the theme already playing isn't got ready again, and the lock screen shows "Entry 1 of n".
 - **Steps keep counting:** a sequence's countdown can't freeze any more.
 - On your device, the Preview mix button's description no longer mentions speakers.
 - Theme exports and downloads carry tidy metadata.
-
-## Please test
-
-- Fresh install: link your Sonorium, Themes › a theme's ⋯ › Save to phone, unlock, choose the folder: the theme arrives with your server's presets.
-- Your device › My channel: while a sequence plays, pick a playlist.
 
 ### Earlier (alpha21)
 - **Timers keep time on your device:** sequence steps and playlist entries change when their countdown says, also where the sound drains faster than real time.
