@@ -72,20 +72,20 @@ import app.sonorium.ui.Palette
 import kotlinx.coroutines.launch
 
 /** A menu item: native pages have a screen here; the rest open the web UI at that page for now. */
-enum class Page(val title: String, val icon: ImageVector, val webView: String?, val perm: String? = null) {
+enum class Page(val title: String, val icon: ImageVector, val webView: String?, val perm: String? = null, val cap: String? = null) {
     Channels("Channels", SIcons.Grid, null),
     Personal("My channel", SIcons.Headphones, null),
     Playlists("Playlists", SIcons.Playlist, null),
     Themes("Themes", SIcons.Music, null),
-    Speakers("Speakers", SIcons.Speakers, null, "sp.set"),
-    Groups("Speaker Groups", SIcons.Speakers, null, "sp.set"),
-    Spaces("Floors & Areas", SIcons.Grid, null, "st.change"),
-    Audio("Audio Settings", SIcons.Volume, null, "st.change"),
-    Advanced("Advanced", SIcons.Settings, null, "st.change"),
-    Logs("Logs", SIcons.Activity, null, "st.view"),
-    Plugins("Plugins", SIcons.Settings, null, "admin.plugins"),
-    Connection("Connection", SIcons.Link, null, "admin.connection"),
-    Status("Status", SIcons.Activity, null),
+    Speakers("Speakers", SIcons.Speakers, null, "sp.set", "speakers"),
+    Groups("Speaker Groups", SIcons.Speakers, null, "sp.set", "speaker_groups"),
+    Spaces("Floors & Areas", SIcons.Grid, null, "st.change", "spaces"),
+    Audio("Audio Settings", SIcons.Volume, null, "st.change", "audio_settings"),
+    Advanced("Advanced", SIcons.Settings, null, "st.change", "advanced"),
+    Logs("Logs", SIcons.Activity, null, "st.view", "logs"),
+    Plugins("Plugins", SIcons.Settings, null, "admin.plugins", "plugins"),
+    Connection("Connection", SIcons.Link, null, "admin.connection", "connection"),
+    Status("Status", SIcons.Activity, null, cap = "status"),
 }
 
 /** Every control in the top bar is this tall (dp): Standard, so they line up (ui-standards: top bar 56, controls 48). */
@@ -107,9 +107,10 @@ fun ServerScreen(
     val themeEditor by model.editor.collectAsState()
     val phonePlaying = app.sonorium.engine.PhonePlayer.state.collectAsState().value.playing
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
-    var themesOnPhone by rememberSaveable { mutableStateOf(false) }
+    val localFolder by model.localFolder.collectAsState()
+    // This device's entry: its themes folder decides what Themes shows
+    LaunchedEffect(state.onDevice) { if (state.onDevice) model.refreshLocalThemes() }
     // A server that can't be reached: Themes opens on the themes on this phone (R19)
-    LaunchedEffect(state.failure != null) { themesOnPhone = state.failure != null }
     var editing by remember { mutableStateOf<Session?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
     // Link channels (Zones, admin): null = closed; a link = change it; NEW_LINK = a new one
@@ -133,7 +134,7 @@ fun ServerScreen(
     // A page this account can't open (e.g. restored after Android closed the app): back to Channels (QA 20)
     LaunchedEffect(page, state.me) {
         val perm = page.perm
-        if (perm != null && state.me != null && perm !in state.me?.perms.orEmpty()) page = Page.Channels
+        if ((perm != null && state.me != null && perm !in state.me?.perms.orEmpty()) || !state.offers(page.cap)) page = Page.Channels
     }
     // Back from any other page returns to Channels (R6), not to the Servers list
     androidx.activity.compose.BackHandler(enabled = page != Page.Channels) { page = Page.Channels }
@@ -187,9 +188,9 @@ fun ServerScreen(
                                 state, page,
                                 onServers = onServers,
                                 onRetry = { model.connect() },
-                                onPhone = { page = Page.Personal },
+                                onPhone = { if (!model.useDevice()) page = Page.Personal },
                             )
-                            page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening, onPhoneThemes = { page = Page.Themes; themesOnPhone = true })
+                            page == Page.Personal -> PersonalChannelScreen(model, state, listenVolume, listening, onPhoneThemes = { if (!model.useDevice()) page = Page.Themes })
                             page == Page.Playlists -> PlaylistsPage(state, model)
                             page == Page.Groups -> GroupsPage(state, model)
                             page == Page.Speakers -> SpeakersPage(state, model)
@@ -201,20 +202,11 @@ fun ServerScreen(
                             page == Page.Logs -> LogsPage(model)
                             page == Page.Advanced -> AdvancedSettingsPage(state, model)
                             // Themes: the server's, or the ones on this phone (the only ones without a server)
-                            page == Page.Themes && state.record == null -> LocalThemesPage(model, hasServer = false)
-                            page == Page.Themes -> Column(Modifier.fillMaxSize()) {
-                                Segmented(
-                                    listOf("On ${state.record?.displayName.orEmpty()}", "On this phone"),
-                                    if (themesOnPhone) 1 else 0,
-                                    { themesOnPhone = it == 1 },
-                                    Modifier.padding(start = 12.dp, end = 12.dp, top = 8.dp),
-                                )
-                                when {
-                                    themesOnPhone -> LocalThemesPage(model, hasServer = true)
-                                    state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { themesOnPhone = true })
-                                    else -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
-                                }
-                            }
+                            // Themes: the active entry's (this device's need its themes folder first)
+                            page == Page.Themes && (state.record == null || (state.onDevice && localFolder != app.sonorium.local.ThemeStore.FolderState.OK)) ->
+                                LocalThemesPage(model, hasServer = false)
+                            page == Page.Themes && state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { model.useDevice() })
+                            page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
                             else -> ChannelsPage(
                                 state = state,
                                 model = model,
@@ -312,7 +304,7 @@ private fun TopBar(
         ) {
             Row(Modifier.padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 val fg = if (live || record == null) Palette.bar else Palette.text
-                Icon(SIcons.Server, null, tint = fg, modifier = Modifier.size(16.dp))
+                Icon(if (record?.device == true) SIcons.Device else SIcons.Server, null, tint = fg, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(label, color = fg, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                 if (record != null && !live) {
@@ -354,7 +346,7 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
         MenuItem(Page.Playlists, current, onOpen)
         Section("Configuration")
         MenuItem(Page.Themes, current, onOpen)
-        val settings = SETTINGS.filter { (it.perm == null || it.perm in perms) && (it != Page.Connection || state.connectionPage) }
+        val settings = SETTINGS.filter { (it.perm == null || it.perm in perms) && state.offers(it.cap) && (it != Page.Connection || state.connectionPage) }
         MenuRow(SIcons.Settings, "Settings", selected = false, trailing = if (settingsOpen) SIcons.ChevronDown else SIcons.ChevronRight) { settingsOpen = !settingsOpen }
         if (settingsOpen) {
             settings.forEach { MenuItem(it, current, onOpen, indent = true) }
@@ -364,8 +356,10 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
             Section("Plugins")
             state.pluginPages.forEach { p -> MenuRow(SIcons.Layers, p.title, selected = false) { onPluginPage(p.view) } }
         }
-        Section("System")
-        MenuItem(Page.Status, current, onOpen)
+        if (state.offers(Page.Status.cap)) {
+            Section("System")
+            MenuItem(Page.Status, current, onOpen)
+        }
         Spacer(Modifier.weight(1f, fill = false))
         HorizontalDivider(color = Palette.border, modifier = Modifier.padding(vertical = 8.dp))
         Row(Modifier.padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -518,6 +512,7 @@ private fun ChannelsPage(
             stopCasting = model::stopCasting,
             leaveLink = model::leaveLink,
             rejoinLink = model::rejoinLink,
+            mix = { s -> s.themeId?.let { id -> model.state.value.theme(id)?.let(model::openThemeEditor) } },
         )
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -558,7 +553,7 @@ private fun ChannelsPage(
                         }
                         Spacer(Modifier.width(8.dp))
                     }
-                    Button(
+                    if (state.offers(CAP_CHANNELS)) Button(
                         onClick = onNew,
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
@@ -608,6 +603,7 @@ private fun ChannelsPage(
                         onCountdownZero = { scope.launch { model.refreshSessions() } },
                         modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth(),
                         onCollapse = { model.setExpanded(session.id, false) },
+                        extra = if (state.onDevice) ({ DeviceOutput() }) else null,
                     )
                 }
             }

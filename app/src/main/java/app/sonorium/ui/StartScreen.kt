@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -127,6 +128,11 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
         items(servers, key = { it.id }) { server ->
             Card(Modifier.clickable { model.select(server); NativeServerActivity.open(context, server.id) }) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // This device's own entry looks different from a Sonorium on the network
+                    if (server.device) {
+                        androidx.compose.material3.Icon(app.sonorium.ui.server.SIcons.Device, null, tint = Palette.accent, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
                     Text(
                         server.displayName,
                         color = Palette.text,
@@ -138,7 +144,7 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
                     // The server the app opens (not a live connection: that shows on the main screen's button)
                     if (server.id == currentId) Chip("Current")
                 }
-                Text(
+                if (!server.device) Text(
                     listOfNotNull(
                         server.hosts.firstOrNull()?.takeIf { server.name != null },
                         server.username,
@@ -147,7 +153,7 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
                     color = Palette.textSecondary,
                     fontSize = 12.sp,
                 )
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                if (!server.device) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(onClick = { renaming = server }) { Text("Rename", color = Palette.textSecondary) }
                     TextButton(onClick = { removing = server }) { Text("Remove", color = Palette.danger) }
                 }

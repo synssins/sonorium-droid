@@ -43,6 +43,8 @@ object SIcons {
         ),
     )
     val Play = icon("play", fill = listOf("M8 5v14l11-7z"))
+    /** This device (a phone or tablet): its own entry in the list. */
+    val Device = icon("device", listOf("M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z", "M12 18h.01"))
     val Stop = icon("stop", fill = listOf("M7.5 6h9A1.5 1.5 0 0 1 18 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 16.5v-9A1.5 1.5 0 0 1 7.5 6z"))
     val Edit = icon("edit", listOf("M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"))
     val More = icon("more", fill = listOf("M5 11$DOT", "M12 11$DOT", "M19 11$DOT"))

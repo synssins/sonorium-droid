@@ -217,7 +217,11 @@ class PhoneThemeApi(
          * (an older theme's "auto" modes), when the theme is fully prepared as for playing.
          * Throws [ThemePrep.Problem] with a message for the user.
          */
-        suspend fun open(context: Context, store: ThemeStore, theme: LocalTheme): Session = withContext(Dispatchers.IO) {
+        suspend fun open(context: Context, store: ThemeStore, theme: LocalTheme): Session =
+            openApi(context, store, theme).session(ThemeSummary(safe(theme.folder), name = theme.name, icon = theme.icon, description = theme.description, categories = theme.categories, totalTracks = theme.tracks))
+
+        /** The editor's API on [theme] as an interceptor (this device's own entry routes a theme's requests to it). */
+        suspend fun openApi(context: Context, store: ThemeStore, theme: LocalTheme): PhoneThemeApi = withContext(Dispatchers.IO) {
             val cantOpen = "Couldn't open “${theme.name}”. Check that it's still in your themes folder."
             try {
                 openChecked(context, store, theme, cantOpen)
@@ -231,7 +235,7 @@ class PhoneThemeApi(
             }
         }
 
-        private suspend fun openChecked(context: Context, store: ThemeStore, theme: LocalTheme, cantOpen: String): Session {
+        private suspend fun openChecked(context: Context, store: ThemeStore, theme: LocalTheme, cantOpen: String): PhoneThemeApi {
             val app = context.applicationContext
             val files = store.files(theme)
             if (files.isEmpty()) throw ThemePrep.Problem(cantOpen)
@@ -254,7 +258,7 @@ class PhoneThemeApi(
                     }
                 }
             })
-            return api.session(ThemeSummary(folder, name = theme.name, icon = theme.icon, description = theme.description, categories = theme.categories, totalTracks = theme.tracks))
+            return api
         }
 
         /**

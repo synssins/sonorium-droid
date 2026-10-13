@@ -47,6 +47,10 @@ import app.sonorium.server.ServerState
 import app.sonorium.ui.Palette
 import kotlinx.coroutines.delay
 
+/** Capabilities a Sonorium lists for making and editing channels, and for listening to them from this device. */
+const val CAP_CHANNELS = "channels.create"
+const val CAP_LISTEN = "listen"
+
 /** Card callbacks; each maps to one row of native-api.md 1.1 "Card actions". */
 class CardActions(
     val togglePlay: (Session) -> Unit,
@@ -65,6 +69,8 @@ class CardActions(
     val stopCasting: (Session, String) -> Unit,
     val leaveLink: (Session, String) -> Unit = { _, _ -> },
     val rejoinLink: (Session, String) -> Unit = { _, _ -> },
+    /** Mix: the Theme Editor on the channel's theme (null: no Mix button). */
+    val mix: ((Session) -> Unit)? = null,
 )
 
 /** The preset menu (1.2): Default settings, presets, a separator, then sequences. */
@@ -100,6 +106,8 @@ fun ChannelCard(
     onCountdownZero: () -> Unit,
     modifier: Modifier = Modifier,
     onCollapse: (() -> Unit)? = null,
+    /** What plays where this channel's sound comes out (this device: getting ready, Cast), above Play. */
+    extra: (@Composable () -> Unit)? = null,
 ) {
     val playing = session.isPlaying
     val playlistMode = session.playlistId != null || session.id in state.playlistMode
@@ -160,6 +168,8 @@ fun ChannelCard(
                     Text(sub, color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 StateChip(playing)
+                // A channel's own settings (name, speakers) and Delete: where channels can be made
+                if (state.offers(CAP_CHANNELS)) {
                 Spacer(Modifier.width(8.dp))
                 IconBox(SIcons.Edit, "Edit", { actions.edit(session) }, size = app.sonorium.ui.UiSize.SMALL)
                 Spacer(Modifier.width(6.dp))
@@ -172,6 +182,7 @@ fun ChannelCard(
                             onClick = { menuOpen = false; confirmDelete = true },
                         )
                     }
+                }
                 }
             }
 
@@ -203,6 +214,22 @@ fun ChannelCard(
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (playlistMode) PlaylistFields(session, state, actions, openMenu = openPlaylistMenu) { openPlaylistMenu = false } else ThemeFields(session, state, actions)
+                    // Mix: the Theme Editor on the theme playing now
+                    actions.mix?.let { mix ->
+                        if (session.themeId != null && state.theme(session.themeId) != null) {
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { mix(session) },
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Palette.border),
+                                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
+                                    .semantics { contentDescription = "Mix: edit ${state.theme(session.themeId)?.name.orEmpty()}" },
+                            ) {
+                                Icon(SIcons.Edit, null, tint = Palette.accent, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Mix", color = Palette.text)
+                            }
+                        }
+                    }
                 }
                 Column(Modifier.padding(start = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ModeButton(SIcons.Palette, "Play a theme", on = !playlistMode) { actions.themeMode(session) }
@@ -230,8 +257,8 @@ fun ChannelCard(
                 PercentSlider(session.volume, "Volume: ${session.name}", { actions.setVolume(session, it) }, Modifier.weight(1f).padding(start = 8.dp))
             }
 
-            // Listen row (this device)
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Listen row (this device): where a channel can be listened to from another device
+            if (state.offers(CAP_LISTEN)) Row(verticalAlignment = Alignment.CenterVertically) {
                 IconBox(
                     SIcons.Headphones, "Listen on this device", { actions.toggleListen(session) },
                     tint = if (listening) Palette.bar else Palette.textSecondary,
@@ -243,6 +270,8 @@ fun ChannelCard(
             }
 
             RecentChanges(session)
+
+            extra?.invoke()
 
             Button(
                 onClick = { actions.togglePlay(session) },

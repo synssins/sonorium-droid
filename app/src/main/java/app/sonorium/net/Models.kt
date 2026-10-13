@@ -20,6 +20,11 @@ data class ServerInfo(
     /** User accounts are loaded (username + password sign-in works); newer servers send it (to-app/21). */
     val accounts: Boolean? = null,
     @SerialName("personal_channel") val personalChannel: Boolean = false,
+    /**
+     * What this Sonorium offers of the optional parts (speakers, plugins, logs, …); null from a server that
+     * doesn't say (everything). This device's own entry lists only what a device has.
+     */
+    val capabilities: List<String>? = null,
     @SerialName("boot_id") val bootId: String? = null,
 ) {
     val hasUsers: Boolean get() = accounts ?: ("users" in plugins)

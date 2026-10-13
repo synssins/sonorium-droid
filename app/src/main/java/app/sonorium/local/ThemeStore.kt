@@ -374,6 +374,15 @@ class ThemeStore(private val context: Context) {
     /** One of Core's file operations (theme_edit.FileOps). */
     data class FileOp(val op: String, val src: String?, val dst: String?)
 
+    /** A new, empty theme folder [folder] holding only [metadata] (metadata.json). Throws [ImportProblem]. */
+    suspend fun createTheme(folder: String, metadata: String) = withContext(Dispatchers.IO) {
+        val tree = root ?: throw ImportProblem("Choose a folder for themes first")
+        val dir = create(tree, rootId(tree), DocumentsContract.Document.MIME_TYPE_DIR, folder)
+        val doc = create(tree, dir, "application/json", "metadata.json")
+        (resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, doc), "w") ?: throw ImportProblem(CANT_WRITE))
+            .use { it.write(metadata.toByteArray()) }
+    }
+
     /** Removes a theme folder from the phone. */
     suspend fun remove(theme: LocalTheme): Boolean = withContext(Dispatchers.IO) {
         val tree = root ?: return@withContext false

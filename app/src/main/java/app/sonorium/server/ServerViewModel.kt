@@ -15,6 +15,7 @@ import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
 import app.sonorium.net.PackageSummary
 import app.sonorium.data.ServerRecord
+import app.sonorium.data.ServerStore
 import app.sonorium.listen.ListenController
 import app.sonorium.net.ApiException
 import app.sonorium.net.Me
@@ -36,6 +37,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
@@ -90,6 +93,10 @@ data class ServerState(
     val pluginPages: List<PluginPage> = emptyList(),
 ) {
     val personalChannel: Boolean get() = info?.personalChannel == true
+    /** This Sonorium offers [cap] (null: always there); a server that doesn't list its capabilities offers all. */
+    fun offers(cap: String?): Boolean = cap == null || info?.capabilities?.contains(cap) != false
+    /** This device's own entry is the one shown. */
+    val onDevice: Boolean get() = record?.device == true
     val playingCount: Int get() = sessions.count { it.isPlaying }
     fun theme(id: String?) = themes.firstOrNull { it.id == id }
     fun playlist(id: String?) = playlists.firstOrNull { it.id == id }
@@ -161,6 +168,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                             serverId = next
                             if (next != null) connect() else _state.value = ServerState(connecting = false)
                         }
+                        // Nothing chosen and this device's own entry is there (Pro just unlocked): it's the one
+                        id == null && next == null && list.firstOrNull()?.device == true -> app.servers.select(list.first().id)
                         id == null && next != null -> {
                             serverId = next
                             loadExpanded()
@@ -207,6 +216,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private fun teardown() {
         events?.cancel()
         events = null
+        deviceEvents?.cancel()
+        deviceEvents = null
         eventsRetry?.cancel()
         poll?.cancel()
         reconnect?.cancel()
@@ -230,6 +241,10 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 return@launch
             }
             if (!quiet || _state.value.record?.id != record.id) _state.update { it.copy(record = record, connecting = true, failure = null, unlinked = false) }
+            if (record.device) {
+                connectDevice(record)
+                return@launch
+            }
             val token = app.servers.token(id)
             if (token == null) {
                 _state.update { it.copy(connecting = false, unlinked = true, failure = "This phone isn't linked to ${record.displayName}. Open Servers to link it again.") }
@@ -265,6 +280,36 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             startEvents()
             startPolling()
         }
+    }
+
+    private var deviceEvents: Job? = null
+
+    /** This device's own entry: the same screens, answered in the app ([app.sonorium.local.DeviceApi]). */
+    private suspend fun connectDevice(record: ServerRecord) {
+        val device = app.deviceApi
+        val deviceClient = device.client()
+        val deviceApi = SonoriumApi(deviceClient, PhoneThemeApi.BASE_URL, ServerStore.DEVICE_TOKEN)
+        val info = runCatching { deviceApi.info() }.getOrNull()
+        if (serverId != record.id) return
+        app.servers.select(record.id)
+        client = deviceClient
+        host = null
+        api = deviceApi
+        tokenInUse = ServerStore.DEVICE_TOKEN
+        _state.update { it.copy(record = record, info = info, connecting = false, failure = null, unlinked = false) }
+        loadAll()
+        // What changes on the device (its playback, its themes and playlists) as a server's events would say
+        deviceEvents?.cancel()
+        deviceEvents = viewModelScope.launch {
+            launch { device.events.collect { type -> onServerEvent(type, "{}") } }
+            launch {
+                PhonePlayer.state
+                    .map { s -> listOf(s.playing, s.preparing != null, s.theme?.docId, s.presetId, s.sequenceId, s.step, s.playlistId, s.playlistMode, s.now, s.volume, s.muted) }
+                    .distinctUntilChanged()
+                    .collect { refreshSessionsSoon(); if (_state.value.personalChannel) refreshPersonal() }
+            }
+        }
+        startPolling()
     }
 
     /** All the data the Channels page loads, in parallel; a failing call leaves the rest working (1.1). */
@@ -956,6 +1001,13 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         return true
     }
 
+    /** Switches the app to this device's own entry (with Pro); false when it isn't available. */
+    fun useDevice(): Boolean {
+        if (!app.entitlement.isPro.value) return false
+        viewModelScope.launch { app.servers.select(SonoriumApp.DEVICE_ID) }
+        return true
+    }
+
     /** A Save to phone waiting for the themes folder: kept here, so it survives the picker. */
     private var pendingSave: String? = null
 
@@ -1215,6 +1267,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val fresh = _state.value.theme(theme.id) ?: theme
         _editor.value = ThemeEditor(
             fresh, api, viewModelScope, getApplication(), client,
+            onPhone = _state.value.onDevice,
             mixUrl = { id ->
                 val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort
                 host?.let { h -> port?.let { "http://$h:$it/stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}" } }

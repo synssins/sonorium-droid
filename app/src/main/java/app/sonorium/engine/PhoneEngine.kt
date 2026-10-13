@@ -135,6 +135,24 @@ object PhoneEngine {
 
     fun setPreset(presetId: String?) = synchronized(lock) { player?.callAttr("set_preset", presetId) }
 
+    /**
+     * Plays a playlist (the server's JSON) from its first entry; its themes are prepared copies under
+     * [themesRoot] with their decoded audio under [pcmRoot]. Throws when it can't be played.
+     */
+    fun startPlaylist(json: String, themesRoot: java.io.File, pcmRoot: java.io.File) = synchronized(lock) {
+        val p = player ?: throw IllegalStateException("The engine isn't open")
+        p.callAttr("start_playlist", json, themesRoot.path, pcmRoot.path)
+        Unit
+    }
+
+    fun stopPlaylist() = synchronized(lock) { player?.callAttr("stop_playlist"); Unit }
+
+    /** The engine's whole status (theme, preset, sequence, playlist, recent changes), or null when nothing is open. */
+    fun status(): org.json.JSONObject? = synchronized(lock) {
+        val p = player ?: return null
+        runCatching { org.json.JSONObject(p.callAttr("status").toString()) }.getOrNull()
+    }
+
     fun setVolume(volume: Float) = synchronized(lock) { player?.callAttr("set_volume", volume.toDouble()) }
 
     /**

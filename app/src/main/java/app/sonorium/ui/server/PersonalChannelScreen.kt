@@ -40,6 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.sonorium.engine.PhonePlayer
+import kotlinx.coroutines.launch
 import app.sonorium.listen.ListenController
 import app.sonorium.local.LocalTheme
 import app.sonorium.local.ThemeStore
@@ -68,8 +69,6 @@ fun PersonalChannelScreen(
     val localThemes by model.localThemes.collectAsState()
     val folder by model.localFolder.collectAsState()
     val isPro by model.entitlement.isPro.collectAsState()
-    val phone by PhonePlayer.state.collectAsState()
-    var onPhone by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(state.record == null || state.failure != null || phone.playing || phone.preparing != null) }
     val channel = state.personal
     Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -78,22 +77,26 @@ fun PersonalChannelScreen(
                 Spacer(Modifier.width(10.dp))
                 Text("My channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
             }
-            // On this phone (the engine, local themes) and/or On <server> (the account's channel).
-            // While the phone plays (or gets a theme ready), its controls always show, so it can be stopped.
-            val canServer = state.record != null && state.personalChannel
-            val phoneBusy = phone.playing || phone.preparing != null
-            val canPhone = phoneBusy || (isPro && !localThemes.isNullOrEmpty())
-            if (canServer && canPhone) {
-                Segmented(
-                    listOf("On this phone", "On ${state.record?.displayName.orEmpty()}"),
-                    if (onPhone) 0 else 1,
-                    { onPhone = it == 0 },
+            // This device's own entry: its channel is the same card as a server's channel
+            if (state.onDevice) {
+                val ch = state.personal ?: state.sessions.firstOrNull()
+                if (ch == null) {
+                    CircularProgressIndicator(color = Palette.accent)
+                    return@Column
+                }
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
+                ChannelCard(
+                    session = ch,
+                    state = state,
+                    listening = false,
+                    listenVolume = listenVolume,
+                    actions = deviceCardActions(model),
+                    onCountdownZero = { scope.launch { model.refreshPersonal() } },
+                    extra = { DeviceOutput() },
                 )
-            }
-            if (canPhone && (onPhone || !canServer)) {
-                PhoneView(localThemes)
                 return@Column
             }
+            val canServer = state.record != null && state.personalChannel
             // No server channel: the server's status, then what this phone can do on its own
             if (!canServer) {
                 Text(
@@ -254,3 +257,23 @@ private fun PhoneOffer(
     }
     if (unlock) UnlockScreen(model, onClose = { unlock = false }, onUnlocked = { unlock = false })
 }
+
+
+/** The card's actions on this device's channel: the same calls as a server channel's. */
+private fun deviceCardActions(model: ServerViewModel) = CardActions(
+    togglePlay = model::togglePlay,
+    setTheme = model::setTheme,
+    setPreset = model::setPreset,
+    setVolume = model::setVolume,
+    toggleMuted = model::toggleSpeakersMuted,
+    toggleListen = {},
+    setListenVolume = {},
+    next = model::next,
+    themeMode = model::enterThemeMode,
+    playlistMode = model::enterPlaylistMode,
+    pickPlaylist = { s, id -> model.state.value.playlists.firstOrNull { it.id == id }?.let { model.pickPlaylist(s, it) } },
+    edit = {},
+    delete = {},
+    stopCasting = { _, _ -> },
+    mix = { s -> s.themeId?.let { id -> model.state.value.theme(id)?.let(model::openThemeEditor) } },
+)

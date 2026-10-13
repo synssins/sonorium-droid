@@ -70,7 +70,8 @@ class MainActivity : ComponentActivity() {
         val servers = (application as SonoriumApp).servers
         lifecycleScope.launch {
             val started = System.currentTimeMillis()
-            val id = servers.currentId.first()?.takeIf { servers.find(it) != null }
+            // The one used last; else the first in the list (this device's own entry, with Pro)
+            val id = servers.currentId.first()?.takeIf { servers.find(it) != null } ?: servers.servers.first().firstOrNull()?.id
             kotlinx.coroutines.delay((SPLASH_MS - (System.currentTimeMillis() - started)).coerceAtLeast(0))
             startActivity(NativeServerActivity.intent(this@MainActivity, id))
             finish()

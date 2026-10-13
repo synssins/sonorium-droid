@@ -20,6 +20,11 @@ data class ServerRecord(
     val version: String = "",
     /** The name the user gave this server in the app; null when not named. */
     val customName: String? = null,
+    /**
+     * This device itself (with Pro): its own themes, presets, sequences and playlists, played on it. Never
+     * stored; [ServerStore] lists it while it's available.
+     */
+    val device: Boolean = false,
 ) {
     /** The user's name for it, else the server's own name, else null. */
     val name: String?

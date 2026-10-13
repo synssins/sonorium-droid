@@ -98,6 +98,9 @@ object ThemePrep {
         }
     }
 
+    /** A theme's prepared copy and decoded audio, where [prepare] puts them (prepared already). */
+    fun prepared(context: Context, folder: String) = Prepared(themeDir(context, folder), pcmDir(context, folder))
+
     private fun base(context: Context) = File(context.filesDir, "engine")
     private fun themeDir(context: Context, folder: String) = File(base(context), "themes/${safe(folder)}")
     private fun pcmDir(context: Context, folder: String) = File(base(context), "pcm/${safe(folder)}")

@@ -13,13 +13,21 @@ import kotlinx.serialization.json.Json
 private val Context.serverData by preferencesDataStore(name = "servers")
 
 /** Linked servers and their tokens. Tokens are encrypted and never logged. */
-class ServerStore(private val context: Context, private val cipher: TokenCipher = TokenCipher()) {
+class ServerStore(
+    private val context: Context,
+    private val cipher: TokenCipher = TokenCipher(),
+    /** This device as an entry of its own (first in the list) while it's available; never stored. */
+    private val device: Flow<ServerRecord?> = kotlinx.coroutines.flow.flowOf(null),
+) {
     private val json = Json { ignoreUnknownKeys = true }
     private val serializer = ListSerializer(ServerRecord.serializer())
 
-    val servers: Flow<List<ServerRecord>> = context.serverData.data.map { prefs ->
-        prefs[SERVERS]?.let { runCatching { json.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList()
-    }
+    val servers: Flow<List<ServerRecord>> = kotlinx.coroutines.flow.combine(
+        context.serverData.data.map { prefs ->
+            prefs[SERVERS]?.let { runCatching { json.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList()
+        },
+        device,
+    ) { stored, here -> listOfNotNull(here) + stored }
 
     val currentId: Flow<String?> = context.serverData.data.map { it[CURRENT] }
 
@@ -35,6 +43,7 @@ class ServerStore(private val context: Context, private val cipher: TokenCipher 
     }
 
     suspend fun update(record: ServerRecord) {
+        if (record.device) return
         context.serverData.edit { prefs ->
             prefs[SERVERS] = json.encodeToString(serializer, decode(prefs[SERVERS]).map { if (it.id == record.id) record else it })
         }
@@ -49,7 +58,7 @@ class ServerStore(private val context: Context, private val cipher: TokenCipher 
     }
 
     suspend fun token(id: String): String? =
-        context.serverData.data.first()[tokenKey(id)]?.let(cipher::decrypt)
+        if (find(id)?.device == true) DEVICE_TOKEN else context.serverData.data.first()[tokenKey(id)]?.let(cipher::decrypt)
 
     /** Forget a server and its token (unlinking, or a 401 `pair`). */
     suspend fun remove(id: String) {
@@ -66,9 +75,12 @@ class ServerStore(private val context: Context, private val cipher: TokenCipher 
     private fun decode(raw: String?): List<ServerRecord> =
         raw?.let { runCatching { json.decodeFromString(serializer, it) }.getOrNull() } ?: emptyList()
 
-    private companion object {
-        val SERVERS = stringPreferencesKey("servers")
-        val CURRENT = stringPreferencesKey("current")
-        fun tokenKey(id: String) = stringPreferencesKey("token:$id")
+    companion object {
+        /** The device's own entry needs no token: a fixed one, never sent anywhere. */
+        const val DEVICE_TOKEN = "device"
+
+        private val SERVERS = stringPreferencesKey("servers")
+        private val CURRENT = stringPreferencesKey("current")
+        private fun tokenKey(id: String) = stringPreferencesKey("token:$id")
     }
 }

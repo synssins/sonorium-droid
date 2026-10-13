@@ -176,6 +176,31 @@ fun PhoneView(
     }
 }
 
+/**
+ * Where this device's channel sounds: getting a theme ready (with its progress), what went wrong, and
+ * Cast to one speaker. Shown in the channel card when this device's own entry is active.
+ */
+@Composable
+fun DeviceOutput() {
+    val context = LocalContext.current
+    val s by PhonePlayer.state.collectAsState()
+    LaunchedEffect(Unit) { CastController.init(context) }
+    s.preparing?.let { (done, total) ->
+        Text(
+            "Getting “${s.now.playlist?.themeName ?: s.theme?.name.orEmpty()}” ready: $done of $total files",
+            color = Palette.textSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
+        )
+        LinearProgressIndicator(
+            progress = { if (total == 0) 0f else done.toFloat() / total },
+            color = Palette.accent, trackColor = Palette.border, modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    s.error?.let { Text(it, color = Palette.danger, fontSize = 13.sp) }
+    s.notice?.let { Text(it, color = Palette.textSecondary, fontSize = 13.sp) }
+    if (s.sequenceFinished) Text("Sequence finished. It stays on its last preset.", color = Palette.textSecondary, fontSize = 13.sp)
+    CastRow(s.theme?.name.orEmpty())
+}
+
 /** "4:05" / "1:02:03". */
 private fun countdown(seconds: Int): String {
     val h = seconds / 3600
