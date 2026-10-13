@@ -14,6 +14,7 @@ import app.sonorium.local.SampleTheme
 import app.sonorium.local.StarterThemes
 import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
+import app.sonorium.local.ThemeSync
 import app.sonorium.net.PackageSummary
 import app.sonorium.data.ServerRecord
 import app.sonorium.ui.server.bytesText
@@ -1157,7 +1158,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _state.value.themes.firstOrNull { it.id == themeId }?.name ?: _packages.value?.get(themeId)?.name?.ifBlank { null } ?: "the theme"
 
     /** Saves (or updates) a server theme on this phone; needs the themes folder picked first. */
-    fun saveThemeToPhone(themeId: String) {
+    /**
+     * Saves a server theme to this phone; with [overwrite] set, syncs the phone's copy instead (new and changed
+     * audio, the server's new presets and sequences; [overwrite] true also takes its presets and settings).
+     */
+    fun saveThemeToPhone(themeId: String, overwrite: Boolean? = null) {
         if (themeId in _downloads.value) return saveLog("$themeId already saving")
         val name = phoneThemeName(themeId)
         // Held at once, so the second start (picker callback + held request) is ignored
@@ -1191,17 +1196,26 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 // The starter themes go in first (a fresh folder): a starter copy of this theme is then replaced, not doubled
                 runCatching { StarterThemes.installOnce(getApplication(), app.themeStore) }
                 val local = app.themeStore.list()
-                val replacing = PhoneThemeActions.localCopy(themeId, local)
+                val serverId = _state.value.record?.id
+                val replacing = PhoneThemeActions.localCopy(themeId, local, serverId)
                 var last = 0L
-                val saved = downloader.download(api, themeId, replacing) { done, total ->
+                val onProgress: (Long, Long) -> Unit = { done, total ->
                     val now = android.os.SystemClock.elapsedRealtime()
                     if (now - last > 200 || done == total) {
                         last = now
                         _downloads.update { if (themeId in it) it + (themeId to if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else 1f) else it }
                     }
                 }
-                saveLog("$themeId done, in ${saved.folder}" + if (replacing != null) " (replaced ${replacing.folder})" else "")
-                toast(if (replacing != null) "Updated “${saved.name}” on this phone" else "Saved “${saved.name}” to this phone", error = false)
+                if (replacing != null && overwrite != null) {
+                    // Sync: the phone's copy keeps its own changes unless asked to take the server's
+                    val r = ThemeSync.sync(getApplication(), app.themeStore, downloader, api, themeId, replacing, overwrite, serverId, onProgress)
+                    saveLog("$themeId synced in ${replacing.folder}: ${r.files} files, ${r.presets} presets, ${r.sequences} sequences added, overwrite=$overwrite")
+                    toast("Synced “${replacing.name}”", error = false)
+                } else {
+                    val saved = downloader.download(api, themeId, replacing, serverId, onProgress)
+                    saveLog("$themeId done, in ${saved.folder}" + if (replacing != null) " (replaced ${replacing.folder})" else "")
+                    toast(if (replacing != null) "Updated “${saved.name}” on this phone" else "Saved “${saved.name}” to this phone", error = false)
+                }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {

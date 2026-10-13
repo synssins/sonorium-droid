@@ -27,11 +27,11 @@ class ThemeDownloader(private val context: Context, private val store: ThemeStor
     private fun dirOf(themeId: String) = File(context.filesDir, "$DOWNLOADS/${themeId.replace(Regex("[^A-Za-z0-9-]"), "_")}")
 
     /** [progress] gets (bytes done, bytes in all). */
-    suspend fun download(api: SonoriumApi, themeId: String, replacing: LocalTheme?, progress: (Long, Long) -> Unit): Saved {
+    suspend fun download(api: SonoriumApi, themeId: String, replacing: LocalTheme?, serverId: String? = null, progress: (Long, Long) -> Unit): Saved {
         val dir = dirOf(themeId)
         val pkg = fetch(api, themeId, dir, checkSpace = true, progress = progress)
         val name = pkg.name.ifBlank { themeId }
-        val folder = store.install(dir, pkg.files.map { it.path }, name, marker(pkg), replacing)
+        val folder = store.install(dir, pkg.files.map { it.path }, name, marker(pkg, serverId), replacing)
         withContext(Dispatchers.IO) { dir.deleteRecursively() }
         return Saved(folder, name)
     }
@@ -91,8 +91,10 @@ class ThemeDownloader(private val context: Context, private val store: ThemeStor
     }
 
     /** [ThemeStore.MARKER]'s text: theme id, content hash, name, the server's playback values. */
-    fun marker(pkg: ThemePackage): String = buildJsonObject {
+    fun marker(pkg: ThemePackage, serverId: String? = null): String = buildJsonObject {
         put("theme_id", pkg.themeId)
+        // Which Sonorium it came from: the same theme id on another server is another theme
+        serverId?.let { put("server_id", it) }
         put("content_hash", pkg.contentHash)
         put("name", pkg.name)
         pkg.playbackValues?.let { put("playback_values", it) }

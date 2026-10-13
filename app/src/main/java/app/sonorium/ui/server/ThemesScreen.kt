@@ -201,13 +201,13 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                         onEdit = { onEdit(t) },
                         onExport = { model.exportTheme(t) { name, bytes -> pendingExport = bytes; saveZip.launch(name) } },
                         onDelete = { deleting = t },
-                        phoneAction = app.sonorium.local.PackageRules.action(packages?.get(t.id), localThemes)?.let { a -> packages?.get(t.id)?.sizeBytes?.takeIf { it > 0 }?.let { "$a (${bytesText(it)})" } ?: a },
-                        phoneBlocked = app.sonorium.local.PackageRules.blocked(packages?.get(t.id), localThemes),
-                        onPhone = app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) != app.sonorium.local.PackageRules.OnPhone.NONE,
+                        phoneAction = app.sonorium.local.PackageRules.action(packages?.get(t.id), localThemes, state.record?.id)?.let { a -> packages?.get(t.id)?.sizeBytes?.takeIf { it > 0 }?.let { "$a (${bytesText(it)})" } ?: a },
+                        phoneBlocked = app.sonorium.local.PackageRules.blocked(packages?.get(t.id), localThemes, state.record?.id),
+                        onPhone = app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes, state.record?.id) != app.sonorium.local.PackageRules.OnPhone.NONE,
                         downloading = downloads[t.id],
                         onSaveToPhone = {
                             // Updating replaces the phone's folder: confirm first, phone edits are lost
-                            if (app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) == app.sonorium.local.PackageRules.OnPhone.UPDATE) updating = t
+                            if (app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes, state.record?.id) == app.sonorium.local.PackageRules.OnPhone.UPDATE) updating = t
                             else saveToPhone(t.id)
                         },
                         onCancelSave = { model.cancelSaveToPhone(t.id) },
@@ -236,14 +236,43 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     }
     if (managing) CategoriesDialog(state, model, onClosedChip = { if (chip == it) chip = ThemeRules.ALL }, onDismiss = { managing = false })
     updating?.let { t ->
-        ConfirmDialog(
-            "Update “${t.name}” on this phone?", "Changes made to it on this phone are replaced by the server's version.", "Update", danger = false,
-            onConfirm = { saveToPhone(t.id) }, onDismiss = { updating = null },
-        )
+        SyncDialog(t.name, onSync = { overwrite -> updating = null; model.saveThemeToPhone(t.id, overwrite) }, onDismiss = { updating = null })
     }
     deleting?.let { t ->
         ConfirmDialog("Delete “${t.name}”?", "The theme and its tracks are removed from the server.", "Delete", onConfirm = { model.deleteTheme(t) }, onDismiss = { deleting = null })
     }
+}
+
+/** "Sync now?": the server's new and changed files, new presets and sequences; the phone's mix stays unless asked. */
+@Composable
+private fun SyncDialog(name: String, onSync: (overwrite: Boolean) -> Unit, onDismiss: () -> Unit) {
+    var overwrite by remember { mutableStateOf(false) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Palette.card,
+        title = { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.sync_title, name), color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.sync_text), color = Palette.textSecondary, fontSize = 14.sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.ROW.dp).clickable { overwrite = !overwrite },
+                ) {
+                    androidx.compose.material3.Checkbox(checked = overwrite, onCheckedChange = { overwrite = it }, colors = androidx.compose.material3.CheckboxDefaults.colors(checkedColor = Palette.accent))
+                    Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.sync_overwrite), color = Palette.text, fontSize = 14.sp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSync(overwrite) }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+            ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.sync_action)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)) { Text("Cancel", color = Palette.textSecondary) }
+        },
+    )
 }
 
 @Composable

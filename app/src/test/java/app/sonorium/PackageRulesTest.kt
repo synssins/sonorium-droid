@@ -48,11 +48,14 @@ class PackageRulesTest {
         val saved = LocalTheme("d", "Tavern", "Tavern", themeId = "t1", contentHash = "sha256:aa")
         assertNull(PackageRules.action(pkg, listOf(saved)))
         assertEquals(PackageRules.OnPhone.SAVED, PackageRules.onPhone(pkg, listOf(saved)))
-        assertEquals("Update on phone", PackageRules.action(pkg, listOf(saved.copy(contentHash = "sha256:bb"))))
+        assertEquals(PackageRules.SYNC, PackageRules.action(pkg, listOf(saved.copy(contentHash = "sha256:bb"))))
+        // Saved from another Sonorium: not this server's copy
+        assertEquals("Save to phone", PackageRules.action(pkg, listOf(saved.copy(serverId = "other")), serverId = "this"))
+        assertEquals(PackageRules.OnPhone.SAVED, PackageRules.onPhone(pkg, listOf(saved.copy(serverId = "this")), serverId = "this"))
         // Imported copy (no hash): on the phone. A starter copy: the server's version is offered
         val imported = LocalTheme("d", "Tavern", "Tavern", metaId = "t1")
         assertEquals(PackageRules.OnPhone.SAVED, PackageRules.onPhone(pkg, listOf(imported)))
-        assertEquals("Update on phone", PackageRules.action(pkg, listOf(imported.copy(starter = true))))
+        assertEquals(PackageRules.SYNC, PackageRules.action(pkg, listOf(imported.copy(starter = true))))
     }
 
     @Test fun licenceRestrictedThemesSayWhy() {

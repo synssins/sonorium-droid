@@ -29,5 +29,5 @@ internal object PhoneThemeActions {
 
     fun importedText(plan: ImportRules.Plan): String = ImportRules.importedText(plan)
 
-    fun localCopy(themeId: String, local: List<LocalTheme>?): LocalTheme? = PackageRules.localCopy(themeId, local)
+    fun localCopy(themeId: String, local: List<LocalTheme>?, serverId: String? = null): LocalTheme? = PackageRules.localCopy(themeId, local, serverId)
 }

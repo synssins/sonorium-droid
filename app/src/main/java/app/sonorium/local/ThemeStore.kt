@@ -38,6 +38,8 @@ data class LocalTheme(
     val starter: Boolean = false,
     /** The sample theme in the app itself ([SampleTheme]): read-only, there for everyone. */
     val sample: Boolean = false,
+    /** The Sonorium it was saved from (its id), when recorded. */
+    val serverId: String? = null,
 ) {
     /** Changes when the theme's files change (an update, or files copied in): its prepared copy is then stale. */
     val version: String get() = "$docId|${contentHash.orEmpty()}|$bytes|$tracks"
@@ -150,6 +152,7 @@ class ThemeStore(private val context: Context) {
             tracks = audio.size, bytes = bytes, themeId = m("theme_id"), contentHash = m("content_hash"),
             metaId = s("id")?.ifBlank { null },
             starter = marker == null && s("id")?.let { it in StarterThemes.ids(context) } == true,
+            serverId = m("server_id"),
         )
     }
 
