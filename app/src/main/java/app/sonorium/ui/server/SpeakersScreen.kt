@@ -132,7 +132,6 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
             item {
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Speakers", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.width(6.dp))
                     PageHelpButton("settings-speakers")
                     if (h != null) {
                         val all = SpeakerRules.all(h)

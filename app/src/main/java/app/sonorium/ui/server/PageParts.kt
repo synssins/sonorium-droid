@@ -59,7 +59,7 @@ fun PageHeader(title: String, count: Int?, modifier: Modifier = Modifier, help: 
             CountBadge(it)
         }
         help?.let {
-            Spacer(Modifier.width(6.dp))
+            if (!LocalHelpInTopBar.current) Spacer(Modifier.width(6.dp))
             PageHelpButton(it)
         }
         Spacer(Modifier.weight(1f))
@@ -246,9 +246,18 @@ fun EmptyState(title: String, sub: String?) {
     }
 }
 
-/** A page's ? button: its `PAGE_HELP` text in a help panel. */
+/** The main screen's top bar has the page's ? (Chris, item 11): the pages then show none of their own. */
+val LocalHelpInTopBar = androidx.compose.runtime.staticCompositionLocalOf { false }
+
+/** A page's ? button, unless the top bar has it ([LocalHelpInTopBar]). */
 @Composable
 fun PageHelpButton(view: String) {
+    if (!LocalHelpInTopBar.current) HelpButton(view)
+}
+
+/** The ? button: its `PAGE_HELP` text in a help panel. */
+@Composable
+fun HelpButton(view: String) {
     val (title, all) = HelpTexts.PAGES[view] ?: return
     val lines = if (LocalOnDevice.current) HelpTexts.forDevice(all) else all
     var open by remember { mutableStateOf(false) }

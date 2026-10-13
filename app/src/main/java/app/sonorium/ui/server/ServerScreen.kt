@@ -106,7 +106,6 @@ fun ServerScreen(
     val listenVolume by model.listenVolume.collectAsState()
     val listening by ListenController.state.collectAsState()
     val themeEditor by model.editor.collectAsState()
-    val phonePlaying = app.sonorium.engine.PhonePlayer.state.collectAsState().value.playing
     var page by rememberSaveable { mutableStateOf(Page.Channels) }
     val localFolder by model.localFolder.collectAsState()
     // This device's entry: its themes folder decides what Themes shows
@@ -143,7 +142,7 @@ fun ServerScreen(
     androidx.activity.compose.BackHandler(enabled = drawer.isOpen || drawer.targetValue == DrawerValue.Open) { scope.launch { drawer.close() } }
     val folderPicker = rememberOwnThemesFolderPicker(model)
     val themeImport = rememberOwnThemeImport(model, folderPicker)
-    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, LocalHelpInTopBar provides true) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     // An imported zip: the user's own file, so asked before it's deleted
     model.zipToDelete.collectAsState().value?.let { (_, name) ->
@@ -174,8 +173,8 @@ fun ServerScreen(
                         showMenuButton = !permanent,
                         onMenu = { scope.launch { drawer.open() } },
                         onServers = onServers,
-                        personalOn = phonePlaying || listening?.let { it.personal && it.playing && it.serverId == state.record?.id } == true,
-                        onPersonal = { page = Page.Personal },
+                        help = helpOf(page, localThemes = page == Page.Themes && (state.record == null ||
+                            (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK))),
                     )
                     // A server that can't be reached: a line above the page, which stays browsable
                     val serverPage = page != Page.Personal && page != Page.Themes
@@ -289,8 +288,7 @@ private fun TopBar(
     showMenuButton: Boolean,
     onMenu: () -> Unit,
     onServers: () -> Unit,
-    personalOn: Boolean,
-    onPersonal: () -> Unit,
+    help: String?,
 ) {
     Row(
         Modifier.fillMaxWidth().height(56.dp).background(Palette.bar).padding(horizontal = 12.dp),
@@ -335,19 +333,29 @@ private fun TopBar(
                 }
             }
         }
-        // The headphone button: the account's personal channel (native only), when the server has it
-        // Always there: the account's channel on a server, or this phone's own player (Pro); else it explains
-        run {
+        // The page's help (?), here instead of in the page header (Chris, item 11)
+        help?.let {
             Spacer(Modifier.width(8.dp))
-            IconBox(
-                SIcons.Headphones, "My channel", onPersonal,
-                tint = if (personalOn) Palette.bar else Palette.accent,
-                background = if (personalOn) Palette.accent else Palette.backgroundSecondary,
-                border = Palette.accent,
-                size = TOP_BAR_CONTROL,
-            )
+            HelpButton(it)
         }
     }
+}
+
+/** The help shown for [page] ([localThemes]: Themes shows the themes on this phone). */
+private fun helpOf(page: Page, localThemes: Boolean): String? = when (page) {
+    Page.Channels -> "sessions"
+    Page.Playlists -> "playlists"
+    Page.Themes -> if (localThemes) "phone-themes" else "themes"
+    Page.Speakers -> "settings-speakers"
+    Page.Groups -> "settings-groups"
+    Page.Spaces -> "settings-spaces"
+    Page.Audio -> "settings-audio"
+    Page.Advanced -> "settings-advanced"
+    Page.Logs -> "settings-logs"
+    Page.Plugins -> "settings-plugins"
+    Page.Connection -> "settings-connection"
+    Page.Status -> "status"
+    Page.Personal, Page.Backups -> null
 }
 
 @Composable
@@ -558,7 +566,6 @@ private fun ChannelsPage(
                     Text("Channels", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(8.dp))
                     CountBadge(state.sessions.size)
-                    Spacer(Modifier.width(6.dp))
                     PageHelpButton("sessions")
                     Spacer(Modifier.weight(1f))
                     if (state.zones?.admin == true && narrow) {
