@@ -35,6 +35,8 @@ class DeviceApiTest {
         assertEquals(listOf(DeviceApi.CHANNEL_ID), sessions.map { it.id })
         assertEquals(DeviceApi.CHANNEL_ID, api.myChannel().id)
         assertEquals(emptyList<Any>(), api.groups())
+        // The sample theme comes with the app: there with nothing unlocked and no themes folder
+        assertTrue("No sample theme", api.themes().any { it.name.isNotBlank() })
 
         // Playlists: Core's checks (an unknown theme is refused as on a server)
         api.playlists()
@@ -47,7 +49,9 @@ class DeviceApiTest {
             })
             fail("A playlist of an unknown theme should be refused")
         } catch (e: ApiException) {
-            assertEquals(400, e.status)
+            // 400 (Core's check) with Pro unlocked by an earlier test; 403 (Pro needed) without
+            val pro = (context.applicationContext as SonoriumApp).entitlement.isPro.value
+            assertEquals(if (pro) 400 else 403, e.status)
         }
 
         // What a device doesn't have answers 404, as a server without it

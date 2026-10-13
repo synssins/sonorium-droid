@@ -36,6 +36,8 @@ data class LocalTheme(
     val metaId: String? = null,
     /** One of the starter themes the app ships with, as copied in (not saved from a server). */
     val starter: Boolean = false,
+    /** The sample theme in the app itself ([SampleTheme]): read-only, there for everyone. */
+    val sample: Boolean = false,
 ) {
     /** Changes when the theme's files change (an update, or files copied in): its prepared copy is then stale. */
     val version: String get() = "$docId|${contentHash.orEmpty()}|$bytes|$tracks"
@@ -241,6 +243,7 @@ class ThemeStore(private val context: Context) {
 
     /** Every file of [theme] (the folder itself and its group folders). */
     suspend fun files(theme: LocalTheme): List<ThemeFile> = withContext(Dispatchers.IO) {
+        if (theme.sample) return@withContext SampleTheme.files(context)
         val tree = root ?: return@withContext emptyList()
         fun walk(parentId: String, prefix: String, depth: Int): List<ThemeFile> = childrenFull(tree, parentId).flatMap { d ->
             when {
@@ -271,6 +274,7 @@ class ThemeStore(private val context: Context) {
 
     /** A text file at the top of [theme]'s folder (presets.json, metadata.json), or null. */
     suspend fun readFile(theme: LocalTheme, name: String): String? = withContext(Dispatchers.IO) {
+        if (theme.sample) return@withContext SampleTheme.readFile(context, name)
         val tree = root ?: return@withContext null
         runCatching { children(tree, theme.docId) }.getOrDefault(emptyList()).firstOrNull { it.name == name && !it.isDir }?.let { readText(tree, it.id) }
     }
@@ -280,6 +284,7 @@ class ThemeStore(private val context: Context) {
      * it. Throws [ImportProblem] when the folder can't be written.
      */
     suspend fun writeFile(theme: LocalTheme, name: String, bytes: ByteArray) = withContext(Dispatchers.IO) {
+        if (theme.sample) throw ImportProblem(SAMPLE_READ_ONLY)
         val tree = root ?: throw ImportProblem(CANT_WRITE)
         val existing = runCatching { children(tree, theme.docId) }.getOrDefault(emptyList()).firstOrNull { it.name == name && !it.isDir }
         // "wt" replaces the content; a provider without it gets a new file instead (plain "w" may leave a longer old tail)
@@ -298,6 +303,7 @@ class ThemeStore(private val context: Context) {
      * take the file from [from] (the prepared copy Core changed). Throws [ImportProblem] when one fails.
      */
     suspend fun applyOps(theme: LocalTheme, ops: List<FileOp>, from: File) = withContext(Dispatchers.IO) {
+        if (theme.sample) throw ImportProblem(SAMPLE_READ_ONLY)
         val tree = root ?: throw ImportProblem(CANT_WRITE)
         fun find(path: String): Doc? {
             var parent = theme.docId
@@ -385,6 +391,7 @@ class ThemeStore(private val context: Context) {
 
     /** Removes a theme folder from the phone. */
     suspend fun remove(theme: LocalTheme): Boolean = withContext(Dispatchers.IO) {
+        if (theme.sample) return@withContext false
         val tree = root ?: return@withContext false
         delete(tree, theme.docId)
     }
@@ -461,6 +468,8 @@ class ThemeStore(private val context: Context) {
         private const val TAG = "ThemeStore"
         private const val KEY_ROOT = "themeFolder"
         private const val CANT_WRITE = "Couldn't write to the themes folder. Check that it's still there and there's free space."
+        /** The sample theme comes with the app and can't be changed. */
+        const val SAMPLE_READ_ONLY = "This theme comes with the app and can't be changed."
 
         /** Work folders (hidden) for imports and downloads in progress; renamed or removed when done. */
         private const val WORK_PREFIX = ".sonorium-"

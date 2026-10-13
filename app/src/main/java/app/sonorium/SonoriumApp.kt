@@ -14,7 +14,8 @@ class SonoriumApp : Application() {
     val baseClient: OkHttpClient by lazy { PinnedTls.baseClient() }
     val servers: ServerStore by lazy {
         // With Pro, this device is an entry of its own: its themes, playlists and playback
-        ServerStore(this, device = entitlement.isPro.map { pro -> if (pro) deviceRecord() else null })
+        // This device is an entry of its own for everyone (its sample theme plays without anything unlocked)
+        ServerStore(this, device = kotlinx.coroutines.flow.flowOf(Unit).map { deviceRecord() })
     }
 
     /** This device's entry in the list (its name as Android shows it). */

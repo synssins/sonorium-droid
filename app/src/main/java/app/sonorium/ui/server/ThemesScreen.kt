@@ -147,7 +147,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                     Column {
                         PageHeader("Themes", themes.size, help = "themes") {
                             Button(
-                                onClick = { if (model.reachableOrSay()) creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                                onClick = { if (model.reachableOrSay() && model.proOrAsk()) creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                             ) {
                                 Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
@@ -156,7 +156,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                             }
                             Spacer(Modifier.width(6.dp))
                             MoreMenu("More", listOf(
-                                MenuAction("Import theme…", SIcons.Upload) { pickZip.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
+                                MenuAction("Import theme…", SIcons.Upload) { if (model.proOrAsk()) pickZip.launch(arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream")) },
                                 MenuAction("Manage categories…", SIcons.Tag) { managing = true },
                                 MenuAction("Refresh", SIcons.Refresh, separatorBefore = true) { model.refreshThemesNow() },
                             ), size = app.sonorium.ui.UiSize.STANDARD)

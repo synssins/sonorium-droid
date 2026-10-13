@@ -144,6 +144,9 @@ fun ServerScreen(
     val themeImport = rememberOwnThemeImport(model, folderPicker)
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
+    // What goes beyond the sample on this device's own entry: the unlock screen
+    val unlockAsked by model.unlockAsked.collectAsState()
+    if (unlockAsked) UnlockScreen(model, onClose = model::unlockClosed, onUnlocked = { model.unlockClosed(); model.refreshLocalThemes() })
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Tablets in landscape keep the menu open as a sidebar; everything else slides it in
@@ -206,7 +209,7 @@ fun ServerScreen(
                             page == Page.Advanced -> AdvancedSettingsPage(state, model)
                             // Themes: the server's, or the ones on this phone (the only ones without a server)
                             // Themes: the active entry's (this device's need its themes folder first)
-                            page == Page.Themes && (state.record == null || (state.onDevice && localFolder != app.sonorium.local.ThemeStore.FolderState.OK)) ->
+                            page == Page.Themes && (state.record == null || (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK)) ->
                                 LocalThemesPage(model, hasServer = false)
                             page == Page.Themes && state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { model.useDevice() })
                             page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })

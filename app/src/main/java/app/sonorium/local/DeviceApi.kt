@@ -77,6 +77,11 @@ class DeviceApi(private val context: Context) : Interceptor {
 
     private fun route(chain: Interceptor.Chain, request: Request, s: List<String>): Response {
         val m = request.method
+        // Beyond playing the sample (more themes, editing, playlists), the device needs Pro, as its screens ask first
+        if (!sapp.entitlement.isPro.value && m != "GET" && (s.firstOrNull() == "playlists" || s.firstOrNull() == "categories" ||
+                (s.firstOrNull() == "themes" && s.getOrNull(2) != "presets"))) {
+            throw Answer(403, "Unlock Pro to change themes and playlists on this device")
+        }
         fun ok(body: JsonElement, status: Int = 200) = respond(request, status, body.toString())
         when {
             s == listOf("info") -> return ok(info())
@@ -158,7 +163,9 @@ class DeviceApi(private val context: Context) : Interceptor {
     /** The themes in the themes folder (read again after 2 s, or at once after a change made here). */
     private fun themesNow(): List<LocalTheme> {
         listed?.let { (at, list) -> if (System.currentTimeMillis() - at < 2_000) return list }
-        val list = runBlocking { runCatching { store.list() }.getOrDefault(emptyList()) }
+        // The sample always; the themes folder's with Pro
+        val folder = if (sapp.entitlement.isPro.value) runBlocking { runCatching { store.list() }.getOrDefault(emptyList()) } else emptyList()
+        val list = SampleTheme.with(context, folder)
         listed = System.currentTimeMillis() to list
         return list
     }

@@ -181,7 +181,7 @@ fun PhoneView(
  * Cast to one speaker. Shown in the channel card when this device's own entry is active.
  */
 @Composable
-fun DeviceOutput() {
+fun DeviceOutput(model: ServerViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
     val context = LocalContext.current
     val s by PhonePlayer.state.collectAsState()
     LaunchedEffect(Unit) { CastController.init(context) }
@@ -198,7 +198,7 @@ fun DeviceOutput() {
     s.error?.let { Text(it, color = Palette.danger, fontSize = 13.sp) }
     s.notice?.let { Text(it, color = Palette.textSecondary, fontSize = 13.sp) }
     if (s.sequenceFinished) Text("Sequence finished. It stays on its last preset.", color = Palette.textSecondary, fontSize = 13.sp)
-    CastRow(s.theme?.name.orEmpty())
+    CastRow(s.theme?.name.orEmpty(), allow = model::proOrAsk)
 }
 
 /** "4:05" / "1:02:03". */
@@ -217,7 +217,7 @@ private const val SPEAKER_SEARCH_MS = 10_000L
  * another speaker moves it there.
  */
 @Composable
-private fun CastRow(themeName: String) {
+private fun CastRow(themeName: String, allow: () -> Boolean = { true }) {
     val cast by CastController.state.collectAsState()
     if (!cast.available) return
     var picking by remember { mutableStateOf(false) }
@@ -236,7 +236,7 @@ private fun CastRow(themeName: String) {
         if (cast.speaker != null) {
             TextButton(onClick = { CastController.stop() }, modifier = Modifier.heightIn(min = UiSize.SMALL.dp)) { Text("Stop casting", color = Palette.danger) }
         }
-        TextButton(onClick = { picking = true }, modifier = Modifier.heightIn(min = UiSize.SMALL.dp)) {
+        TextButton(onClick = { if (allow()) picking = true }, modifier = Modifier.heightIn(min = UiSize.SMALL.dp)) {
             Text(if (cast.speaker == null) "Cast…" else "Change…", color = Palette.accent)
         }
     }

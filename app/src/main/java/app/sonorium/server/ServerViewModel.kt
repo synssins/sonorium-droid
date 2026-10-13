@@ -10,6 +10,7 @@ import app.sonorium.engine.PhonePlayer
 import app.sonorium.SonoriumApp
 import app.sonorium.local.LocalTheme
 import app.sonorium.local.PhoneThemeApi
+import app.sonorium.local.SampleTheme
 import app.sonorium.local.StarterThemes
 import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
@@ -985,8 +986,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         } else emptyList()
         _localFolder.value = folder
         _localThemes.value = list
-        // The theme chosen to play on the phone follows its folder (updated, removed, folder gone)
-        if (folder != ThemeStore.FolderState.NONE) PhoneThemeActions.synced(app, list)
+        // The theme chosen to play on the phone follows its folder (updated, removed, folder gone); the sample is always there
+        val device = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { SampleTheme.with(app, if (app.entitlement.isPro.value) list else emptyList()) }
+        PhoneThemeActions.synced(app, device)
     }
 
     /**
@@ -1016,7 +1018,6 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Switches the app to this device's own entry (with Pro); false when it isn't available. */
     fun useDevice(): Boolean {
-        if (!app.entitlement.isPro.value) return false
         viewModelScope.launch { app.servers.select(SonoriumApp.DEVICE_ID) }
         return true
     }
@@ -1027,6 +1028,24 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
      */
     private fun saveLog(text: String) {
         android.util.Log.println(android.util.Log.WARN, "LocalThemes", "Save to phone: $text")
+    }
+
+    private val _unlockAsked = MutableStateFlow(false)
+    /** The unlock screen is asked for (something on this device's own entry beyond the sample). */
+    val unlockAsked: StateFlow<Boolean> = _unlockAsked.asStateFlow()
+
+    /**
+     * On this device's own entry, what goes beyond playing the sample (more themes, editing, playlists,
+     * Cast) needs Pro: true when it's there (or a Sonorium is shown), else the unlock screen is asked for.
+     */
+    fun proOrAsk(): Boolean {
+        if (!_state.value.onDevice || app.entitlement.isPro.value) return true
+        _unlockAsked.value = true
+        return false
+    }
+
+    fun unlockClosed() {
+        _unlockAsked.value = false
     }
 
     /** A Save to phone waiting for the themes folder: kept here, so it survives the picker. */
@@ -1306,6 +1325,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     val editor: StateFlow<ThemeEditor?> = _editor.asStateFlow()
 
     fun openThemeEditor(theme: ThemeSummary) {
+        if (!proOrAsk()) return
         val api = api ?: return
         val client = client ?: return
         closePreview()
