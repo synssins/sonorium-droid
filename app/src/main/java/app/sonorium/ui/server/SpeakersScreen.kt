@@ -132,7 +132,6 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
             item {
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("Speakers", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                    PageHelpButton("settings-speakers")
                     if (h != null) {
                         val all = SpeakerRules.all(h)
                         val on = all.count { it.entityId in state.enabledSpeakers }
@@ -141,6 +140,8 @@ fun SpeakersPage(state: ServerState, model: ServerViewModel) {
                     }
                     Spacer(Modifier.weight(1f))
                     if (network != null) AddButton("Add speaker", narrow) { adding = true }
+                    Spacer(Modifier.width(8.dp))
+                    PageHelpButton("settings-speakers")
                 }
                 // Toolbar
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 8.dp)) {

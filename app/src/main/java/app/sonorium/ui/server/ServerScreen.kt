@@ -54,6 +54,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.platform.testTag
+import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -156,7 +157,7 @@ fun ServerScreen(
             coach.showOnce(firstRun)
         }
     }
-    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, LocalHelpInTopBar provides true, app.sonorium.ui.coach.LocalCoach provides coach) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, app.sonorium.ui.coach.LocalCoach provides coach) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     // An imported zip: the user's own file, so asked before it's deleted
     model.importProblem.collectAsState().value?.let { text ->
@@ -195,8 +196,6 @@ fun ServerScreen(
                         showMenuButton = !permanent,
                         onMenu = { scope.launch { drawer.open() } },
                         onServers = onServers,
-                        help = helpOf(page, localThemes = page == Page.Themes && (state.record == null ||
-                            (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK))),
                     )
                     // A server that can't be reached: a line above the page, which stays browsable
                     val serverPage = page != Page.Personal && page != Page.Themes
@@ -316,10 +315,10 @@ private fun TopBar(
     showMenuButton: Boolean,
     onMenu: () -> Unit,
     onServers: () -> Unit,
-    help: String?,
 ) {
     Row(
-        Modifier.fillMaxWidth().height(56.dp).background(Palette.bar).padding(horizontal = 12.dp),
+        // Tagged for the device tests (no headphones button in any state: Chris, item 11)
+        Modifier.fillMaxWidth().height(56.dp).background(Palette.bar).semantics { testTagsAsResourceId = true }.testTag("top-bar").padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (showMenuButton) {
@@ -362,30 +361,9 @@ private fun TopBar(
                 }
             }
         }
-        // The page's help (?), here instead of in the page header (Chris, item 11)
-        help?.let {
-            Spacer(Modifier.width(8.dp))
-            HelpButton(it)
-        }
     }
 }
 
-/** The help shown for [page] ([localThemes]: Themes shows the themes on this phone). */
-private fun helpOf(page: Page, localThemes: Boolean): String? = when (page) {
-    Page.Channels -> "sessions"
-    Page.Playlists -> "playlists"
-    Page.Themes -> if (localThemes) "phone-themes" else "themes"
-    Page.Speakers -> "settings-speakers"
-    Page.Groups -> "settings-groups"
-    Page.Spaces -> "settings-spaces"
-    Page.Audio -> "settings-audio"
-    Page.Advanced -> "settings-advanced"
-    Page.Logs -> "settings-logs"
-    Page.Plugins -> "settings-plugins"
-    Page.Connection -> "settings-connection"
-    Page.Status -> "status"
-    Page.Personal, Page.Backups -> null
-}
 
 @Composable
 private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: (Page) -> Unit, onServers: () -> Unit, onPluginPage: (String) -> Unit) {
@@ -595,7 +573,6 @@ private fun ChannelsPage(
                     Text("Channels", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(8.dp))
                     CountBadge(state.sessions.size)
-                    PageHelpButton("sessions")
                     Spacer(Modifier.weight(1f))
                     if (state.zones?.admin == true && narrow) {
                         // Phones: icon only, so the header fits next to New Channel
@@ -624,6 +601,9 @@ private fun ChannelsPage(
                         Spacer(Modifier.width(6.dp))
                         Text("New Channel", fontWeight = FontWeight.Medium)
                     }
+                    // Help at the far right, its right edge under the top bar's server button (Chris, item 11)
+                    Spacer(Modifier.width(8.dp))
+                    Box(Modifier.offset(x = side - 12.dp)) { PageHelpButton("sessions") }
                 }
             }
             // Link bars (Zones): one per link, above the cards (1.6)
