@@ -189,7 +189,7 @@ class DeviceApi(private val context: Context) : Interceptor {
             sequence = if (!playlistOn) now.sequence?.takeIf { st.sequenceId != null } else null,
             // Until the engine runs it (themes getting ready): the playlist, its first entry, no countdown
             playlist = if (playlistOn) now.playlist?.takeIf { it.id == st.playlistId } ?: PhonePlaylists.playlists.value.firstOrNull { it.id == st.playlistId }?.let { p ->
-                app.sonorium.net.PlaylistStatus(id = p.id, name = p.name, position = 0, entries = p.entries.size, themeId = p.entries.firstOrNull()?.themeId)
+                app.sonorium.net.PlaylistStatus(id = p.id, name = p.name, entryIndex = 0, position = 0, entries = p.entries.size, themeId = p.entries.firstOrNull()?.themeId)
             } else null,
             speakersMuted = st.muted,
             recent = now.recent,

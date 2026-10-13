@@ -1101,14 +1101,20 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     /** Saves (or updates) a server theme on this phone; needs the themes folder picked first. */
     fun saveThemeToPhone(themeId: String) {
         if (themeId in _downloads.value) return saveLog("$themeId already saving")
-        // Says why when the server can't be reached (never a silent no-op)
-        if (!reachableOrSay()) return saveLog("$themeId not started: the server can't be reached")
-        val api = api ?: return
         val name = phoneThemeName(themeId)
-        saveLog("$themeId started")
+        // Held at once, so the second start (picker callback + held request) is ignored
         _downloads.update { it + (themeId to 0f) }
         downloadJobs[themeId] = viewModelScope.launch {
             try {
+                // Back from Android's folder picker the connection may not be in place yet: wait for it a little
+                // (reconnecting when it was dropped meanwhile) instead of deciding on what the state says now
+                val api = liveApi(themeId) ?: run {
+                    val s = _state.value
+                    saveLog("$themeId not started: the server can't be reached (api=${api != null}, connecting=${s.connecting}, failure=${s.failure})")
+                    reachableOrSay()
+                    return@launch
+                }
+                saveLog("$themeId started")
                 when (app.themeStore.folderState()) {
                     ThemeStore.FolderState.OK -> {}
                     ThemeStore.FolderState.MISSING -> {
@@ -1156,6 +1162,24 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             }
             refreshLocalThemes()
         }
+    }
+
+    /** The server's API once it's connected and answering, waiting up to 15 s (reconnecting once); null when it isn't. */
+    private suspend fun liveApi(themeId: String): SonoriumApi? {
+        val end = android.os.SystemClock.elapsedRealtime() + 15_000
+        var reconnected = false
+        while (android.os.SystemClock.elapsedRealtime() < end) {
+            val s = _state.value
+            val a = api
+            if (a != null && s.failure == null && !s.connecting) return a
+            if (a == null && !s.connecting && !reconnected && serverId != null) {
+                saveLog("$themeId waits: no connection (failure=${s.failure}), reconnecting")
+                reconnected = true
+                connect(quiet = true)
+            }
+            delay(250)
+        }
+        return null
     }
 
     /** Stops saving a theme; the files downloaded so far are kept, so saving it again carries on from there. */

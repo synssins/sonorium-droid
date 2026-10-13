@@ -313,10 +313,12 @@ object PhonePlayer {
                 val total = inIt.filter { ready[it.folder] != it.version }.sumOf { it.tracks }
                 var done = 0
                 if (total > 0) _state.update { it.copy(preparing = 0 to total, error = null, notice = null) }
+                val inEngine = _state.value.now.themeId
                 for (t in inIt) {
                     if (ready[t.folder] == t.version) continue
-                    // The theme playing now keeps its files while it plays (even updated meanwhile: the next Play gets it ready)
-                    if (openFolder == t.folder) continue
+                    // A theme the engine has open keeps its files while it plays (even updated meanwhile: the next
+                    // Play of it gets it ready)
+                    if (openFolder == t.folder || (t.metaId != null && t.metaId == inEngine) || ready.containsKey(t.folder)) continue
                     val before = done
                     ThemePrep.prepare(app, app.themeStore, t) { d, _ ->
                         if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = (before + d) to total) else it }
@@ -394,7 +396,9 @@ object PhonePlayer {
         val status = PhoneEngine.status() ?: return
         val now = System.currentTimeMillis()
         val rendered = status.optDouble("seconds_rendered", 0.0)
-        fun at(secondsLeft: Double?): String? = secondsLeft?.let { java.time.Instant.ofEpochMilli(now + (it * 1000).toLong()).toString() }
+        // A step or entry with no end (the last of a pass, "never") has no countdown
+        fun at(secondsLeft: Double?): String? = secondsLeft?.takeIf { it.isFinite() && it >= 0 && it < 365.0 * 24 * 3600 }
+            ?.let { java.time.Instant.ofEpochMilli(now + (it * 1000).toLong()).toString() }
         fun str(o: org.json.JSONObject, k: String): String? = if (o.isNull(k)) null else o.optString(k).ifEmpty { null }
         val seq = status.optJSONObject("sequence")?.let { q ->
             SequenceStatus(
@@ -533,8 +537,9 @@ object PhonePlayer {
         if (!on) return
         stepPoll = scope.launch(Dispatchers.IO) {
             while (true) {
-                refreshStep()
-                refreshNow()
+                // One bad status never stops the step line, the card and the notification from following
+                runCatching { refreshStep() }.onFailure { Log.w(TAG, "Couldn't read the sequence's step", it) }
+                runCatching { refreshNow() }.onFailure { Log.w(TAG, "Couldn't read the engine's status", it) }
                 delay(1_000)
             }
         }
@@ -576,8 +581,11 @@ object PhonePlayer {
 
     /** What the lock screen shows under the theme's name: the playlist entry, the sequence step, else the preset. */
     fun subtitle(s: State = _state.value): String = when {
-        s.playlistMode && s.now.playlist?.entries != null && s.now.playlist.entries > 0 ->
+        s.playlistMode && s.now.playlist?.entries != null && s.now.playlist.entries > 0 && s.now.playlist.id == s.playlistId ->
             "Entry ${(s.now.playlist.position ?: 0) + 1} of ${s.now.playlist.entries}"
+        // A playlist picked, its themes getting ready: its first entry, not the preset playing before
+        s.playlistMode && s.playlistId != null ->
+            PhonePlaylists.playlists.value.firstOrNull { it.id == s.playlistId }?.let { "Entry 1 of ${it.entries.size}" } ?: "Default settings"
         s.sequenceId != null && s.step != null -> s.step.let { st -> "Step ${st.step} of ${st.steps} · ${st.name}" }
         s.sequenceId != null -> s.sequences.firstOrNull { it.id == s.sequenceId }?.name ?: "Sequence"
         s.presetId != null -> s.presets.firstOrNull { it.id == s.presetId }?.name ?: "On this phone"

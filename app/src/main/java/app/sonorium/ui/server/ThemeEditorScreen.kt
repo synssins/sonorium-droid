@@ -387,7 +387,9 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload:
             // On this phone: no Preview mix (the theme plays live in My channel) or links (they need the server)
             if (!editor.onPhone || editor.linksHere) ToolButton(
                 if (ui.previewMix) "Stop preview" else "Preview mix", if (ui.previewMix) SIcons.Stop else SIcons.Play,
-                "Play the whole theme on this device, with your changes, without changing the speakers", pressed = ui.previewMix,
+                // On this device there are no speakers to leave alone
+                if (editor.onPhone) "Play the whole theme on this device, with your changes" else "Play the whole theme on this device, with your changes, without changing the speakers",
+                pressed = ui.previewMix,
             ) { editor.togglePreviewMix() }
             var uploadMenu by remember { mutableStateOf(false) }
             Box {

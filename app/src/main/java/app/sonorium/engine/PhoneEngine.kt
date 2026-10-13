@@ -76,7 +76,7 @@ object PhoneEngine {
         val step = Step(
             seq.optString("current_preset_name").ifBlank { seq.optString("current_preset_id") },
             seq.optInt("step"), seq.optInt("steps"),
-            if (seq.isNull("seconds_left")) null else seq.optDouble("seconds_left").toInt(),
+            if (seq.isNull("seconds_left")) null else seq.optDouble("seconds_left").takeIf { it.isFinite() }?.toInt(),
         )
         SequenceStatus(true, step, preset)
     }
@@ -89,7 +89,7 @@ object PhoneEngine {
         Step(
             seq.optString("current_preset_name").ifBlank { seq.optString("current_preset_id") },
             seq.optInt("step"), seq.optInt("steps"),
-            if (seq.isNull("seconds_left")) null else seq.optDouble("seconds_left").toInt(),
+            if (seq.isNull("seconds_left")) null else seq.optDouble("seconds_left").takeIf { it.isFinite() }?.toInt(),
         )
     }
 
