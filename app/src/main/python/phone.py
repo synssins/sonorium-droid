@@ -72,6 +72,9 @@ class Player:
     def next(self):
         return self.engine.next() or ""
 
+    def previous(self):
+        return self.engine.previous() or ""
+
     def status(self):
         """engine.status() as JSON (the running sequence's step and seconds left)."""
         return json.dumps(self.engine.status(), default=str)

@@ -285,6 +285,44 @@ object PhonePlayer {
         }
     }
 
+    /**
+     * The lock screen's ⏭ / ⏮ (also headsets, cars, watches): the running sequence's next or previous
+     * step, else the next or previous preset of the theme (Default settings included), round the list.
+     */
+    fun skip(forward: Boolean) {
+        val s = _state.value
+        if (s.sequenceId != null) {
+            if (openFor != null) scope.launch(Dispatchers.IO) {
+                runCatching { if (forward) PhoneEngine.next() else PhoneEngine.previous() }
+                refreshStep()
+            }
+            return
+        }
+        val ids = listOf<String?>(null) + s.presets.map { it.id }
+        if (ids.size < 2) return
+        val i = ids.indexOf(s.presetId).coerceAtLeast(0)
+        setPreset(ids[(i + (if (forward) 1 else -1) + ids.size) % ids.size])
+    }
+
+    /** The lock screen's "Next theme": the next theme on this phone, crossfading to it while it plays. */
+    fun nextTheme(context: Context) {
+        val app = context.applicationContext as SonoriumApp
+        scope.launch {
+            val themes = runCatching { app.themeStore.list() }.getOrDefault(emptyList())
+            if (themes.size < 2) return@launch
+            val i = themes.indexOfFirst { it.docId == _state.value.theme?.docId }
+            choose(app, themes[(i + 1).mod(themes.size)])
+        }
+    }
+
+    /** What the lock screen shows under the theme's name: the sequence step, else the preset. */
+    fun subtitle(s: State = _state.value): String = when {
+        s.sequenceId != null && s.step != null -> s.step.let { st -> "Step ${st.step} of ${st.steps} · ${st.name}" }
+        s.sequenceId != null -> s.sequences.firstOrNull { it.id == s.sequenceId }?.name ?: "Sequence"
+        s.presetId != null -> s.presets.firstOrNull { it.id == s.presetId }?.name ?: "On this phone"
+        else -> "Default settings"
+    }
+
     fun setPreset(presetId: String?) {
         _state.update { it.copy(presetId = presetId, sequenceId = null, step = null, sequenceFinished = false) }
         if (openFor != null) scope.launch(Dispatchers.IO) { runCatching { PhoneEngine.setPreset(presetId) } }

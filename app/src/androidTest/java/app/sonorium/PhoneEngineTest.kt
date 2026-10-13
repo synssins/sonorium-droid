@@ -93,6 +93,24 @@ class PhoneEngineTest {
         while (!(PhonePlayer.state.value.playing && EngineDataSource.served > second) && System.currentTimeMillis() < end) Thread.sleep(200)
         val playing = PhonePlayer.state.value.playing
         val served = EngineDataSource.served
+        // What the lock screen sees: a live stream (no seek bar, no length), the title, Next theme and Stop
+        val token = androidx.media3.session.SessionToken(context, android.content.ComponentName(context, PhonePlayerService::class.java))
+        val controller = androidx.media3.session.MediaController.Builder(context, token).buildAsync().get(10, java.util.concurrent.TimeUnit.SECONDS)
+        val live = java.util.concurrent.atomic.AtomicReference<String>()
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            live.set(
+                listOf(
+                    "duration=${controller.duration == androidx.media3.common.C.TIME_UNSET}",
+                    "live=${controller.isCurrentMediaItemLive}",
+                    "seekable=${controller.isCurrentMediaItemSeekable}",
+                    "next=${controller.isCommandAvailable(androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT)}",
+                    "title=${controller.mediaMetadata.title}",
+                    "artwork=${controller.mediaMetadata.artworkData != null}",
+                    "buttons=${controller.mediaButtonPreferences.mapNotNull { it.displayName?.toString() }}",
+                ).joinToString(" "),
+            )
+        }
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync { controller.release() }
         val error = PhonePlayer.state.value.error
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_STOP))
         Thread.sleep(500)
@@ -100,5 +118,9 @@ class PhoneEngineTest {
         PhoneEngine.close()
         assertTrue("The on-phone player didn't start playing (error: $error)", playing)
         assertTrue("The player took only $served bytes of the engine's mix", served > second)
+        val seen = live.get()
+        listOf("duration=true", "live=true", "seekable=false", "next=true", "title=Test Theme", "artwork=true", "Next theme", "Stop").forEach {
+            assertTrue("Lock-screen control: expected $it in [$seen]", seen.contains(it))
+        }
     }
 }

@@ -55,6 +55,9 @@ object PhoneEngine {
     /** The sequence's next step now; "sequence", "playlist", "end" or "". */
     fun next(): String = synchronized(lock) { player?.callAttr("next")?.toString().orEmpty() }
 
+    /** The sequence's previous step now (the lock screen's ⏮). */
+    fun previous(): String = synchronized(lock) { player?.callAttr("previous")?.toString().orEmpty() }
+
     /**
      * The sequence part of the engine's status: [running] false once a sequence that doesn't repeat has
      * finished (or none is set); [presetId] is the preset playing now.
