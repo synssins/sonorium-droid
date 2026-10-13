@@ -74,7 +74,12 @@ class FlacCacheBenchmark {
         b[at + 1] = (s shr 8).toByte()
     }
 
-    private fun encode(pcm: ByteArray): ByteArray {
+    /** The encoder's output: its stream header (csd-0, from the output format or a codec-config buffer) and its frames. */
+    private class Flac(val csd: ByteArray?, val frames: List<ByteArray>) {
+        val size: Int get() = (csd?.size ?: 0) + frames.sumOf { it.size }
+    }
+
+    private fun encode(pcm: ByteArray): Flac {
         val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_FLAC, rate, channels).apply {
             setInteger(MediaFormat.KEY_FLAC_COMPRESSION_LEVEL, 5)
             setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 64 * 1024)
@@ -82,7 +87,8 @@ class FlacCacheBenchmark {
         val codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_AUDIO_FLAC)
         codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
         codec.start()
-        val out = java.io.ByteArrayOutputStream()
+        val frames = mutableListOf<ByteArray>()
+        var csd: ByteArray? = null
         val info = MediaCodec.BufferInfo()
         var pos = 0
         var inDone = false
@@ -104,48 +110,54 @@ class FlacCacheBenchmark {
                 }
             }
             val o = codec.dequeueOutputBuffer(info, 10_000)
-            if (o >= 0) {
+            if (o == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                codec.outputFormat.getByteBuffer("csd-0")?.let { b -> csd = ByteArray(b.remaining()).also { b.get(it) } }
+            } else if (o >= 0) {
                 val buf = codec.getOutputBuffer(o)!!
                 val chunk = ByteArray(info.size)
                 buf.position(info.offset)
                 buf.get(chunk)
-                out.write(chunk)
+                if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) {
+                    if (csd == null && chunk.isNotEmpty()) csd = chunk
+                } else if (chunk.isNotEmpty()) {
+                    frames += chunk
+                }
                 codec.releaseOutputBuffer(o, false)
                 if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) outDone = true
             }
         }
         codec.stop()
         codec.release()
-        return out.toByteArray()
+        return Flac(csd, frames)
     }
 
-    /** Decodes the encoder's raw FLAC frames back (the stream header from the encoder's first buffer). */
-    private fun decode(flac: ByteArray): Long {
-        val file = java.io.File(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.cacheDir, "bench.flac")
-        file.writeBytes(flac)
-        val extractor = android.media.MediaExtractor()
+    /**
+     * Decodes the encoder's frames straight into a FLAC decoder given the encoder's stream header as csd-0
+     * (a file of raw frames isn't a FLAC file every Android's extractor reads: Android 8 failed on it).
+     */
+    private fun decode(flac: Flac): Long {
         return try {
-            extractor.setDataSource(file.path)
-            extractor.selectTrack(0)
-            val format = extractor.getTrackFormat(0)
-            val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+            val format = MediaFormat.createAudioFormat(MediaFormat.MIMETYPE_AUDIO_FLAC, rate, channels)
+            flac.csd?.let { format.setByteBuffer("csd-0", java.nio.ByteBuffer.wrap(withMarker(it))) }
+            val codec = MediaCodec.createDecoderByType(MediaFormat.MIMETYPE_AUDIO_FLAC)
             codec.configure(format, null, null, 0)
             codec.start()
             val info = MediaCodec.BufferInfo()
             var total = 0L
+            var next = 0
             var inDone = false
             var outDone = false
             while (!outDone) {
                 if (!inDone) {
                     val i = codec.dequeueInputBuffer(10_000)
                     if (i >= 0) {
-                        val n = extractor.readSampleData(codec.getInputBuffer(i)!!, 0)
-                        if (n < 0) {
+                        if (next >= flac.frames.size) {
                             codec.queueInputBuffer(i, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
                             inDone = true
                         } else {
-                            codec.queueInputBuffer(i, 0, n, extractor.sampleTime, 0)
-                            extractor.advance()
+                            val frame = flac.frames[next++]
+                            codec.getInputBuffer(i)!!.put(frame)
+                            codec.queueInputBuffer(i, 0, frame.size, 0, 0)
                         }
                     }
                 }
@@ -160,13 +172,14 @@ class FlacCacheBenchmark {
             codec.release()
             total
         } catch (e: Exception) {
-            report("FLAC decode failed: ${e.javaClass.simpleName}: ${e.message}")
+            report("FLAC decode failed: ${e.javaClass.simpleName}: ${e.message} (csd ${flac.csd?.size ?: 0} bytes)")
             -1
-        } finally {
-            extractor.release()
-            file.delete()
         }
     }
+
+    /** The decoders take the stream header with its "fLaC" marker; some encoders leave it out. */
+    private fun withMarker(csd: ByteArray): ByteArray =
+        if (csd.size >= 4 && String(csd, 0, 4, Charsets.US_ASCII) == "fLaC") csd else "fLaC".toByteArray(Charsets.US_ASCII) + csd
 
     private fun report(text: String) {
         Log.w("FlacBenchmark", text)
