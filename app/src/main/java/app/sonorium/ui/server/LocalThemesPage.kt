@@ -110,6 +110,14 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
         model.toast("Playing “${t.name}” on this phone. Its controls are in My channel.", error = false)
     }
 
+    fun edit(t: LocalTheme) {
+        if (!isPro) {
+            unlock = true
+            return
+        }
+        model.openPhoneThemeEditor(t)
+    }
+
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val side = if (maxWidth < 600.dp) 12.dp else 24.dp
         LazyVerticalGrid(
@@ -174,7 +182,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
             if (folder != ThemeStore.FolderState.MISSING) {
                 items(list.orEmpty(), key = { it.docId }) { t ->
                     val on = phone.theme?.docId == t.docId && (phone.playing || phone.preparing != null)
-                    LocalThemeCard(t, playing = on, onPlay = { play(t) }, onRemove = { removing = t })
+                    LocalThemeCard(t, playing = on, onPlay = { play(t) }, onEdit = { edit(t) }, onRemove = { removing = t })
                 }
             }
         }
@@ -333,7 +341,7 @@ fun rememberThemeImport(model: ServerViewModel, folderPicker: ThemesFolderPicker
 }
 
 @Composable
-private fun LocalThemeCard(t: LocalTheme, playing: Boolean, onPlay: () -> Unit, onRemove: () -> Unit) {
+private fun LocalThemeCard(t: LocalTheme, playing: Boolean, onPlay: () -> Unit, onEdit: () -> Unit, onRemove: () -> Unit) {
     Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, if (playing) Palette.accent else Palette.border)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -354,6 +362,8 @@ private fun LocalThemeCard(t: LocalTheme, playing: Boolean, onPlay: () -> Unit, 
                     tint = if (playing) Palette.danger else Palette.accent,
                     size = UiSize.SMALL,
                 )
+                Spacer(Modifier.width(6.dp))
+                IconBox(SIcons.Edit, "Edit ${t.name}", onEdit, size = UiSize.SMALL)
                 Spacer(Modifier.width(6.dp))
                 MoreMenu("More for ${t.name}", listOf(MenuAction("Remove from phone…", SIcons.Trash, danger = true) { onRemove() }), size = UiSize.SMALL)
             }

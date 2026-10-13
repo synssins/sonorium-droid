@@ -179,14 +179,17 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                     }
                     IconBox(SIcons.Help, "How a theme plays", { help = true }, size = app.sonorium.ui.UiSize.STANDARD)
                     Spacer(Modifier.width(6.dp))
-                    MoreMenu("More theme options", listOf(MenuAction("Export theme", SIcons.Download) {
-                        model.toast("Preparing export…", error = false)
-                        model.exportTheme(ThemeSummary(editor.themeId, ui.title)) { name, bytes ->
-                            pendingExport = bytes
-                            saveZip.launch(name)
-                        }
-                    }))
-                    Spacer(Modifier.width(6.dp))
+                    // A theme on this phone is already its own folder (in the Files app): no server export
+                    if (!editor.onPhone) {
+                        MoreMenu("More theme options", listOf(MenuAction("Export theme", SIcons.Download) {
+                            model.toast("Preparing export…", error = false)
+                            model.exportTheme(ThemeSummary(editor.themeId, ui.title)) { name, bytes ->
+                                pendingExport = bytes
+                                saveZip.launch(name)
+                            }
+                        }))
+                        Spacer(Modifier.width(6.dp))
+                    }
                     IconBox(SIcons.Close, "Cancel", { cancel() }, size = app.sonorium.ui.UiSize.STANDARD)
                 }
                 val hooks = ListHooks(editor, { ask = it }, ::upload, live, deleting) { deleting = it }
@@ -381,12 +384,13 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Un
         }
         FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SequencesMenu(ui, editor, onSequence)
-            ToolButton(
+            // On this phone: no Preview mix (the theme plays live in My channel), Upload or links (they need the server)
+            if (!editor.onPhone) ToolButton(
                 if (ui.previewMix) "Stop preview" else "Preview mix", if (ui.previewMix) SIcons.Stop else SIcons.Play,
                 "Play the whole theme on this device, with your changes, without changing the speakers", pressed = ui.previewMix,
             ) { editor.togglePreviewMix() }
             var uploadMenu by remember { mutableStateOf(false) }
-            Box {
+            if (!editor.onPhone) Box {
                 ToolButton("Upload", SIcons.Upload, "Upload") { uploadMenu = true }
                 DropdownMenu(expanded = uploadMenu, onDismissRequest = { uploadMenu = false }, containerColor = Palette.card) {
                     Text("Upload to", color = Palette.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
@@ -404,10 +408,19 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Un
                     }
                 }
             }
-            ToolButton("Add from another theme", SIcons.Link, "Add from another theme", onClick = onPicker)
+            if (!editor.onPhone) ToolButton("Add from another theme", SIcons.Link, "Add from another theme", onClick = onPicker)
             ToolButton("Reset all", SIcons.Refresh, "Reset all", onClick = onReset)
         }
         if (ui.waiting) Text("Updating…", color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+        if (editor.onPhone) {
+            val phone = app.sonorium.engine.PhonePlayer.state.collectAsState().value
+            val playing = phone.playing && phone.theme?.folder?.let(app.sonorium.local.PhoneThemeApi::safe) == editor.themeId
+            Text(
+                (if (playing) "Changes are heard at once while it plays in My channel. " else "Play it in My channel to hear your changes as you make them. ") +
+                    "Some changes need your server: adding files, links, and moving or renaming groups.",
+                color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp),
+            )
+        }
     }
 }
 

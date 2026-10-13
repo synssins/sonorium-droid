@@ -19,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import app.sonorium.cast.CastController
 import app.sonorium.engine.PhonePlayer
 import app.sonorium.local.LocalTheme
+import app.sonorium.server.ServerViewModel
 import app.sonorium.ui.Palette
 import app.sonorium.ui.UiSize
 import kotlinx.coroutines.delay
@@ -54,7 +57,11 @@ import kotlinx.coroutines.delay
  * on-phone engine. The theme list is the themes on this phone (null while they're being read).
  */
 @Composable
-fun PhoneView(themes: List<LocalTheme>?) {
+fun PhoneView(
+    themes: List<LocalTheme>?,
+    /** The activity's view model (the screen's own), for Mix: the Theme Editor on the chosen theme. */
+    model: ServerViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+) {
     val context = LocalContext.current
     val s by PhonePlayer.state.collectAsState()
     // A theme to start with: the one used last, else the first on the phone
@@ -66,14 +73,32 @@ fun PhoneView(themes: List<LocalTheme>?) {
     Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, if (s.playing) Palette.accent else Palette.border)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FieldLabel("Theme")
-            PickerField(
-                label = "Theme",
-                options = list.map { PickOption(it.docId, it.name) },
-                current = s.theme?.docId,
-                onPick = { o -> list.firstOrNull { it.docId == o.value }?.let { PhonePlayer.choose(context, it) } },
-                placeholder = if (list.isEmpty()) "No themes on this phone" else "Choose a theme",
-                enabled = list.isNotEmpty() && !busy,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PickerField(
+                    label = "Theme",
+                    options = list.map { PickOption(it.docId, it.name) },
+                    current = s.theme?.docId,
+                    onPick = { o -> list.firstOrNull { it.docId == o.value }?.let { PhonePlayer.choose(context, it) } },
+                    modifier = Modifier.weight(1f),
+                    placeholder = if (list.isEmpty()) "No themes on this phone" else "Choose a theme",
+                    enabled = list.isNotEmpty() && !busy,
+                )
+                // Mix: the Theme Editor on this theme; while it plays, every change is heard at once
+                s.theme?.let { theme ->
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = { model.openPhoneThemeEditor(theme) },
+                        enabled = !busy,
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, Palette.border),
+                        modifier = Modifier.heightIn(min = UiSize.STANDARD.dp).semantics { contentDescription = "Mix: edit ${theme.name}" },
+                    ) {
+                        Icon(SIcons.Edit, null, tint = Palette.accent, modifier = Modifier.size(UiSize.GLYPH_SMALL.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Mix", color = Palette.text)
+                    }
+                }
+            }
             FieldLabel("Preset")
             PickerField(
                 label = "Preset",
