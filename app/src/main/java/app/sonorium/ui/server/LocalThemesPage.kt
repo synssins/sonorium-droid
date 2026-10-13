@@ -231,7 +231,19 @@ class ThemesFolderPicker internal constructor(private val start: (Boolean, (() -
 private data class FolderRequest(val changing: Boolean, val then: (() -> Unit)?)
 
 @Composable
-fun rememberThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
+fun rememberThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker =
+    LocalThemesFolderPicker.current ?: rememberOwnThemesFolderPicker(model)
+
+/**
+ * The main screen's folder picker, which outlives the pages: a page can leave the screen while
+ * Android's picker is open (e.g. Themes switching to On this phone when the server stops answering
+ * in the background), and its result would be lost (validation 085a06b: first Save to phone on a
+ * tablet and a fold).
+ */
+val LocalThemesFolderPicker = androidx.compose.runtime.staticCompositionLocalOf<ThemesFolderPicker?> { null }
+
+@Composable
+fun rememberOwnThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
     var asking by remember { mutableStateOf<FolderRequest?>(null) }
     var pending by remember { mutableStateOf<FolderRequest?>(null) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
