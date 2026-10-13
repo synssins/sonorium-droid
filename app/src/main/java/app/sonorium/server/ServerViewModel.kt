@@ -1002,6 +1002,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             }
         val pending = pendingSave.takeIf { !changing }
         pendingSave = null
+        saveLog("themes folder chosen" + (pending?.let { ", then $it" } ?: ""))
         if (changed) {
             // Nothing prepared from the old folder applies any more
             viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
@@ -1020,11 +1021,20 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         return true
     }
 
+    /**
+     * What Save to phone does, in the log of release builds too (Log.println at WARN: not a call that
+     * shrinking rules for Log.d/i/v could drop), for the validation runs.
+     */
+    private fun saveLog(text: String) {
+        android.util.Log.println(android.util.Log.WARN, "LocalThemes", "Save to phone: $text")
+    }
+
     /** A Save to phone waiting for the themes folder: kept here, so it survives the picker. */
     private var pendingSave: String? = null
 
     /** Save to phone once the themes folder has been chosen ([useThemesFolder]). */
     fun saveToPhoneAfterFolder(themeId: String) {
+        saveLog("$themeId waits for the themes folder")
         pendingSave = themeId
     }
 
@@ -1090,25 +1100,25 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Saves (or updates) a server theme on this phone; needs the themes folder picked first. */
     fun saveThemeToPhone(themeId: String) {
-        if (themeId in _downloads.value) return
+        if (themeId in _downloads.value) return saveLog("$themeId already saving")
         // Says why when the server can't be reached (never a silent no-op)
-        if (!reachableOrSay()) return
+        if (!reachableOrSay()) return saveLog("$themeId not started: the server can't be reached")
         val api = api ?: return
         val name = phoneThemeName(themeId)
-        android.util.Log.i("LocalThemes", "Save to phone: $themeId started")
+        saveLog("$themeId started")
         _downloads.update { it + (themeId to 0f) }
         downloadJobs[themeId] = viewModelScope.launch {
             try {
                 when (app.themeStore.folderState()) {
                     ThemeStore.FolderState.OK -> {}
                     ThemeStore.FolderState.MISSING -> {
-                        android.util.Log.w("LocalThemes", "Save to phone: $themeId stopped, the themes folder is missing")
+                        saveLog("$themeId stopped, the themes folder is missing")
                         _localFolder.value = ThemeStore.FolderState.MISSING
                         toast("Your themes folder can't be found. Choose it again in Themes › On this phone.", error = true)
                         return@launch
                     }
                     ThemeStore.FolderState.NONE -> {
-                        android.util.Log.w("LocalThemes", "Save to phone: $themeId stopped, no themes folder")
+                        saveLog("$themeId stopped, no themes folder")
                         toast("Choose a folder for themes first", error = true)
                         return@launch
                     }
@@ -1126,12 +1136,12 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                         _downloads.update { if (themeId in it) it + (themeId to if (total > 0) (done.toFloat() / total).coerceIn(0f, 1f) else 1f) else it }
                     }
                 }
-                android.util.Log.i("LocalThemes", "Save to phone: $themeId done, in ${saved.folder}" + if (replacing != null) " (replaced ${replacing.folder})" else "")
+                saveLog("$themeId done, in ${saved.folder}" + if (replacing != null) " (replaced ${replacing.folder})" else "")
                 toast(if (replacing != null) "Updated “${saved.name}” on this phone" else "Saved “${saved.name}” to this phone", error = false)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                android.util.Log.w("LocalThemes", "Save to phone failed for $themeId", e)
+                saveLog("$themeId failed: ${e.javaClass.simpleName}: ${e.message}")
                 toast(
                     when (e) {
                         is ThemeDownloader.Problem, is ThemeStore.ImportProblem -> e.message ?: "Couldn't save “$name” to this phone"

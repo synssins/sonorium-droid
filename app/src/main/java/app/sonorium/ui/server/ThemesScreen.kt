@@ -97,7 +97,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
             !model.entitlement.isPro.value -> unlockFor = id
             model.themeStore.root == null || model.localFolder.value == app.sonorium.local.ThemeStore.FolderState.MISSING ->
                 // The view model starts it once the folder is chosen (this page may be gone by then)
-                model.saveToPhoneAfterFolder(id).also { folderPicker.ask(changing = false, then = null) }
+                model.saveToPhoneAfterFolder(id).also { folderPicker.ask(changing = false) { model.saveThemeToPhone(id) } }
             else -> model.saveThemeToPhone(id)
         }
     }
