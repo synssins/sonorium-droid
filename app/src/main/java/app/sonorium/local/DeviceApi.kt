@@ -152,7 +152,15 @@ class DeviceApi(private val context: Context) : Interceptor {
 
     // ---------- the channel: what this device plays ----------
 
-    private fun themesNow(): List<LocalTheme> = runBlocking { runCatching { store.list() }.getOrDefault(emptyList()) }
+    @Volatile private var listed: Pair<Long, List<LocalTheme>>? = null
+
+    /** The themes in the themes folder (read again after 2 s, or at once after a change made here). */
+    private fun themesNow(): List<LocalTheme> {
+        listed?.let { (at, list) -> if (System.currentTimeMillis() - at < 2_000) return list }
+        val list = runBlocking { runCatching { store.list() }.getOrDefault(emptyList()) }
+        listed = System.currentTimeMillis() to list
+        return list
+    }
 
     private fun idOf(t: LocalTheme) = themeId(t)
 
@@ -420,6 +428,7 @@ class DeviceApi(private val context: Context) : Interceptor {
     private fun JsonPrimitive.contentOrNullSafe(): String? = if (this is JsonNull) null else content
 
     private fun changed(type: String) {
+        if (type.startsWith("theme.")) listed = null
         _events.tryEmit(type)
     }
 

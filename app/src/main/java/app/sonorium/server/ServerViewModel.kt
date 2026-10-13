@@ -304,7 +304,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             launch { device.events.collect { type -> onServerEvent(type, "{}") } }
             launch {
                 PhonePlayer.state
-                    .map { s -> listOf(s.playing, s.preparing != null, s.theme?.docId, s.presetId, s.sequenceId, s.step, s.playlistId, s.playlistMode, s.now, s.volume, s.muted) }
+                    .map { s -> listOf(s.playing, s.preparing != null, s.theme?.docId, s.presetId, s.sequenceId, s.step, s.playlistId, s.playlistMode, s.volume, s.muted,
+                        s.now.themeId, s.now.presetId, s.now.sequence?.step, s.now.sequence?.running, s.now.playlist?.position, s.now.recent.size) }
                     .distinctUntilChanged()
                     .collect { refreshSessionsSoon(); if (_state.value.personalChannel) refreshPersonal() }
             }
