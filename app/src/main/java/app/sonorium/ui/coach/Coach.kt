@@ -84,6 +84,17 @@ class CoachState(private val context: Context) {
 
     fun seen(id: String): Boolean = prefs.getBoolean("seen:$id", false)
 
+    /**
+     * This install was updated since it was first installed (an upgrade from a build without guides, or any
+     * later one): the first-run guide is for a real first run only (Chris).
+     */
+    val upgraded: Boolean by lazy {
+        runCatching {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            info.lastUpdateTime > info.firstInstallTime
+        }.getOrDefault(false)
+    }
+
     /** Shows [guide] now (from help: whether seen or not); steps whose control isn't on screen are left out. */
     fun show(guide: CoachGuide) {
         val steps = guide.steps.filter { it.target == null || rectOf(it.target) != null }

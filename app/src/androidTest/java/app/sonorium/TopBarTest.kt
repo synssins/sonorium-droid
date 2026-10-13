@@ -52,8 +52,13 @@ class TopBarTest {
             val top = device.findObject(By.res("top-bar"))
             assertTrue("A My Channel button in the top bar ($what)", top.findObject(By.desc("My Channel")) == null)
             assertTrue("A help button in the top bar ($what)", top.findObject(By.descStartsWith("Help")) == null)
-            // The page's help is on its title row
-            assertNotNull("No help on the page ($what)", device.findObject(By.descStartsWith("Help: ")))
+            // The page's help is on its title row, its right edge under the server button's (Chris: exactly)
+            val help = device.findObject(By.descStartsWith("Help: "))
+            assertNotNull("No help on the page ($what)", help)
+            val server = top.findObject(By.descContains("Servers:")) ?: top.findObject(By.descContains(", this device"))
+            assertNotNull("No server button ($what)", server)
+            val gap = help.visibleBounds.right - server.visibleBounds.right
+            assertTrue("Help's right edge is $gap px off the server button's ($what)", kotlin.math.abs(gap) <= 2)
         }
     }
 }

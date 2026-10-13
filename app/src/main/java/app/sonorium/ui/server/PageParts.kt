@@ -3,6 +3,9 @@ package app.sonorium.ui.server
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -247,9 +250,28 @@ fun EmptyState(title: String, sub: String?) {
     }
 }
 
-/** A page's ? button: at the far right of the page's title row. */
+/** Where the top bar's server button ends on screen (its right edge, root px); null: no top bar here. */
+val LocalServerButtonRight = androidx.compose.runtime.staticCompositionLocalOf<androidx.compose.runtime.MutableState<Float?>?> { null }
+
+/**
+ * A page's ? button at the far right of the page's title row, its right edge exactly under the top bar's server
+ * button's (Chris: every page, every screen size): shifted by what the page's own margin leaves over.
+ */
 @Composable
-fun PageHelpButton(view: String) = HelpButton(view)
+fun PageHelpButton(view: String) {
+    val target = LocalServerButtonRight.current?.value
+    var shift by remember { mutableStateOf(0) }
+    Box(
+        Modifier
+            .offset { androidx.compose.ui.unit.IntOffset(shift, 0) }
+            .onGloballyPositioned { c ->
+                if (target == null) return@onGloballyPositioned
+                val right = c.boundsInRoot().right - shift
+                val want = kotlin.math.round(target - right).toInt()
+                if (want != shift) shift = want
+            },
+    ) { HelpButton(view) }
+}
 
 /** The ? button: its `PAGE_HELP` text in a help panel. */
 @Composable

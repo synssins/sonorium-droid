@@ -54,6 +54,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -149,15 +151,18 @@ fun ServerScreen(
     val themeImport = rememberOwnThemeImport(model, folderPicker)
     val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
     val coach = remember { app.sonorium.ui.coach.CoachState(appContext) }
+    val serverButtonRight = remember { mutableStateOf<Float?>(null) }
     // First run: the guide over the main screen, once the first page has settled (item 12)
-    val firstRun = app.sonorium.ui.coach.Guides.firstRun()
+    val linkedServers by model.servers.collectAsState(initial = emptyList())
+    val firstRun = app.sonorium.ui.coach.Guides.firstRun(hasServer = linkedServers.any { !it.device })
     LaunchedEffect(state.connecting, page) {
-        if (!state.connecting && page == Page.Channels) {
+        // A real first run only: not after an update (Chris)
+        if (!state.connecting && page == Page.Channels && !coach.upgraded) {
             kotlinx.coroutines.delay(800)
             coach.showOnce(firstRun)
         }
     }
-    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, app.sonorium.ui.coach.LocalCoach provides coach) {
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, app.sonorium.ui.coach.LocalCoach provides coach, LocalServerButtonRight provides serverButtonRight) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     // An imported zip: the user's own file, so asked before it's deleted
     model.importProblem.collectAsState().value?.let { text ->
@@ -316,6 +321,7 @@ private fun TopBar(
     onMenu: () -> Unit,
     onServers: () -> Unit,
 ) {
+    val serverButtonRight = LocalServerButtonRight.current
     Row(
         // Tagged for the device tests (no headphones button in any state: Chris, item 11)
         Modifier.fillMaxWidth().height(56.dp).background(Palette.bar).semantics { testTagsAsResourceId = true }.testTag("top-bar").padding(horizontal = 12.dp),
@@ -347,6 +353,7 @@ private fun TopBar(
             border = if (live || record == null) null else androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
             modifier = Modifier.height(TOP_BAR_CONTROL.dp).widthIn(max = 200.dp)
                 .coachTarget(app.sonorium.ui.coach.Targets.SERVERS)
+                .onGloballyPositioned { c -> serverButtonRight?.value = c.boundsInRoot().right }
                 .semantics { contentDescription = if (record?.device == true) "$label, this device" else "Servers: $label" + (status?.let { ", $it" } ?: "") }
                 .clickable(onClick = onServers),
         ) {
@@ -603,7 +610,7 @@ private fun ChannelsPage(
                     }
                     // Help at the far right, its right edge under the top bar's server button (Chris, item 11)
                     Spacer(Modifier.width(8.dp))
-                    Box(Modifier.offset(x = side - 12.dp)) { PageHelpButton("sessions") }
+                    PageHelpButton("sessions")
                 }
             }
             // Link bars (Zones): one per link, above the cards (1.6)

@@ -12,13 +12,14 @@ object Guides {
     @Composable
     private fun step(target: String?, title: Int, text: Int) = CoachStep(target, stringResource(title), stringResource(text))
 
+    /** [hasServer]: a Sonorium is linked already, so "Add a server" is left out. */
     @Composable
-    fun firstRun() = CoachGuide(
+    fun firstRun(hasServer: Boolean = false) = CoachGuide(
         FIRST_RUN,
-        listOf(
+        listOfNotNull(
             step(Targets.PLAY, R.string.coach_play_title, R.string.coach_play_text),
             step(Targets.SERVERS, R.string.coach_connections_title, R.string.coach_connections_text),
-            step(Targets.SERVERS, R.string.coach_add_title, R.string.coach_add_text),
+            if (hasServer) null else step(Targets.SERVERS, R.string.coach_add_title, R.string.coach_add_text),
         ),
     )
 

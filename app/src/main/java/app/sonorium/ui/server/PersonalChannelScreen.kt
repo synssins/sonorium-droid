@@ -78,6 +78,8 @@ fun PersonalChannelScreen(
                 Icon(SIcons.Headphones, null, tint = Palette.accent, modifier = Modifier.size(UiSize.GLYPH.dp))
                 Spacer(Modifier.width(10.dp))
                 Text("My Channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
+                Spacer(Modifier.weight(1f))
+                PageHelpButton("my-channel")
             }
             // This device's own entry: its channel is the same card as a server's channel
             if (state.onDevice) {

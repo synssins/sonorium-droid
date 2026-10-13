@@ -7,6 +7,7 @@ import app.sonorium.data.ServerStore
 import app.sonorium.link.Linker
 import app.sonorium.net.PinnedTls
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -36,17 +37,48 @@ class SonoriumApp : Application() {
     companion object {
         /** The id of this device's own entry. */
         const val DEVICE_ID = "this-device"
+        /** "Stop My Channel when switching between server and device" (on by default; Audio Settings). */
+        const val KEY_STOP_ON_SWITCH = "stopMyChannelOnSwitch"
     }
 
     override fun onCreate() {
         super.onCreate()
         CrashLog.install(this)
+        // "Stop My Channel when switching between server and device": watched here, not in a screen, because
+        // choosing an entry in the Servers list opens a new main screen (the old one never sees the switch)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main).launch {
+            var last = servers.currentId.first()
+            servers.currentId.collect { now ->
+                val left = last
+                last = now
+                if (left != null && now != null && left != now) runCatching { leftEntry(left) }
+            }
+        }
         // Home-screen widgets on this device's own channel follow its player
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main).launch {
             app.sonorium.engine.PhonePlayer.state
                 .map { s -> listOf(s.playing, s.sampleEnded, app.sonorium.engine.PhonePlayer.title(s), app.sonorium.engine.PhonePlayer.subtitle(s)) }
                 .distinctUntilChanged()
                 .collect { runCatching { app.sonorium.widget.WidgetUpdater.updateDevice(this@SonoriumApp) } }
+        }
+    }
+
+    /** The switcher left [left] (a server or this device): with the setting on, My Channel stops there. */
+    private fun leftEntry(left: String) {
+        if (!getSharedPreferences("sonorium", MODE_PRIVATE).getBoolean(KEY_STOP_ON_SWITCH, true)) return
+        if (left == DEVICE_ID) {
+            if (app.sonorium.engine.PhonePlayer.state.value.playing || app.sonorium.engine.PhonePlayerService.isRunning) app.sonorium.engine.PhonePlayer.stop(this)
+            return
+        }
+        val now = app.sonorium.listen.ListenController.state.value ?: return
+        if (now.serverId != left) return
+        app.sonorium.listen.ListenController.stop(this, now.sessionId)
+        // The server lets go of the slot at once (else when its hold time runs out)
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            runCatching {
+                val api = app.sonorium.widget.WidgetUpdater.apiFor(this@SonoriumApp, left) ?: return@runCatching
+                if (now.personal) api.stopListeningMyChannel() else api.stopListening(now.sessionId)
+            }
         }
     }
 

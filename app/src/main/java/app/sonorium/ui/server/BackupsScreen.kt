@@ -70,7 +70,7 @@ fun BackupsPage(state: ServerState, model: ServerViewModel) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val narrow = maxWidth < 600.dp
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = if (narrow) 12.dp else 24.dp)) {
-            PageHeader(stringResource(R.string.backups_title), null)
+            PageHeader(stringResource(R.string.backups_title), null, help = "settings-backups")
             // This phone's backups to this server
             Card {
                 SwitchLine(

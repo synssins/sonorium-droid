@@ -8,6 +8,8 @@ mkdir -p e2e-out
 adb logcat -c || true
 adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+# The QA build: shrunk like a release (R8), for QaSmokeTest
+adb install -r -g app/build/outputs/apk/qa/app-qa.apk
 
 RUNNER=app.sonorium.debug.test/androidx.test.runner.AndroidJUnitRunner
 
@@ -22,10 +24,20 @@ adb shell am instrument -w -r -e class app.sonorium.ScreenTourTest#offline "$RUN
 adb shell am instrument -w -r \
   -e linkUri "$LINK_URI_B64" \
   -e channelName "'$CHANNEL_NAME'" \
-  -e class app.sonorium.EndToEndTest,app.sonorium.TopBarTest,app.sonorium.MyChannelTest,app.sonorium.ServerNameTest,app.sonorium.PcmDecoderTest,app.sonorium.LiveDecoderTest,app.sonorium.PhoneEngineTest,app.sonorium.PhoneThemeEditorTest,app.sonorium.PackageDownloadTest,app.sonorium.BackupApiTest,app.sonorium.CastStreamTest,app.sonorium.DeviceApiTest,app.sonorium.FlacCacheBenchmark,app.sonorium.Mp3Benchmark \
+  -e class app.sonorium.QaSmokeTest,app.sonorium.EndToEndTest,app.sonorium.TopBarTest,app.sonorium.MyChannelTest,app.sonorium.ServerNameTest,app.sonorium.PcmDecoderTest,app.sonorium.LiveDecoderTest,app.sonorium.PhoneEngineTest,app.sonorium.PhoneThemeEditorTest,app.sonorium.PackageDownloadTest,app.sonorium.BackupApiTest,app.sonorium.CastStreamTest,app.sonorium.DeviceApiTest,app.sonorium.FlacCacheBenchmark,app.sonorium.Mp3Benchmark \
   "$RUNNER" | tee e2e-out/instrumentation.txt
 grep -q "^OK (" e2e-out/instrumentation.txt
 e2e=$?
+
+# The top bar and the help buttons on a tablet too (help right-aligned under the server button on every
+# screen size: Chris), landscape-wide like a large tablet
+if [ "$e2e" -eq 0 ]; then
+  adb shell wm size 2560x1600; adb shell wm density 320; sleep 3
+  adb shell am instrument -w -r -e class app.sonorium.TopBarTest "$RUNNER" | tee e2e-out/topbar-tablet.txt | tail -3
+  cat e2e-out/topbar-tablet.txt >> e2e-out/instrumentation.txt
+  grep -q "^OK (" e2e-out/topbar-tablet.txt || e2e=1
+  adb shell wm size reset; adb shell wm density reset; sleep 2
+fi
 
 # Screen profiles: name, size (portrait, px), density (dpi), font scale.
 # Sizes for Samsung devices are their default display settings, approximately.

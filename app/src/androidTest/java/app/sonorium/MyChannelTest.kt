@@ -69,6 +69,12 @@ class MyChannelTest {
         }
     }
 
+    /** As the Servers list switches: the entry chosen, then a new main screen on it (the old one goes). */
+    private fun switchTo(id: String) {
+        runBlocking { sonorium.servers.select(id) }
+        app.sonorium.server.NativeServerActivity.open(context, id)
+    }
+
     private fun playOnDevice() {
         runBlocking { PhonePlayer.sync(context, SampleTheme.with(context, emptyList())) }
         instrumentation.runOnMainSync { PhonePlayer.play(context) }
@@ -89,7 +95,7 @@ class MyChannelTest {
         try {
             onMain(SonoriumApp.DEVICE_ID) {
                 playOnDevice()
-                runBlocking { sonorium.servers.select(server!!.id) }
+                switchTo(server!!.id)
                 assertTrue("Device → server: this device's My Channel kept playing", waitFor(8_000) { !PhonePlayer.state.value.playing })
             }
         } finally {
@@ -105,7 +111,7 @@ class MyChannelTest {
         try {
             onMain(SonoriumApp.DEVICE_ID) {
                 playOnDevice()
-                runBlocking { sonorium.servers.select(server!!.id) }
+                switchTo(server!!.id)
                 Thread.sleep(5_000)
                 assertTrue("Setting off: this device's My Channel stopped on the switch", PhonePlayer.state.value.playing)
             }
@@ -124,7 +130,7 @@ class MyChannelTest {
         try {
             onMain(server!!.id) {
                 assertTrue("Couldn't listen to the server's My Channel", listenToServer(server.id))
-                runBlocking { sonorium.servers.select(SonoriumApp.DEVICE_ID) }
+                switchTo(SonoriumApp.DEVICE_ID)
                 assertTrue("Server → device: the server's stream kept playing", waitFor(8_000) { ListenController.state.value == null })
             }
         } finally {

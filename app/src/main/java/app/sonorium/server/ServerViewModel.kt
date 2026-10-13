@@ -185,7 +185,6 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                             connect()
                         }
                         id != null && next != null && next != id -> {
-                            leaving()
                             teardown()
                             serverId = next
                             loadExpanded()
@@ -222,33 +221,13 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         runCatching { cm.registerDefaultNetworkCallback(callback) }.onSuccess { networkWatch = callback }
     }
 
-    /**
-     * Switching the active entry (a server ↔ this device): with "Stop My Channel when switching" on (the
-     * default), My Channel playback of the entry being left stops: the server stream this phone listens to,
-     * or this device's own player.
-     */
-    private fun leaving() {
-        if (!stopOnSwitch.value) return
-        val record = _state.value.record ?: return
-        if (record.device) {
-            if (PhonePlayer.state.value.playing || PhonePlayerService.isRunning) PhonePlayer.stop(app)
-        } else {
-            val now = ListenController.state.value ?: return
-            if (now.serverId != record.id) return
-            ListenController.stop(app, now.sessionId)
-            val api = api ?: return
-            // The server lets go of the slot at once (the api is dropped right after this)
-            viewModelScope.launch { runCatching { if (now.personal) api.stopListeningMyChannel() else api.stopListening(now.sessionId) } }
-        }
-    }
-
-    private val _stopOnSwitch = MutableStateFlow(prefs.getBoolean(KEY_STOP_ON_SWITCH, true))
+    private val _stopOnSwitch = MutableStateFlow(prefs.getBoolean(SonoriumApp.KEY_STOP_ON_SWITCH, true))
     /** "Stop My Channel when switching between server and device" (on by default). */
     val stopOnSwitch: StateFlow<Boolean> = _stopOnSwitch.asStateFlow()
 
     fun setStopOnSwitch(on: Boolean) {
         _stopOnSwitch.value = on
-        prefs.edit().putBoolean(KEY_STOP_ON_SWITCH, on).apply()
+        prefs.edit().putBoolean(SonoriumApp.KEY_STOP_ON_SWITCH, on).apply()
     }
 
     /** Drops everything that talks to the current server (removed, unlinked, switched). */
@@ -1100,6 +1079,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     // ---------- Themes on this phone (offline playback) ----------
 
+    /** The entries in the switcher (this device and the linked servers). */
+    val servers get() = app.servers.servers
     val themeStore get() = app.themeStore
     val entitlement get() = app.entitlement
     private val _localThemes = MutableStateFlow<List<LocalTheme>?>(null)
@@ -1986,7 +1967,6 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         const val KEY_VOLUME_KEYS = "volumeKeys"
         /** A server that can't be reached is tried again at most this often in the background (ms). */
         const val RETRY_MS = 60_000L
-        const val KEY_STOP_ON_SWITCH = "stopMyChannelOnSwitch"
         /** A backup started by the app at most this often (ms); the Backups page's Back up now any time. */
         const val BACKUP_GAP_MS = 5 * 60_000L
         const val EVENT_TYPES =

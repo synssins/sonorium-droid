@@ -60,6 +60,15 @@ android {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }
+        // Shrunk exactly like release, signed with the debug key, installable beside the debug app: CI plays a
+        // theme with it, so code reached only by reflection (Python) and removed by R8 shows up before a release
+        create("qa") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            matchingFallbacks += listOf("release")
+        }
     }
 
     compileOptions {

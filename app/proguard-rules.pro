@@ -14,3 +14,11 @@
 -keep class com.google.android.gms.signin.** { *; }
 -keep class com.google.android.gms.auth.api.** { *; }
 -keep class com.google.android.gms.internal.base.** { *; }
+
+# Called only from Python (Chaquopy, by reflection): R8 can't see these uses, so it removed them
+# (alpha30: nothing played on the device). Every class and member Python reaches is kept here; the
+# QA build (minified like release) and its smoke test in CI catch a missing one.
+# - app/src/main/python/phone.py: jclass("app.sonorium.audio.LiveDecoder").open / .durationSeconds,
+#   and the Stream it returns: read(), close(), getHeaderFrames()
+-keep class app.sonorium.audio.LiveDecoder { *; }
+-keep class app.sonorium.audio.LiveDecoder$Stream { *; }
