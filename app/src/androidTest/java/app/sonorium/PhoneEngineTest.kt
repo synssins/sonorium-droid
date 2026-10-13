@@ -125,7 +125,9 @@ class PhoneEngineTest {
         assertTrue("The player took only $served bytes of the engine's mix", served > second)
         assertTrue("The mix ran ahead of real time: ${inSix / second} s of audio in 6 s", inSix <= second * (6 + 4 + 1))
         val seen = live.get()
-        listOf("duration=true", "live=true", "seekable=false", "next=true", "title=Test Theme", "artwork=true", "Next theme", "Stop").forEach {
+        // The title is the theme chosen on this device (the sample, opened with the main screen), else the one given
+        val title = PhonePlayer.title() ?: "Test Theme"
+        listOf("duration=true", "live=true", "seekable=false", "next=true", "title=$title", "artwork=true", "Next theme", "Stop").forEach {
             assertTrue("Lock-screen control: expected $it in [$seen]", seen.contains(it))
         }
     }
