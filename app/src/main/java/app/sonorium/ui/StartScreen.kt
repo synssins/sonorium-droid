@@ -261,7 +261,9 @@ private fun FoundServers(servers: List<ServerRecord>, model: LinkViewModel) {
                     androidx.compose.material3.Icon(app.sonorium.ui.server.SIcons.Server, null, tint = Palette.textSecondary, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(f.name, color = Palette.text, fontWeight = FontWeight.Medium, maxLines = 1)
+                        // Servers all named "Sonorium" (no rename on the server yet): the name with where it is
+                        val title = if (fresh.count { it.name == f.name } > 1) "${f.name} · ${f.host}" else f.name
+                        Text(title, color = Palette.text, fontWeight = FontWeight.Medium, maxLines = 1)
                         Text(listOf(f.address, f.version).filter { it.isNotEmpty() }.joinToString(" · "), color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1)
                     }
                     Text(androidx.compose.ui.res.stringResource(R.string.found_add), color = Palette.accent, fontWeight = FontWeight.Medium)
