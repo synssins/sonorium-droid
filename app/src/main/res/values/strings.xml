@@ -166,7 +166,7 @@
         <item quantity="other">%d themes moved</item>
     </plurals>
     <string name="cancel">Cancel</string>
-    <string name="folder_explain">Sonorium keeps the themes on this phone in a folder named Sonorium inside the folder you choose, so you can also see them in the Files app.</string>
-    <string name="folder_explain_how">On the next screen, open Music (or another folder) and tap Use this folder. Sonorium makes its folder there, or uses the one already there.</string>
+    <string name="folder_explain">Sonorium keeps the themes on this device in a folder named Sonorium inside the folder you choose, so you can also see them in the Files app.</string>
+    <string name="folder_explain_how">On the next screen, open Music (or another folder) and tap Use this folder. Sonorium makes a Sonorium folder there, or uses the one already there.</string>
     <string name="folder_explain_move">Then you can move your themes to the new folder.</string>
 </resources>
