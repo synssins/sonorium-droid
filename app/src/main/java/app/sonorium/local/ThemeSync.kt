@@ -37,6 +37,10 @@ object ThemeSync {
                     local.bytes != f.length() || sha256(context, local) != sha256(f)
                 }
                 if (changed.isNotEmpty()) store.applyOps(theme, changed.map { ThemeStore.FileOp("write", null, it) }, dir)
+                // A track whose file the server replaced by another format (x.wav → x.mp3, same key): the old file goes,
+                // so the theme doesn't hold two files for one track
+                val replaced = replacedFiles(mine.keys, pkg.files.map { it.path })
+                if (replaced.isNotEmpty()) store.applyOps(theme, replaced.map { ThemeStore.FileOp("delete", it, null) }, dir)
 
                 // Settings: the server's, or the phone's with what the server has that the phone doesn't
                 var presetsAdded = 0
@@ -61,6 +65,19 @@ object ThemeSync {
                 dir.deleteRecursively()
             }
         }
+    }
+
+    /**
+     * The phone's audio files that a package replaces with a file of another type for the same track (same path
+     * without its extension, e.g. `Birds/robin.wav` when the package has `Birds/robin.mp3`). The phone's own files
+     * with no counterpart in the package are kept.
+     */
+    fun replacedFiles(phone: Collection<String>, pkg: Collection<String>): List<String> {
+        fun stem(path: String) = path.substringBeforeLast('.')
+        val incoming = pkg.filter { ThemeStore.isAudio(it) }
+        val stems = incoming.map { stem(it) }.toSet()
+        val exact = pkg.toSet()
+        return phone.filter { ThemeStore.isAudio(it) && it !in exact && stem(it) in stems }
     }
 
     private fun parse(text: String): JsonObject = runCatching { SonoriumApi.json.parseToJsonElement(text) as JsonObject }.getOrDefault(JsonObject(emptyMap()))
