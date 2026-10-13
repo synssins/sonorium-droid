@@ -278,6 +278,13 @@ class SonoriumApi(
         strict(theme(themeId, "links").post(body.toString().toRequestBody(JSON)).build())
     }
 
+    /** Copies a linked file into the theme where it is (its group, or null: the top level); its new key. */
+    suspend fun copyLinkIn(themeId: String, key: String, group: String?): String {
+        val body = buildJsonObject { put("group", group?.let { JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull) }
+        val answer = SonoriumApi.json.parseToJsonElement(strict(theme(themeId, "links", key, "copy-in").post(body.toString().toRequestBody(JSON)).build())) as? kotlinx.serialization.json.JsonObject
+        return (answer?.get("track") as? JsonPrimitive)?.content ?: key
+    }
+
     suspend fun removeTrackLink(themeId: String, key: String) {
         strict(theme(themeId, "links", key).delete().build())
     }

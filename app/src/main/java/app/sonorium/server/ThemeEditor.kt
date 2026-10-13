@@ -289,6 +289,27 @@ class ThemeEditor(
         loadPresets()
     }
 
+    /**
+     * `teCopyLinkIn`: the linked file copied into this theme where it is (its group, or the top level). The row
+     * stays in place and becomes the theme's own file (a new key on a name clash, e.g. "Rain (2)"), with its
+     * settings; Cancel's snapshot follows the new key.
+     */
+    fun copyLinkIn(t: EditorTrack) = scope.launch {
+        if (t.linked == null || t.missing) return@launch
+        val newKey = try {
+            api.copyLinkIn(themeId, t.name, ThemeEditorRules.groupOf(t))
+        } catch (e: Exception) {
+            toast(message(e, "Failed to copy the file"), true)
+            return@launch
+        }
+        _ui.update { u -> u.copy(tracks = u.tracks.map { if (it.name == t.name) it.copy(name = newKey, linked = null) else it }) }
+        snapshot?.let { s ->
+            if (newKey != t.name) s.tracks[t.name]?.let { v -> snapshot = s.copy(tracks = s.tracks - t.name + (newKey to v)) }
+        }
+        loadTracks()
+        loadPresets()
+    }
+
     /** `teMoveTrack`: into [group] (null = the theme). */
     fun moveTrack(t: EditorTrack, group: String?) = scope.launch {
         if (ThemeEditorRules.groupOf(t) == group) return@launch

@@ -167,10 +167,17 @@ private fun TrackRow(t: EditorTrack, section: Section, group: TrackGroup?, ui: E
                     if (l.missing) {
                         Text("Missing", color = Palette.warning, fontSize = 12.sp)
                     } else {
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.semantics { contentDescription = "Linked from ${l.themeName}" }) {
-                            Icon(SIcons.Link, null, tint = Palette.textMuted, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
-                            Spacer(Modifier.width(4.dp))
-                            Text("from ${l.themeName}", color = Palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f, fill = false).semantics { contentDescription = "Linked from ${l.themeName}" }) {
+                                Icon(SIcons.Link, null, tint = Palette.textMuted, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("from ${l.themeName}", color = Palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            // The web UI's download icon on the link: copy the file into this theme
+                            if (editor.linksHere) {
+                                Spacer(Modifier.width(4.dp))
+                                IconBox(SIcons.Download, "Copy into this theme: ${t.shortName}", { editor.copyLinkIn(t) }, size = app.sonorium.ui.UiSize.SMALL)
+                            }
                         }
                     }
                 }
@@ -388,6 +395,12 @@ private fun TrackMenu(t: EditorTrack, section: Section, group: TrackGroup?, ui: 
             )
             if (link) {
                 HorizontalDivider(color = Palette.border)
+                if (editor.linksHere) DropdownMenuItem(
+                    enabled = !t.missing,
+                    leadingIcon = { Icon(SIcons.Download, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
+                    text = { Text("Copy into this theme", color = if (t.missing) Palette.textMuted else Palette.text) },
+                    onClick = { open = false; editor.copyLinkIn(t) },
+                )
                 DropdownMenuItem(
                     leadingIcon = { Icon(SIcons.Link, null, tint = Palette.danger, modifier = Modifier.size(16.dp)) },
                     text = { Text("Remove link…", color = Palette.danger) },
