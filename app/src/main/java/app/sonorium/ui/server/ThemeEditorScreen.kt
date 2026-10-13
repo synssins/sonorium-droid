@@ -819,7 +819,8 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                                     enabled = !added,
                                     onCheckedChange = { on -> chosen = if (on) chosen + t.id else chosen - t.id },
                                     colors = CheckboxDefaults.colors(checkedColor = Palette.accent),
-                                    modifier = Modifier.semantics { contentDescription = if (added) "Already added" else "Add" },
+                                    // Each box named by its track (the sheet's own button is "Add")
+                                    modifier = Modifier.semantics { contentDescription = t.displayName.ifEmpty { t.name } + if (added) ", already added" else "" },
                                 )
                             }
                         }

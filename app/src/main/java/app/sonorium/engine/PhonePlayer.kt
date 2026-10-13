@@ -46,6 +46,8 @@ object PhonePlayer {
         val playing: Boolean = false,
         /** Getting the theme ready: files done of total (null when not preparing). */
         val preparing: Pair<Int, Int>? = null,
+        /** The theme being got ready, when it isn't [theme] (a playlist's). */
+        val preparingName: String? = null,
         val error: String? = null,
         /** Something to know that isn't an error (audio files left out). */
         val notice: String? = null,
@@ -127,12 +129,20 @@ object PhonePlayer {
             it.copy(theme = theme, presets = emptyList(), presetId = null, sequences = emptyList(), sequenceId = null, step = null, sequenceFinished = false, error = null, notice = null)
         }
         scope.launch {
-            val (presets, sequences) = readLists(app, theme) ?: (emptyList<PhoneEngine.Preset>() to emptyList())
+            // Read again a few times when the theme's files can't be read yet (right after a start)
+            var lists = readLists(app, theme)
+            var tries = 0
+            while ((lists == null || lists.first.isEmpty() && lists.second.isEmpty()) && tries++ < 5) {
+                delay(400)
+                lists = readLists(app, theme)
+            }
+            val (presets, sequences) = lists ?: (emptyList<PhoneEngine.Preset>() to emptyList())
             if (_state.value.theme?.docId == theme.docId && _state.value.presets.isEmpty()) {
                 // The preset or sequence chosen last for this theme (kept like the volume), else its default
-                val kept = prefs(app).getString(KEY_CHOICE + theme.docId, null)
+                val kept = prefs(app).getString(KEY_CHOICE + theme.docId, null) ?: prefs(app).getString(KEY_CHOICE + theme.folder, null)
                 val keptSeq = kept?.removePrefix("seq:")?.takeIf { kept.startsWith("seq:") && sequences.any { q -> q.id == it } }
                 val keptPreset = kept?.takeIf { !it.startsWith("seq:") && (it.isEmpty() || presets.any { p -> p.id == it }) }
+                Log.println(Log.WARN, TAG, "Kept choice for ${theme.folder}: ${kept ?: "none"} (${presets.size} presets, ${sequences.size} sequences)")
                 _state.update {
                     it.copy(
                         presets = presets, sequences = sequences, sequenceId = it.sequenceId ?: keptSeq,
@@ -189,13 +199,14 @@ object PhonePlayer {
         val theme = _state.value.theme ?: return
         val app = context.applicationContext as SonoriumApp
         job?.cancel()
+        laterPrep?.cancel()
         job = scope.launch {
             val self = coroutineContext[Job]
             try {
                 if (openFor != theme.version) {
                     // This theme's files changed since the engine opened it: let go of them before they're rebuilt
                     if (openFolder == theme.folder) closeEngine()
-                    _state.update { it.copy(preparing = 0 to theme.tracks, error = null, notice = null) }
+                    _state.update { it.copy(preparing = 0 to theme.tracks, preparingName = null, error = null, notice = null) }
                     val prepared = ThemePrep.prepare(app, app.themeStore, theme) { done, total ->
                         if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = done to total) else it }
                     }
@@ -231,7 +242,7 @@ object PhonePlayer {
                 Log.e(TAG, "Couldn't play ${theme.folder}", e)
                 _state.update { it.copy(error = "Couldn't play “${theme.name}”. Try again; if it keeps happening, remove it from this phone and add it again.") }
             } finally {
-                if (job === self) _state.update { if (it.preparing != null) it.copy(preparing = null) else it }
+                if (job === self) _state.update { if (it.preparing != null) it.copy(preparing = null, preparingName = null) else it }
             }
         }
     }
@@ -283,6 +294,9 @@ object PhonePlayer {
         }
     }
 
+    /** A playlist's later themes being got ready while it plays. */
+    private var laterPrep: Job? = null
+
     /** Versions of the themes whose prepared copy is current (folder → [LocalTheme.version]). */
     private val ready = java.util.concurrent.ConcurrentHashMap<String, String>()
 
@@ -310,16 +324,22 @@ object PhonePlayer {
                     _state.update { it.copy(error = "None of this playlist's themes are on this phone.") }
                     return@launch
                 }
-                val total = inIt.filter { ready[it.folder] != it.version }.sumOf { it.tracks }
-                var done = 0
-                if (total > 0) _state.update { it.copy(preparing = 0 to total, error = null, notice = null) }
+                laterPrep?.cancel()
                 val inEngine = _state.value.now.themeId
-                for (t in inIt) {
-                    if (ready[t.folder] == t.version) continue
-                    // A theme the engine has open keeps its files while it plays (even updated meanwhile: the next
-                    // Play of it gets it ready)
-                    if (openFolder == t.folder || (t.metaId != null && t.metaId == inEngine) || ready.containsKey(t.folder)) continue
+                // A theme the engine has open keeps its files while it plays (even updated meanwhile: the next
+                // Play of it gets it ready)
+                fun isReady(t: LocalTheme) = ready[t.folder] == t.version || openFolder == t.folder ||
+                    (t.metaId != null && t.metaId == inEngine) || ready.containsKey(t.folder)
+                // The first entry's theme now (all of them for a shuffled playlist); the others after it starts
+                val first = themes.firstOrNull { it.metaId == playlist.entries.firstOrNull()?.themeId } ?: inIt.first()
+                val now = if (playlist.order == "shuffle") inIt else listOf(first)
+                val later = inIt.filter { t -> now.none { it.docId == t.docId } && !isReady(t) }
+                val total = now.filter { !isReady(it) }.sumOf { it.tracks }
+                var done = 0
+                for (t in now) {
+                    if (isReady(t)) continue
                     val before = done
+                    _state.update { it.copy(preparing = before to total, preparingName = t.name, error = null, notice = null) }
                     ThemePrep.prepare(app, app.themeStore, t) { d, _ ->
                         if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = (before + d) to total) else it }
                     }
@@ -327,7 +347,8 @@ object PhonePlayer {
                     ready[t.folder] = t.version
                     ensureActive()
                 }
-                val first = inIt.first()
+                // The later entries' themes are listed (settings and stand-ins) so the playlist knows them from the start
+                for (t in later) runCatching { PhoneThemeApi.openApi(app, app.themeStore, t) }
                 val json = SonoriumApi.json.encodeToString(Playlist.serializer(), playlist)
                 withContext(Dispatchers.IO) {
                     if (!PhoneEngine.isOpen) PhoneEngine.open(app, ThemePrep.prepared(app, first.folder), null, effectiveVolume())
@@ -336,9 +357,17 @@ object PhonePlayer {
                 // The engine plays the playlist's themes now: a theme picked later is crossfaded to
                 openFor = "playlist:${playlist.id}"
                 openFolder = null
-                _state.update { it.copy(preparing = null, sequenceId = null, step = null, sequenceFinished = false) }
+                _state.update { it.copy(preparing = null, preparingName = null, sequenceId = null, step = null, sequenceFinished = false) }
                 refreshNow()
                 startOutput(app, _state.value.now.playlist?.themeName ?: first.name)
+                // Their audio while the first entry plays (one at a time; entries change after minutes)
+                if (later.isNotEmpty()) laterPrep = scope.launch {
+                    for (t in later) {
+                        runCatching { ThemePrep.prepare(app, app.themeStore, t) { _, _ -> } }
+                            .onSuccess { ready[t.folder] = t.version }
+                            .onFailure { e -> if (e is CancellationException) throw e; Log.w(TAG, "Couldn't get ${t.folder} ready for the playlist", e) }
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: ThemePrep.Problem) {
@@ -347,7 +376,7 @@ object PhonePlayer {
                 Log.e(TAG, "Couldn't play playlist ${playlist.id}", e)
                 _state.update { it.copy(error = "Couldn't play “${playlist.name}”. Try again.") }
             } finally {
-                if (job === self) _state.update { if (it.preparing != null) it.copy(preparing = null) else it }
+                if (job === self) _state.update { if (it.preparing != null) it.copy(preparing = null, preparingName = null) else it }
             }
         }
     }
@@ -450,6 +479,7 @@ object PhonePlayer {
     fun stop(context: Context?) {
         job?.cancel()
         job = null
+        laterPrep?.cancel()
         _state.update { it.copy(preparing = null) }
         if (CastController.casting) {
             CastController.stop()
@@ -637,8 +667,9 @@ object PhonePlayer {
     /** The preset ("" = default settings) or "seq:<id>" chosen for the current theme, kept for the next start. */
     private fun keepChoice(choice: String) {
         val ctx = appContext ?: return
-        val doc = _state.value.theme?.docId ?: return
-        prefs(ctx).edit { putString(KEY_CHOICE + doc, choice) }
+        val theme = _state.value.theme ?: return
+        // By document and by folder name (a folder replaced by an update gets a new document)
+        prefs(ctx).edit { putString(KEY_CHOICE + theme.docId, choice).putString(KEY_CHOICE + theme.folder, choice) }
     }
     private const val KEY_PLAYLIST = "playlist"
     private const val KEY_THEME_DOC = "theme_doc"

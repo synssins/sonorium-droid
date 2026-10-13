@@ -187,7 +187,7 @@ fun DeviceOutput() {
     LaunchedEffect(Unit) { CastController.init(context) }
     s.preparing?.let { (done, total) ->
         Text(
-            "Getting “${s.now.playlist?.themeName ?: s.theme?.name.orEmpty()}” ready: $done of $total files",
+            "Getting “${s.preparingName ?: s.theme?.name.orEmpty()}” ready: $done of $total files",
             color = Palette.textSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis,
         )
         LinearProgressIndicator(
