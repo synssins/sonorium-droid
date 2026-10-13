@@ -402,7 +402,9 @@ object PhonePlayer {
     fun prepareInBackground(context: Context, themes: List<LocalTheme>) {
         val app = context.applicationContext as SonoriumApp
         restore(app)
-        val todo = themes.filter { !isReady(app, it) && it.tracks > 0 && it.folder != openFolder }
+        val p = prefs(app)
+        // A theme whose space was freed on purpose waits for its next Play
+        val todo = themes.filter { !isReady(app, it) && it.tracks > 0 && it.folder != openFolder && p.getString(KEY_FREED + it.folder, null) != it.version }
         if (todo.isEmpty() || arrivals?.isActive == true) return
         arrivals = scope.launch {
             try {
@@ -427,7 +429,13 @@ object PhonePlayer {
     /** [theme]'s prepared copy is current (kept across restarts, so nothing is got ready twice). */
     private fun markReady(context: Context, theme: LocalTheme) {
         ready[theme.folder] = theme.version
-        prefs(context).edit { putString(KEY_READY + theme.folder, theme.version) }
+        prefs(context).edit { putString(KEY_READY + theme.folder, theme.version).remove(KEY_FREED + theme.folder) }
+    }
+
+    /** The theme's ready-to-play copy was deleted to free space: not made again in the background (only when it plays). */
+    fun cacheFreed(context: Context, theme: LocalTheme) {
+        ready.remove(theme.folder)
+        prefs(context).edit { remove(KEY_READY + theme.folder).putString(KEY_FREED + theme.folder, theme.version) }
     }
 
     /** Versions of the themes whose prepared copy is current (folder → [LocalTheme.version]). */
@@ -800,6 +808,7 @@ object PhonePlayer {
     private const val KEY_PLAYLIST_MODE = "playlist_mode"
     private const val KEY_SAMPLE_DAY = "sample_day"
     private const val KEY_READY = "ready:"
+    private const val KEY_FREED = "freed:"
     private const val KEY_SAMPLE_SECONDS = "sample_seconds"
     private const val KEY_CHOICE = "choice:"
     @Volatile private var appContext: Context? = null

@@ -16,6 +16,7 @@ import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
 import app.sonorium.net.PackageSummary
 import app.sonorium.data.ServerRecord
+import app.sonorium.ui.server.bytesText
 import app.sonorium.data.ServerStore
 import app.sonorium.listen.ListenController
 import app.sonorium.net.ApiException
@@ -830,6 +831,18 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     /** Themes deleted here: a list fetched before the server's rebuild still has them (R5). */
     private val deletedThemes = mutableSetOf<String>()
+
+    /** Frees a theme's ready-to-play copy on this device (its cache); it's made again when needed. */
+    fun clearThemeCache(theme: ThemeSummary) = viewModelScope.launch {
+        val api = api ?: return@launch
+        try {
+            val freed = (api.json("DELETE", "themes/${android.net.Uri.encode(theme.id)}/cache")["freed_bytes"] as? JsonPrimitive)?.content?.toLongOrNull() ?: 0L
+            toast("Freed ${bytesText(freed)}", error = false)
+            refreshThemeList()
+        } catch (e: Exception) {
+            failOr(e, "Couldn't free the space")
+        }
+    }
 
     fun deleteTheme(theme: ThemeSummary) = viewModelScope.launch {
         val api = api ?: return@launch

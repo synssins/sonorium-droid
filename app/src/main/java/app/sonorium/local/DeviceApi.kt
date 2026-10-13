@@ -79,7 +79,7 @@ class DeviceApi(private val context: Context) : Interceptor {
         val m = request.method
         // Beyond playing the sample (more themes, editing, playlists), the device needs Pro, as its screens ask first
         if (!sapp.entitlement.isPro.value && m != "GET" && (s.firstOrNull() == "playlists" || s.firstOrNull() == "categories" ||
-                (s.firstOrNull() == "themes" && s.getOrNull(2) != "presets"))) {
+                (s.firstOrNull() == "themes" && s.getOrNull(2) != "presets" && s.getOrNull(2) != "cache"))) {
             throw Answer(403, "Unlock Pro to change themes and playlists on this device")
         }
         fun ok(body: JsonElement, status: Int = 200) = respond(request, status, body.toString())
@@ -121,6 +121,7 @@ class DeviceApi(private val context: Context) : Interceptor {
             s == listOf("extensions") -> return ok(buildJsonObject { put("connections", JsonArray(emptyList())); put("pages", JsonArray(emptyList())) })
             s.size == 2 && s[0] == "themes" && m == "DELETE" -> return ok(deleteTheme(s[1]))
             s.size == 3 && s[0] == "themes" && s[2] == "favorite" && m == "POST" -> return ok(favorite(s[1]))
+            s.size == 3 && s[0] == "themes" && s[2] == "cache" && m == "DELETE" -> return ok(clearCache(s[1]))
             s.size == 3 && s[0] == "themes" && s[2] == "export" && m == "GET" -> return export(request, s[1])
             // A linked file's ▶ preview: the file in the theme it comes from
             s.size == 5 && s[0] == "themes" && s[2] == "tracks" && s[4] == "audio" && m == "GET" -> linkedSource(s[1], s[3])?.let { (src, key) ->
@@ -320,6 +321,7 @@ class DeviceApi(private val context: Context) : Interceptor {
                 add(SonoriumApi.json.encodeToJsonElement(ThemeSummary.serializer(), ThemeSummary(
                     id = idOf(t), name = t.name, icon = t.icon, totalTracks = t.tracks, hasAudio = t.tracks > 0,
                     isFavorite = idOf(t) in favorites, categories = t.categories, description = t.description,
+                    sizeBytes = t.bytes, cacheBytes = cacheBytes(t),
                 )))
             }
         }
@@ -419,6 +421,25 @@ class DeviceApi(private val context: Context) : Interceptor {
     }
 
     /** Favorites: kept on this device (not in the theme's files, so they don't change its package). */
+    /** The theme's ready-to-play copy on this device (its decoded audio and prepared folder), in bytes. */
+    private fun cacheBytes(t: LocalTheme): Long {
+        val p = app.sonorium.engine.ThemePrep.prepared(context, t.folder)
+        return listOf(p.pcmDir, p.themeDir).sumOf { d -> d.walkTopDown().filter { it.isFile }.sumOf { it.length() } }
+    }
+
+    /** DELETE /themes/{id}/cache: frees the ready-to-play copy (made again in the background, or at the next Play). */
+    private fun clearCache(id: String): JsonObject {
+        val t = theme(id)
+        if (PhonePlayer.state.value.playing && PhonePlayer.state.value.theme?.docId == t.docId) throw Answer(409, "“${t.name}” is playing. Stop it first.")
+        val freed = cacheBytes(t)
+        runBlocking { app.sonorium.engine.ThemePrep.clear(context, t.folder) }
+        PhonePlayer.cacheFreed(context, t)
+        synchronized(editors) { editors.remove(t.folder) }
+        listed = null
+        _events.tryEmit("theme.changed")
+        return buildJsonObject { put("status", "ok"); put("freed_bytes", freed) }
+    }
+
     private fun favoritePrefs() = context.getSharedPreferences("device_api", Context.MODE_PRIVATE)
     private fun favoriteIds(): Set<String> = favoritePrefs().getStringSet("favorites", emptySet()).orEmpty()
 

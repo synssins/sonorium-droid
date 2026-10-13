@@ -211,6 +211,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                             else saveToPhone(t.id)
                         },
                         onCancelSave = { model.cancelSaveToPhone(t.id) },
+                        onClearCache = { model.clearThemeCache(t) },
                     )
                 }
             }
@@ -299,6 +300,7 @@ private fun ThemeCard(
     downloading: Float? = null,
     onSaveToPhone: () -> Unit = {},
     onCancelSave: () -> Unit = {},
+    onClearCache: () -> Unit = {},
 ) {
     val onAir = ThemeRules.onAir(t.id, state.sessions)
     Surface(
@@ -315,7 +317,9 @@ private fun ThemeCard(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text(t.name, color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(ThemeRules.tracks(t.totalTracks), color = Palette.textSecondary, fontSize = 12.sp)
+                    // On this device: the space the theme takes, and its ready-to-play copy
+                    val space = t.sizeBytes?.let { b -> " · " + bytesText(b) + (t.cacheBytes?.takeIf { it > 0 }?.let { c -> " + ${bytesText(c)} cache" } ?: "") }.orEmpty()
+                    Text(ThemeRules.tracks(t.totalTracks) + space, color = Palette.textSecondary, fontSize = 12.sp)
                 }
                 IconBox(
                     if (t.isFavorite) SIcons.StarFilled else SIcons.Star,
@@ -372,6 +376,7 @@ private fun ThemeCard(
                     phoneAction?.takeIf { downloading == null }?.let { MenuAction(it, SIcons.Headphones, onClick = onSaveToPhone) },
                     phoneBlocked?.let { MenuAction(it, SIcons.Headphones, enabled = false) {} },
                     MenuAction("Export", SIcons.Download, onClick = onExport),
+                    t.cacheBytes?.takeIf { it > 0 }?.let { MenuAction("Free up space (${bytesText(it)})", SIcons.Refresh, onClick = onClearCache) },
                     MenuAction("Delete…", SIcons.Trash, danger = true, separatorBefore = true, onClick = onDelete),
                 ))
             }
