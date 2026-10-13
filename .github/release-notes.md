@@ -1,15 +1,27 @@
 ## What's new in this build
 
-- **Lock screen and notification control** while playing on the phone: Sonorium artwork, the theme as the title and the preset or sequence step under it, updated as they change. Shown as a live stream (no seek bar, no length). Previous / Next go through the presets (Default settings included) or the running sequence's steps, also from headsets, cars and watches; plus **Next theme** and **Stop** buttons.
-- **Edit themes on this phone:** Themes › On this phone › a theme's **Edit**, or **Mix** next to the theme picker in My channel. The same Theme Editor as on a server: track and group volumes, mutes, modes and intervals, presets (New, Save, Rename, Set as default, Delete) and sequences. Changes are saved into the theme's folder and heard at once while it plays. Not on the phone (they need a server): Upload, links to other themes' files, moving tracks, creating, renaming or deleting groups, Preview mix and Export.
-- **Edited on the phone, seen at once:** closing the editor updates My channel's preset and sequence lists. **Update on phone** (a server theme's ⋯) asks first, since it replaces the phone's copy and the changes made on the phone.
-- **Save to phone on tablets and foldables:** the themes folder picked the first time is kept (it used to be lost on a large screen, so the save didn't start).
+- **More of the Theme Editor on the phone:** **Upload** audio files (into the theme or a group), **new groups**, **rename** a group (tap and hold its name, or ⋯ › Rename…) and **Delete group…**, and **Remove link…** on a linked file. The files change in the theme's own folder, as a server would change them. Still on the server only: adding links to other themes' files, moving a track to another group, Preview mix and Export.
+- **Theme details, preset import and a sequence step's tracks** on the phone now use the server's own code, so the files come out exactly as the server writes them. Opening a theme in the editor no longer has to get its audio ready first.
+- **Starter themes show their presets** in My channel before they are played for the first time.
+- **The first Save to phone works:** after choosing the themes folder, the theme you asked for downloads (it used to be dropped), the starter themes are added once, and the download replaces the starter copy of that theme instead of adding "Tavern (1)" next to it.
+- **Lock screen and notification follow at once** when the theme, preset or step changes.
+- **"Update ready"** shows on a server theme as soon as the server changes it, without restarting the app.
+- **Notifications permission** is asked when something first plays, not on the first screen.
+- **Starter themes can be updated from your server:** a server theme whose phone copy is the starter one offers **Update on phone** (⋯), so its presets and sequences come over.
+- **Import theme** keeps the zip you picked even when the page changes while Android's file picker is open (the import used to be dropped now and then).
+- **My channel opens on the phone half** while a theme plays on the phone.
 
 ## Please test
 
-- Play a theme on the phone, lock the screen: the Sonorium artwork, theme and preset show; Next / Previous change the preset, Next theme changes the theme, Stop stops. Try a headset's buttons.
-- My channel › **Mix**: move a track's volume while it plays (you hear it), mute one, **Save preset**; close and open again: the changes stay.
-- On a tablet or foldable: Themes › ⋯ › Save to phone on a fresh install: pick or create the folder, the theme downloads.
+- Themes › On this phone › a theme's **Edit**: **Upload** a file into a group, rename that group (tap and hold its name), then ⋯ › **Delete group…**. Check the folder in the Files app after each step. Close the editor and play the theme.
+- On a fresh install: choose the themes folder, then save Tavern from your server: one Tavern only, with your server's presets.
+- A starter theme in My channel: its presets show before you press Play.
+- Themes › On this phone › Import theme: pick a zip; it's imported every time.
+
+### Earlier (alpha17)
+- **Lock screen and notification control** while playing on the phone: artwork, theme, preset or step; Previous / Next through presets or steps; Next theme and Stop.
+- **Edit themes on this phone** (Themes › On this phone › Edit, or Mix in My channel); closing the editor updates My channel's lists; **Update on phone** asks first.
+- **Save to phone on tablets and foldables** keeps the themes folder picked the first time.
 
 ### Earlier (alpha16)
 A full QA pass over every screen (code review plus screenshots of every screen on emulators in each connection state), and the fixes:
