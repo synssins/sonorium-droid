@@ -87,6 +87,13 @@ EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.k
 `app/src/main/python/phone.py` (+ Engine Lab's engine files via Chaquopy `srcDir`). First-run wizard:
 `ui/wizard/FirstRunWizard.kt`, off (`FirstRun.ENABLED`).
 
+## Hand-over (2026-10-13)
+A new app session takes over. Start with the handoff repo: `shared/app-session-handover.md` (protocol with
+the server session, rules, build/CI/release steps, open tasks). Branch head `131094c`: alpha16 (released,
+`1df4bcb`) + folder-picker fix + Core modules (theme_edit, playlists, reload_theme) + lock-screen control
++ Theme Editor for themes on the phone (loopback: `phone_api.py`, `local/PhoneThemeApi.kt`). CI was running
+on it; if green, release alpha17.
+
 ## Releases (Chris's rule)
 Every green build gets the next numbered release right away (`v0.1.0-alphaN`, release notes updated,
 android.yml run_workflow with `release`). Chris tests from the numbered releases, not `ci-latest`;
