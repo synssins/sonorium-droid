@@ -1,13 +1,20 @@
 ## What's new in this build
 
-- **Your preset is kept again:** the preset or sequence you chose comes back after the app is closed fully.
-- **Playlists start at once:** picking a playlist plays its first entry right away; the other entries' themes get ready in the background while it plays, and the progress line names the theme being got ready.
-- Add from another theme: each track's checkbox is named by its track (for TalkBack).
+- **Playlists from the Channels page:** picking a playlist on a channel card plays it (it did nothing before).
+- **Your preset shows at once** when the app starts, not after a few seconds.
+- **Linked files get ready quickly:** a theme that uses a file from another theme gets only that file ready, not the whole other theme.
+- After a restart with a playlist chosen, the channel shows the playlist's first entry and Mix opens its theme.
+- Add from another theme: each preview button names its track (for TalkBack).
 
 ## Please test
 
-- Your device › My channel: choose a preset, close the app fully, open it again: the preset is still chosen.
-- While a sequence plays, pick a playlist whose second entry is a theme you haven't played yet: the first entry plays at once.
+- Channels › a channel card › Play a playlist › pick one: it plays.
+- Close the app fully and open it: My channel shows your preset right away.
+
+### Earlier (alpha23)
+- **Your preset is kept again:** the preset or sequence you chose comes back after the app is closed fully.
+- **Playlists start at once:** picking a playlist plays its first entry right away; the other entries' themes get ready in the background while it plays, and the progress line names the theme being got ready.
+- Add from another theme: each track's checkbox is named by its track (for TalkBack).
 
 ### Earlier (alpha22)
 - **The first Save to phone works:** after choosing the themes folder, the save waits for the connection to your Sonorium instead of giving up, then downloads the theme you asked for.
