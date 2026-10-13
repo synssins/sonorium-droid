@@ -71,7 +71,10 @@ class PhoneThemeApi(
         if (request.url.host != HOST) return chain.proceed(request)
         val segments = request.url.pathSegments.dropWhile { it.isEmpty() }.let { if (it.firstOrNull() == "api") it.drop(1) else it }
         if (request.method == "GET" && segments.size == 5 && segments[0] == "themes" && segments[4] == "audio") return audio(request, segments[3])
-        val text = request.body?.let { b -> Buffer().also { b.writeTo(it) }.readUtf8() }.orEmpty()
+        // Only JSON bodies go to phone_api: an upload's multipart body isn't JSON (it would answer 400
+        // "Invalid JSON body" instead of saying the phone can't do that, 501)
+        val text = request.body?.takeIf { it.contentType()?.subtype?.contains("json") != false }
+            ?.let { b -> Buffer().also { b.writeTo(it) }.readUtf8() }.orEmpty()
         val (status, body) = call(request.method, segments, query(request.url), text)
         return Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(status).message(if (status in 200..299) "OK" else "Error")
             .body(body.toResponseBody(JSON)).build()

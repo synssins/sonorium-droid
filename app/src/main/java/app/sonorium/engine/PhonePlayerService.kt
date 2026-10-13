@@ -9,11 +9,13 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
+import androidx.media3.common.Timeline
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ForwardingTimeline
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import kotlinx.coroutines.CoroutineScope
@@ -97,6 +99,8 @@ class PhonePlayerService : MediaSessionService() {
             override fun isCurrentMediaItemLive(): Boolean = true
             override fun isCurrentMediaItemSeekable(): Boolean = false
             override fun isCurrentMediaItemDynamic(): Boolean = true
+            // Controllers (the lock screen, Bluetooth, cars) read live/seekable from the timeline's window
+            override fun getCurrentTimeline(): Timeline = exo.currentTimeline.let { t -> if (t.isEmpty) t else LiveTimeline(t) }
             override fun getAvailableCommands(): Player.Commands = exo.availableCommands.buildUpon()
                 .removeAll(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD, Player.COMMAND_SEEK_TO_DEFAULT_POSITION)
                 .addAll(Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
@@ -281,5 +285,18 @@ class PhonePlayerService : MediaSessionService() {
         fun retitle(title: String) {
             running?.rename(title)
         }
+    }
+}
+
+/** The engine's stream as a live one: no seek bar, no length (a theme plays on and on). */
+@OptIn(UnstableApi::class)
+private class LiveTimeline(timeline: Timeline) : ForwardingTimeline(timeline) {
+    override fun getWindow(windowIndex: Int, window: Timeline.Window, defaultPositionProjectionUs: Long): Timeline.Window {
+        super.getWindow(windowIndex, window, defaultPositionProjectionUs)
+        window.isSeekable = false
+        window.isDynamic = true
+        window.liveConfiguration = window.liveConfiguration ?: MediaItem.LiveConfiguration.UNSET
+        window.durationUs = C.TIME_UNSET
+        return window
     }
 }
