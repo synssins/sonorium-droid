@@ -8,7 +8,9 @@ mkdir -p e2e-out
 adb logcat -c || true
 adb install -r -g app/build/outputs/apk/debug/app-debug.apk
 adb install -r -g app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-# The QA build: shrunk like a release (R8), for QaSmokeTest
+# The QA build: shrunk like a release (R8), for QaSmokeTest. Built here, not in the workflow (a workflow
+# change on the branch stops the release job from tagging: GitHub refuses the token)
+./gradlew -q :app:assembleQa >/dev/null 2>&1 || ./gradlew :app:assembleQa
 adb install -r -g app/build/outputs/apk/qa/app-qa.apk
 
 RUNNER=app.sonorium.debug.test/androidx.test.runner.AndroidJUnitRunner

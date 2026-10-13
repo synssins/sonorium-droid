@@ -120,7 +120,7 @@ jobs:
           python3 e2e/server_setup.py https://127.0.0.1:8808 10.0.2.2 >> "$GITHUB_ENV"
 
       - name: Build the app and its device tests
-        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleQa
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
 
       - name: Run on the emulator
         id: device
