@@ -37,7 +37,8 @@ class PhoneThemeEditorTest {
         val work = File(context.cacheDir, "phone-editor-test").apply { deleteRecursively(); mkdirs() }
         // The theme's own folder (as in the user's themes folder) ...
         val source = File(Python.getInstance().getModule("lab").callAttr("make_test_theme", work.path).toString())
-        // ... and its copy laid out as ThemePrep prepares it: settings files, empty stand-ins, decoded audio
+        // ... and its copy laid out as the app prepares it: settings files and a file per track (decoded audio
+        // beside it, as older copies had; the editor reads lengths from the files now)
         val folder = "phone-editor-test"
         val themeDir = File(PhoneThemeApi.themesRoot(context), folder).apply { deleteRecursively(); mkdirs() }
         val pcmDir = File(PhoneThemeApi.pcmRoot(context), folder).apply { deleteRecursively(); mkdirs() }
@@ -76,7 +77,8 @@ class PhoneThemeEditorTest {
             // Upload and groups: Core changes the prepared copy, and its file operations reach the theme's folder
             api.uploadTrack(folder, "Hum.wav", File(source, "Drone.wav").readBytes(), "Hums")
             assertTrue(File(source, "Hums/Hum.wav").length() > 1000)
-            assertEquals(0L, File(themeDir, "Hums/Hum.wav").length())  // back to a stand-in
+            // The prepared copy keeps a file the engine can read live (the upload, or a stand-in naming it)
+            assertTrue(File(themeDir, "Hums/Hum.wav").isFile)
             assertTrue(JSONObject(File(source, "metadata.json").readText()).getJSONObject("tracks").has("Hums/Hum"))
             api.renameTrackGroup(folder, "Hums", "Drones")
             assertTrue(File(source, "Drones/Hum.wav").isFile)
