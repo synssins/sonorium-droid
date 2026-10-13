@@ -1,20 +1,22 @@
 ## What's new in this build
 
-- **Fixes from your test of alpha14:**
-  - After unlocking, the app carries on with what you were doing (Save to phone or Import), instead of staying on the unlock screen.
-  - **Picking another theme while playing on the phone now switches to it**, with a crossfade. When stopped, the next Play uses it.
-  - Presets show as soon as you pick a theme (before the first Play).
-- **Sequences on the phone:** the preset field also lists the theme's sequences. While one plays: the step, the time to the next one, and **Next**.
-- **Cast to a speaker:** in the headphone button's On this phone view, **Cast…** lists Google Cast speakers (Nest, Chromecast). Pick one: the phone mixes, the speaker plays. Pick another to move it; **Stop casting** ends it. One speaker at a time.
-- **Save to phone** shows the theme's size; Themes › ⋯ › Refresh also updates the phone's copies.
-- **When the server can't be reached:** the "Can't reach" line now clears by itself when the network comes back; Themes opens on the themes on this phone; Create theme, Add playlist, New Channel and Add group say the server can't be reached instead of opening.
-- Text fields are a little shorter (48 dp, the shared size standard); number fields 44 dp.
+A full QA pass over every screen (code review plus screenshots of every screen on emulators in each connection state), and the fixes:
+
+- **Starter themes:** Tavern, A Rainy Day and Sleigh Ride come with the app; they're added to your themes folder when you choose it.
+- **Servers:** removing a server clears it from the main screen at once (it used to stay on the top-bar button with its channels). The server button shows its status: connected, connecting (dot) or can't reach (dot); "Connect" when there's none.
+- **No stale information:** with no server, or when it can't be reached, the server's pages say so ("No server connected" / "Can't reach …" with Try again, Servers and Play on this phone) instead of showing old data as if it were live. The app reconnects by itself when the network comes back, also when it was started without a connection.
+- **Playing on the phone:** Stop works while a theme is being got ready; removing the playing theme stops it; a failed import no longer blocks trying again; the decoded copies are deleted with the theme and free space is checked first; lock screen and headset Pause pause; plain-language errors; Android 15's audio rules handled (the sound starting late or not at all).
+- **Cast:** "No speakers found" after 10 s with Look again; switching speakers doesn't end the new cast; the phone's Wi-Fi address is used.
+- **Everywhere:** consistent dialogs (named actions, Cancel first), touch targets of 44–48 dp, sizes and wording, help texts written for a phone, accessibility labels. Floors & Areas' buttons fit on phones. Tapping the playing notification opens My channel.
 
 ## Please test
 
-- Headphone › On this phone: play a theme, then pick another theme: it crossfades to it. Pick a sequence (if the theme has one): the step and Next show.
-- Cast… › your Nest or Chromecast (low volume): it plays there; Stop casting.
-- Save to phone on a server theme you haven't saved yet: after unlocking, it goes straight on to the folder / download.
+- Remove your server (Servers › Remove), press Back: "No server connected", and "Connect" on the top-bar button.
+- Wi-Fi off with the app open, then on again: the line clears by itself.
+- Choose a themes folder: the three starter themes appear; play one from the headphone button with Wi-Fi off.
+
+### Earlier (alpha15)
+- Picking another theme while playing on the phone switches to it; sequences on the phone; Cast to one speaker.
 
 ### Earlier (alpha14)
 - Themes on this phone (Import, Save to phone, Update on phone), played on this phone with no server; the app opens without a server.
