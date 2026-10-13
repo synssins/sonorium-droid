@@ -8,6 +8,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import app.sonorium.MainActivity
 import app.sonorium.ui.SonoriumTheme
 import app.sonorium.ui.server.ServerScreen
@@ -24,7 +28,7 @@ class NativeServerActivity : ComponentActivity() {
         val id = intent.getStringExtra(EXTRA_SERVER_ID)
         model.open(id)
         pageFrom(intent)
-        askForNotifications()
+        askForNotificationsOnFirstPlay()
         setContent {
             SonoriumTheme {
                 ServerScreen(
@@ -57,6 +61,23 @@ class NativeServerActivity : ComponentActivity() {
     override fun onPause() {
         model.onPause()
         super.onPause()
+    }
+
+    /**
+     * Asked when something first plays (on the phone, Listen here or Cast), not on the first screen:
+     * the playback controls then explain why.
+     */
+    private fun askForNotificationsOnFirstPlay() {
+        if (Build.VERSION.SDK_INT < 33 ||
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) return
+        lifecycleScope.launch {
+            kotlinx.coroutines.flow.combine(
+                app.sonorium.engine.PhonePlayer.state, app.sonorium.listen.ListenController.state, app.sonorium.cast.CastController.state,
+            ) { phone, listen, cast -> phone.playing || phone.preparing != null || listen != null || cast.speaker != null }
+                .first { it }
+            withResumed { askForNotifications() }
+        }
     }
 
     /** Listen here's playback controls need notifications (Android 13+). */
