@@ -47,8 +47,8 @@ class PhoneThemeEditorTest {
                 val rel = f.relativeTo(source).path
                 val out = File(themeDir, rel).apply { parentFile?.mkdirs() }
                 if (f.extension == "json") f.copyTo(out, overwrite = true) else {
-                    out.createNewFile()
-                    PcmDecoder.decodeToWav(f, File(pcmDir, rel.substringBeforeLast('.') + ".wav"))
+                    // A stand-in naming the file, as ThemePrep writes it (the engine reads the file live)
+                    out.writeText(app.sonorium.audio.LiveDecoder.SOURCE_PREFIX + android.net.Uri.fromFile(f))
                 }
             }
             val session = PhoneThemeApi.forFolder(context, folder, writeBackTo = source, audioDir = source)

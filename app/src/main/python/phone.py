@@ -63,6 +63,20 @@ class _LiveAudio:
             self._stream.close()
 
 
+class _NoAudio:
+    """A file the device's decoder can't open: nothing to play (the engine leaves it out)."""
+    has_audio = False
+
+    def header_length(self):
+        return None
+
+    def blocks(self, flush=True):
+        return iter(())
+
+    def close(self):
+        pass
+
+
 class LiveDecoder:
     """
     Core's decoder hook (sonorium.decoders): theme files read live while the engine mixes, by the
@@ -73,7 +87,12 @@ class LiveDecoder:
 
     def open(self, path, channels=1):
         from java import jclass
-        stream = jclass("app.sonorium.audio.LiveDecoder").open(str(path), int(channels))
+        try:
+            stream = jclass("app.sonorium.audio.LiveDecoder").open(str(path), int(channels))
+        except Exception as e:  # noqa: BLE001  (a file the device can't read is silent, never the end of the mix)
+            import logging
+            logging.getLogger("sonorium.phone").warning("Can't read %s: %s", path, e)
+            return _NoAudio()
         return _LiveAudio(stream, 2 if channels >= 2 else 1)
 
     def __repr__(self):
