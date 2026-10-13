@@ -8,14 +8,15 @@ import org.json.JSONObject
 
 /**
  * The sample: one theme in the app itself that everyone can play at once, offline, with no server, no
- * themes folder and nothing unlocked. It is a read-only copy in the app's own storage (copied from the
- * APK's assets the first time, and again when the app is updated).
+ * themes folder and nothing unlocked. It is a read-only copy in the app's own storage (unpacked from the
+ * APK the first time, and again when the app is updated).
  *
- * To change the sample, point [ASSET] at another folder under `assets/`.
+ * To change the sample, replace the one file [ASSET] (`app/src/main/assets/sample/sample-theme.zip`) with a
+ * theme zip as Sonorium's Export makes it (one `<folder>/` with the theme's files). See docs/SAMPLE_THEME.md.
  */
 object SampleTheme {
-    /** THE sample theme: a theme folder in the APK's assets. */
-    const val ASSET = "starter-themes/Tavern"
+    /** THE sample theme: a theme zip in the APK's assets (a drop-in file). */
+    const val ASSET = "sample/sample-theme.zip"
 
     /** Its document id and folder name on this device (never a folder in the themes folder). */
     const val DOC_ID = "sample:theme"
@@ -35,16 +36,18 @@ object SampleTheme {
         if (dir.isDirectory && stamp.isFile && stamp.readText() == version) return dir
         dir.deleteRecursively()
         dir.mkdirs()
-        fun copy(asset: String, to: File) {
-            val children = app.assets.list(asset).orEmpty()
-            if (children.isEmpty()) {
-                to.parentFile?.mkdirs()
-                app.assets.open(asset).use { input -> to.outputStream().use { input.copyTo(it) } }
-            } else {
-                children.forEach { copy("$asset/$it", File(to, it)) }
+        // The zip's one top folder is the theme; only safe relative paths are unpacked
+        runCatching {
+            java.util.zip.ZipInputStream(app.assets.open(ASSET).buffered()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    val path = entry.name.substringAfter('/', "")
+                    if (entry.isDirectory || path.isEmpty() || !PackageRules.safePath(path)) continue
+                    val out = File(dir, path).apply { parentFile?.mkdirs() }
+                    out.outputStream().use { zip.copyTo(it) }
+                }
             }
-        }
-        runCatching { copy(ASSET, dir) }.onFailure { Log.e(TAG, "Couldn't copy the sample theme", it) }
+        }.onFailure { Log.e(TAG, "Couldn't unpack the sample theme", it) }
         stamp.writeText(version)
         dir
     }
