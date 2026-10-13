@@ -31,6 +31,12 @@ class LocalProEntitlement(context: Context) : ProEntitlement {
 
     override suspend fun restore(): Boolean = state.value
 
+    /** Test builds only: back to free (device tests of what free users see). */
+    fun revoke() {
+        prefs.edit().putBoolean(KEY, false).apply()
+        state.value = false
+    }
+
     private companion object {
         const val KEY = "proUnlocked"
     }

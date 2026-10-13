@@ -30,7 +30,7 @@ class DeviceApiTest {
         assertEquals(listOf("audio_settings"), info.capabilities)
         assertTrue("ch.play" in api.me().perms)
 
-        // Its one channel: what this device plays, also as My channel
+        // Its one channel: what this device plays, also as My Channel
         val sessions = api.sessions()
         assertEquals(listOf(DeviceApi.CHANNEL_ID), sessions.map { it.id })
         assertEquals(DeviceApi.CHANNEL_ID, api.myChannel().id)

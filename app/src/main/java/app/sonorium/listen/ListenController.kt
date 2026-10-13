@@ -45,6 +45,10 @@ object ListenController {
         volume: Int,
         personal: Boolean = false,
     ) {
+        // One My Channel playback at a time: this device's own player stops first (Chris)
+        if (app.sonorium.engine.PhonePlayer.state.value.playing || app.sonorium.engine.PhonePlayerService.isRunning) {
+            app.sonorium.engine.PhonePlayer.stop(context)
+        }
         context.startService(
             Intent(context, ListenService::class.java).setAction(ListenService.ACTION_LISTEN)
                 .putExtra(ListenService.EXTRA_SERVER_ID, serverId)
@@ -55,6 +59,15 @@ object ListenController {
                 .putExtra(ListenService.EXTRA_VOLUME, volume)
                 .putExtra(ListenService.EXTRA_PERSONAL, personal),
         )
+    }
+
+    /**
+     * Whatever this phone listens to stops (this device's own player is starting). The server lets go of the
+     * slot when the stream ends (its hold time); a page that knows the server tells it at once.
+     */
+    fun stopAny(context: Context) {
+        val now = _state.value ?: return
+        stop(context, now.sessionId)
     }
 
     /** The page turned Listen here off; it tells the server itself. */

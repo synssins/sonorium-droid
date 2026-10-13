@@ -77,7 +77,7 @@ import kotlinx.coroutines.launch
 /** A menu item: native pages have a screen here; the rest open the web UI at that page for now. */
 enum class Page(val title: String, val icon: ImageVector, val webView: String?, val perm: String? = null, val cap: String? = null) {
     Channels("Channels", SIcons.Grid, null),
-    Personal("My channel", SIcons.Headphones, null),
+    Personal("My Channel", SIcons.Headphones, null),
     Playlists("Playlists", SIcons.Playlist, null),
     Themes("Themes", SIcons.Music, null),
     Speakers("Speakers", SIcons.Speakers, null, "sp.set", "speakers"),
@@ -126,7 +126,7 @@ fun ServerScreen(
         if (p.webView != null) onWebPage(p.webView) else page = p
     }
 
-    // Asked from outside (a notification): My channel
+    // Asked from outside (a notification): My Channel
     val requested by model.requestedPage.collectAsState()
     LaunchedEffect(requested) {
         if (requested == app.sonorium.engine.OpenApp.PAGE_MY_CHANNEL) {

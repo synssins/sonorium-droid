@@ -36,7 +36,7 @@ val LocalOnDevice = androidx.compose.runtime.staticCompositionLocalOf { false }
 object HelpTexts {
     /** Lines about what only a Sonorium has (speakers, making channels, Save to phone): not shown on the device. */
     private val SERVER_ONLY = setOf(
-        "Speakers:", "Volume:", "Speaker button:", "Headphones button:", "Play / Stop:", "Edit:", "Delete:",
+        "Speakers:", "Volume:", "Speaker button:", "Listen on this device:", "Play / Stop:", "Edit:", "Delete:",
         "New Channel:", "Speaker group:", "Playing count:", "⋯ › Save to phone:", "Save to phone:",
     )
 
@@ -180,7 +180,7 @@ object HelpTexts {
             HelpLine(HelpKind.P1, "Speakers:", "where the channel plays. Use Edit to change them."),
             HelpLine(HelpKind.P1, "Volume:", "the speakers. Saved when you let go of the slider."),
             HelpLine(HelpKind.P1, "Speaker button:", "mutes the speakers. Red while muted. Speakers may take a few seconds to go quiet."),
-            HelpLine(HelpKind.P1, "Headphones button:", "plays the channel on this phone, even while the speakers are stopped. Its slider is this phone's volume only."),
+            HelpLine(HelpKind.P1, "Listen on this device:", "the headphones button on a channel plays that channel on this phone too, even while its speakers are stopped. The phone's volume buttons set how loud."),
             HelpLine(HelpKind.P1, "Play / Stop:", "starts or stops the speakers. This phone keeps playing if it listens."),
             HelpLine(HelpKind.P1, "Edit:", "changes the channel's name, theme or playlist, preset, volume and speakers."),
             HelpLine(HelpKind.P1, "Delete:", "removes the channel. You confirm first."),

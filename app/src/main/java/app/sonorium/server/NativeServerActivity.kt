@@ -65,7 +65,7 @@ class NativeServerActivity : ComponentActivity() {
 
     private var handledVolumeKey: Int? = null
 
-    /** A notification of the phone's player or cast opens My channel. */
+    /** A notification of the phone's player or cast opens My Channel. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)

@@ -61,6 +61,8 @@ class PhonePlayerService : MediaSessionService() {
             // instead of staying paused (seen in the device tests: "Focus request DENIED ... hardening")
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (playWhenReady || reason != Player.PLAY_WHEN_READY_CHANGE_REASON_AUDIO_FOCUS_LOSS || !wanted) return
+                // Lost to this app's own server stream (Listen): that one plays now, no taking focus back
+                if (app.sonorium.listen.ListenController.state.value?.playing == true) return
                 if (System.currentTimeMillis() - startedAt > FOCUS_RETRY_WINDOW_MS || focusRetries >= FOCUS_RETRIES) {
                     if (System.currentTimeMillis() - startedAt <= FOCUS_RETRY_WINDOW_MS) {
                         PhonePlayer.onError("Android didn't let the sound start. Open Sonorium and press Play.")

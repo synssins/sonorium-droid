@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.sonorium.engine.PhonePlayer
+import app.sonorium.engine.PhonePlayerService
 import app.sonorium.SonoriumApp
 import app.sonorium.local.LocalTheme
 import app.sonorium.local.PhoneThemeApi
@@ -116,7 +117,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val app = application as SonoriumApp
     private val _state = MutableStateFlow(ServerState())
     val state: StateFlow<ServerState> = _state.asStateFlow()
-    /** A page to show, asked from outside the screen (a notification opens My channel). */
+    /** A page to show, asked from outside the screen (a notification opens My Channel). */
     val requestedPage = MutableStateFlow<String?>(null)
     private val _toasts = MutableStateFlow<Toast?>(null)
     val toasts: StateFlow<Toast?> = _toasts.asStateFlow()
@@ -184,6 +185,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                             connect()
                         }
                         id != null && next != null && next != id -> {
+                            leaving()
                             teardown()
                             serverId = next
                             loadExpanded()
@@ -220,6 +222,35 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         runCatching { cm.registerDefaultNetworkCallback(callback) }.onSuccess { networkWatch = callback }
     }
 
+    /**
+     * Switching the active entry (a server ↔ this device): with "Stop My Channel when switching" on (the
+     * default), My Channel playback of the entry being left stops: the server stream this phone listens to,
+     * or this device's own player.
+     */
+    private fun leaving() {
+        if (!stopOnSwitch.value) return
+        val record = _state.value.record ?: return
+        if (record.device) {
+            if (PhonePlayer.state.value.playing || PhonePlayerService.isRunning) PhonePlayer.stop(app)
+        } else {
+            val now = ListenController.state.value ?: return
+            if (now.serverId != record.id) return
+            ListenController.stop(app, now.sessionId)
+            val api = api ?: return
+            // The server lets go of the slot at once (the api is dropped right after this)
+            viewModelScope.launch { runCatching { if (now.personal) api.stopListeningMyChannel() else api.stopListening(now.sessionId) } }
+        }
+    }
+
+    private val _stopOnSwitch = MutableStateFlow(prefs.getBoolean(KEY_STOP_ON_SWITCH, true))
+    /** "Stop My Channel when switching between server and device" (on by default). */
+    val stopOnSwitch: StateFlow<Boolean> = _stopOnSwitch.asStateFlow()
+
+    fun setStopOnSwitch(on: Boolean) {
+        _stopOnSwitch.value = on
+        prefs.edit().putBoolean(KEY_STOP_ON_SWITCH, on).apply()
+    }
+
     /** Drops everything that talks to the current server (removed, unlinked, switched). */
     private fun teardown() {
         events?.cancel()
@@ -241,6 +272,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     /** Connects to the server; [quiet]: a retry in the background (the unreachable line stays until it works). */
     fun connect(quiet: Boolean = false) {
         val id = serverId ?: return
+        // Retries in the background at most once a minute (Chris); Try again and choosing the server go at once
+        if (quiet && System.currentTimeMillis() - lastAttempt < RETRY_MS) return
+        lastAttempt = System.currentTimeMillis()
         reconnect?.cancel()
         viewModelScope.launch {
             val record = app.servers.find(id)
@@ -271,7 +305,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 }
                 // Keep trying in the background while this screen shows (the network callback also helps)
                 reconnect = viewModelScope.launch {
-                    delay(15_000)
+                    delay(RETRY_MS)
                     if (visible && serverId == id && api == null) connect(quiet = true)
                 }
                 return@launch
@@ -292,6 +326,22 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private var deviceEvents: Job? = null
+    /** When the last connection attempt started (background retries wait [RETRY_MS] after it). */
+    private var lastAttempt = 0L
+
+    /**
+     * The server can't be reached: My Channel plays on this device instead. The switcher goes to this device
+     * (the server is left as the setting says) and My Channel starts there with its last theme. The app
+     * never switches back by itself.
+     */
+    fun playOnDevice() = viewModelScope.launch {
+        app.servers.select(SonoriumApp.DEVICE_ID)
+        val themes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            SampleTheme.with(app, if (app.entitlement.isPro.value) runCatching { app.themeStore.list() }.getOrDefault(emptyList()) else emptyList())
+        }
+        PhonePlayer.sync(app, themes)
+        PhonePlayer.play(app)
+    }
 
     /** This device's own entry: the same screens, answered in the app ([app.sonorium.local.DeviceApi]). */
     private suspend fun connectDevice(record: ServerRecord) {
@@ -771,7 +821,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             val url = "http://${host ?: return@launch}:$port${slot.playPath}"
             ListenController.listen(
                 context, serverId ?: return@launch, session.id, url,
-                name = if (personal) "My channel" else session.name,
+                name = if (personal) "My Channel" else session.name,
                 themeName = _state.value.theme(session.themeId)?.name.orEmpty(),
                 volume = _listenVolume.value,
                 personal = personal,
@@ -1507,7 +1557,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val e = _editor.value ?: return
         e.close()
         _editor.value = null
-        // Edited on this phone: My channel shows the theme's new presets and sequences
+        // Edited on this phone: My Channel shows the theme's new presets and sequences
         if (e.onPhone) {
             PhonePlayer.reloadLists(getApplication())
             // Files may have been added or moved (upload, groups): sizes, track counts, prepared copy
@@ -1934,6 +1984,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private companion object {
         const val CAP_BACKUP = "theme_backup"
         const val KEY_VOLUME_KEYS = "volumeKeys"
+        /** A server that can't be reached is tried again at most this often in the background (ms). */
+        const val RETRY_MS = 60_000L
+        const val KEY_STOP_ON_SWITCH = "stopMyChannelOnSwitch"
         /** A backup started by the app at most this often (ms); the Backups page's Back up now any time. */
         const val BACKUP_GAP_MS = 5 * 60_000L
         const val EVENT_TYPES =

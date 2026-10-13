@@ -6,7 +6,7 @@
 
 ## Please test
 
-- My channel on your device with headphones: left and right differ on a stereo theme; Audio Settings › Stereo off makes it mono at once, without getting the theme ready again.
+- My Channel on your device with headphones: left and right differ on a stereo theme; Audio Settings › Stereo off makes it mono at once, without getting the theme ready again.
 - A theme saved to your device, then changed on your Sonorium (add a preset): ⋯ › Sync now, with and without the overwrite box.
 
 ### Earlier (alpha28)
@@ -21,7 +21,7 @@
 - **The sample's daily time:** the sample theme plays up to 30 minutes a day; then it fades out and the card says so.
 
 ### Earlier (alpha26)
-- **A sample theme for everyone:** right after installing, with no internet, no server and nothing unlocked, your device shows up with one theme (Tavern) ready to play in My channel, with its presets and sequences, Next, volume and the lock screen.
+- **A sample theme for everyone:** right after installing, with no internet, no server and nothing unlocked, your device shows up with one theme (Tavern) ready to play in My Channel, with its presets and sequences, Next, volume and the lock screen.
 - Your device is in the Servers list for everyone; a first start with nothing else chosen opens it.
 - Beyond the sample (more themes on your device, editing, playlists, Cast from your device), the app shows the unlock first.
 
@@ -56,14 +56,14 @@
 - The starter themes lost some stale entries that ended up in exports.
 
 ### Earlier (alpha20)
-- **Previews on your device:** the ▶ on a theme in Themes, Preview mix in the Theme Editor, and the ▶ of a linked file all play from the device itself, while My channel keeps playing.
+- **Previews on your device:** the ▶ on a theme in Themes, Preview mix in the Theme Editor, and the ▶ of a linked file all play from the device itself, while My Channel keeps playing.
 - **The first Save to phone downloads:** after choosing the themes folder, the theme you asked for is saved (it could be dropped before).
-- My channel on the device refreshes when something changes, not every second.
+- My Channel on the device refreshes when something changes, not every second.
 
 ### Earlier (alpha19)
 - **Your device in the Servers list:** this phone or tablet shows up in the list (with a device icon) next to your Sonorium. Choose it and the whole app works with the device's own themes, presets, sequences and playlists, played on the device; choose your Sonorium to go back. Nothing is copied between them (Save to phone and Update on phone still bring a theme down).
-- **The same screens either way:** Channels, My channel, Playlists, Themes and the Theme Editor look and work as they do with your Sonorium. My channel on the device is a channel card like any other: Theme or Playlist, preset or sequence with its step and Next, volume and mute, recent changes, and Cast.
-- **Playlists on the device:** make, edit, duplicate and delete playlists from the themes on the device, and play them in My channel.
+- **The same screens either way:** Channels, My Channel, Playlists, Themes and the Theme Editor look and work as they do with your Sonorium. My Channel on the device is a channel card like any other: Theme or Playlist, preset or sequence with its step and Next, volume and mute, recent changes, and Cast.
+- **Playlists on the device:** make, edit, duplicate and delete playlists from the themes on the device, and play them in My Channel.
 - **Menus follow what's there:** pages that only make sense on a Sonorium (Speakers, Speaker Groups, Floors & Areas, Advanced, Logs, Plugins, Connection, Status) don't show while the device is chosen.
 - **The whole Theme Editor on the device:** Upload, groups, moving tracks, Add from another theme (linked files play too), Remove link and Export, as with your Sonorium.
 - **Audio Settings on the device:** crossfade between themes, default volume and master gain.
@@ -74,7 +74,7 @@
 
 ### Earlier (alpha17)
 - **Lock screen and notification control** while playing on the phone: artwork, theme, preset or step; Previous / Next through presets or steps; Next theme and Stop.
-- **Edit themes on this phone** (Themes › On this phone › Edit, or Mix in My channel); closing the editor updates My channel's lists; **Update on phone** asks first.
+- **Edit themes on this phone** (Themes › On this phone › Edit, or Mix in My Channel); closing the editor updates My Channel's lists; **Update on phone** asks first.
 - **Save to phone on tablets and foldables** keeps the themes folder picked the first time.
 
 ### Earlier (alpha16)
@@ -85,7 +85,7 @@ A full QA pass over every screen (code review plus screenshots of every screen o
 - **No stale information:** with no server, or when it can't be reached, the server's pages say so ("No server connected" / "Can't reach …" with Try again, Servers and Play on this phone) instead of showing old data as if it were live. The app reconnects by itself when the network comes back, also when it was started without a connection.
 - **Playing on the phone:** Stop works while a theme is being got ready; removing the playing theme stops it; a failed import no longer blocks trying again; the decoded copies are deleted with the theme and free space is checked first; lock screen and headset Pause pause; plain-language errors; Android 15's audio rules handled (the sound starting late or not at all).
 - **Cast:** "No speakers found" after 10 s with Look again; switching speakers doesn't end the new cast; the phone's Wi-Fi address is used.
-- **Everywhere:** consistent dialogs (named actions, Cancel first), touch targets of 44–48 dp, sizes and wording, help texts written for a phone, accessibility labels. Floors & Areas' buttons fit on phones. Tapping the playing notification opens My channel.
+- **Everywhere:** consistent dialogs (named actions, Cancel first), touch targets of 44–48 dp, sizes and wording, help texts written for a phone, accessibility labels. Floors & Areas' buttons fit on phones. Tapping the playing notification opens My Channel.
 
 Tested in alpha16:
 
@@ -133,7 +133,7 @@ Tested in alpha16:
 
 - Top bar: the menu, server and headphone buttons are the same height. Leave/Rejoin a link (Zones). Play a playlist on a card: the menu opens. Open the ☰ menu, press Back: only the menu closes.
 
-0. New Channel: pick a theme: its ★ preset is chosen; Create: the channel plays that theme. Back from My channel / Themes returns to Channels.
+0. New Channel: pick a theme: its ★ preset is chosen; Create: the channel plays that theme. Back from My Channel / Themes returns to Channels.
 
 1. Install over the previous build. Your servers are still linked.
 2. ☰ › Themes › **Edit** on a theme you can change. Move a Volume slider, mute a track, then **Cancel**; open it again: the old values are back.

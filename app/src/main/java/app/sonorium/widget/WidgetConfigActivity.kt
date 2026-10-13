@@ -45,7 +45,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.first
 
-/** A widget's channel: this device's My channel, or a channel of a linked Sonorium. */
+/** A widget's channel: this device's My Channel, or a channel of a linked Sonorium. */
 class WidgetConfigActivity : androidx.activity.ComponentActivity() {
     private data class Option(val choice: WidgetChoice, val title: String, val source: String, val device: Boolean)
 

@@ -1,7 +1,7 @@
 # The sample theme
 
 The app ships one theme that everyone can play straight after installing: offline, with no server and no
-themes folder. It is the sample in My channel on the device's own entry.
+themes folder. It is the sample in My Channel on the device's own entry.
 
 ## Changing it
 

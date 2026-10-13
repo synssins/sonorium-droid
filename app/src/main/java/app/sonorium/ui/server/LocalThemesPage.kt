@@ -107,7 +107,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
         }
         PhonePlayer.choose(context, t)
         PhonePlayer.play(context)
-        model.toast("Playing “${t.name}” on this phone. Its controls are in My channel.", error = false)
+        model.toast("Playing “${t.name}” on this phone. Its controls are in My Channel.", error = false)
     }
 
     fun edit(t: LocalTheme) {

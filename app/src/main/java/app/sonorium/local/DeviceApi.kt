@@ -516,7 +516,7 @@ class DeviceApi(private val context: Context) : Interceptor {
         private val JSON = "application/json".toMediaType()
         /** The device's one channel: what it plays. */
         const val CHANNEL_ID = "device"
-        private const val MY_CHANNEL = "My channel"
+        private const val MY_CHANNEL = "My Channel"
 
         /** What the device offers of the capabilities a Sonorium server can have (none of the server-only ones). */
         val CAPABILITIES = listOf("audio_settings")

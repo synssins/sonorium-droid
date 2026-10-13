@@ -131,7 +131,7 @@
     <string name="widget_choose">Choose a channel</string>
     <string name="widget_sample_limit">Today\'s free listening is used up</string>
     <string name="widget_unlock">Unlock Pro</string>
-    <string name="widget_my_channel">My channel</string>
+    <string name="widget_my_channel">My Channel</string>
     <string name="widget_config_title">Choose a channel</string>
     <string name="widget_config_loading">Looking for channels…</string>
     <string name="widget_config_none">No channels</string>
@@ -139,4 +139,13 @@
     <string name="folder_choose_line">Choose a folder on this phone for your themes: saved, imported and new ones go there.</string>
     <string name="folder_missing_line">Your themes folder can\'t be found. Choose it again, or a new one.</string>
     <string name="folder_choose">Choose folder</string>
+    <!-- This phone's own settings (Audio Settings › On this phone); wording proposed -->
+    <string name="stop_on_switch_title">Stop My Channel when switching between server and device</string>
+    <string name="stop_on_switch_tip">Choosing another entry with the server button stops My Channel on the one you leave</string>
+    <!-- My Channel on this device, free: at the bottom of the page; wording proposed -->
+    <string name="device_nag">Pro removes the 30-minute daily limit on this device and lets you take your themes on the road.</string>
+    <string name="unlock_pro">Unlock Pro</string>
+    <!-- My Channel with the chosen server out of reach (Chris, item 2) -->
+    <string name="cant_reach">Can\'t reach %1$s</string>
+    <string name="play_on_device">Play on this device</string>
 </resources>

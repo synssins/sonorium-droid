@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,7 +77,7 @@ fun PersonalChannelScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(SIcons.Headphones, null, tint = Palette.accent, modifier = Modifier.size(UiSize.GLYPH.dp))
                 Spacer(Modifier.width(10.dp))
-                Text("My channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
+                Text("My Channel", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
             }
             // This device's own entry: its channel is the same card as a server's channel
             if (state.onDevice) {
@@ -94,6 +96,26 @@ fun PersonalChannelScreen(
                     onCountdownZero = { scope.launch { model.refreshPersonal() } },
                     extra = { DeviceOutput() },
                 )
+                // Free on this device: what Pro adds here, at the bottom (never with a server chosen, never with Pro)
+                if (!isPro) DeviceNag(onUnlock = { model.proOrAsk() })
+                return@Column
+            }
+            // The server can't be reached: say so, and offer My Channel on this device (Chris, item 2)
+            if (state.record != null && !state.onDevice && state.failure != null && !state.unlinked) {
+                Text(
+                    androidx.compose.ui.res.stringResource(app.sonorium.R.string.cant_reach, state.record.displayName),
+                    color = Palette.text, fontSize = 14.sp,
+                )
+                Button(
+                    onClick = { model.playOnDevice() },
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = UiSize.STANDARD.dp),
+                ) {
+                    Icon(SIcons.Device, null, modifier = Modifier.size(UiSize.GLYPH_SMALL.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.play_on_device), fontWeight = FontWeight.Medium)
+                }
                 return@Column
             }
             val canServer = state.record != null && state.personalChannel
@@ -180,6 +202,23 @@ fun PersonalChannelScreen(
     }
 }
 
+/** My Channel on this device, free: what Pro adds on this device (the daily limit applies only here). */
+@Composable
+private fun DeviceNag(onUnlock: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().semantics { testTagsAsResourceId = true }.testTag("device-nag"),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.device_nag), color = Palette.textSecondary, fontSize = 14.sp)
+        Button(
+            onClick = onUnlock,
+            shape = RoundedCornerShape(8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
+            modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
+        ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.unlock_pro)) }
+    }
+}
+
 /**
  * What this phone can do without a server: the unlock (only here, where it's relevant), else how to get
  * a theme onto the phone (Import theme, or Themes › On this phone). [compact]: a short line under the
@@ -195,21 +234,13 @@ private fun PhoneOffer(
     onPhoneThemes: (() -> Unit)?,
     compact: Boolean = false,
 ) {
-    var unlock by remember { mutableStateOf(false) }
     val folderPicker = rememberThemesFolderPicker(model)
     val startImport = rememberThemeImport(model, folderPicker)
     val importing by model.importing.collectAsState()
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         when {
-            !isPro -> {
-                Text("With Pro, this phone plays themes on its own, without a server.", color = Palette.textSecondary, fontSize = 14.sp)
-                Button(
-                    onClick = { unlock = true },
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                    modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
-                ) { Text("Unlock Pro") }
-            }
+            // Pro is offered on this device's own page only (DeviceNag), never next to a server
+            !isPro -> {}
             folder == ThemeStore.FolderState.MISSING -> {
                 Text("Your themes folder can't be found, so the themes on this phone can't play.", color = Palette.textSecondary, fontSize = 14.sp)
                 Button(
@@ -250,7 +281,6 @@ private fun PhoneOffer(
             }
         }
     }
-    if (unlock) UnlockScreen(model, onClose = { unlock = false }, onUnlocked = { unlock = false })
 }
 
 

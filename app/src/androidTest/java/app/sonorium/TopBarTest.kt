@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The top bar holds the menu, the logo and the server button only: no headphones (My channel) button and no
+ * The top bar holds the menu, the logo and the server button only: no headphones (My Channel) button and no
  * help in any state (Chris, item 11). Checked with a server chosen (EndToEndTest linked the CI server) and
  * with this device chosen; the page's help is on its title row.
  */
@@ -50,7 +50,7 @@ class TopBarTest {
             assertNotNull("No top bar ($what)", bar)
             Thread.sleep(2_000)
             val top = device.findObject(By.res("top-bar"))
-            assertTrue("A My channel button in the top bar ($what)", top.findObject(By.desc("My channel")) == null)
+            assertTrue("A My Channel button in the top bar ($what)", top.findObject(By.desc("My Channel")) == null)
             assertTrue("A help button in the top bar ($what)", top.findObject(By.descStartsWith("Help")) == null)
             // The page's help is on its title row
             assertNotNull("No help on the page ($what)", device.findObject(By.descStartsWith("Help: ")))

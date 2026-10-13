@@ -285,6 +285,8 @@ object PhonePlayer {
     /** Play: prepares the theme the first time (decoding its audio once), opens the engine, starts playback. */
     fun play(context: Context) {
         restore(context)
+        // One My Channel playback at a time: a server stream this phone listens to stops first (Chris)
+        app.sonorium.listen.ListenController.stopAny(context)
         if (sampleUsedUp(context)) {
             _state.update { it.copy(sampleEnded = true) }
             return

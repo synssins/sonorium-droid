@@ -403,7 +403,7 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload:
         }
         FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SequencesMenu(ui, editor, onSequence)
-            // On this phone: no Preview mix (the theme plays live in My channel) or links (they need the server)
+            // On this phone: no Preview mix (the theme plays live in My Channel) or links (they need the server)
             if (!editor.onPhone || editor.linksHere) Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.EDITOR_PREVIEW)) {
                 ToolButton(
                     if (ui.previewMix) "Stop preview" else "Preview mix", if (ui.previewMix) SIcons.Stop else SIcons.Play,
@@ -439,7 +439,7 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload:
             val phone = app.sonorium.engine.PhonePlayer.state.collectAsState().value
             val playing = phone.playing && phone.theme?.let { t -> editor.themeId == app.sonorium.local.PhoneThemeApi.safe(t.folder) || editor.themeId == app.sonorium.local.DeviceApi.themeId(t) } == true
             Text(
-                if (playing) "Changes are heard at once while it plays in My channel." else "Play it in My channel to hear your changes as you make them.",
+                if (playing) "Changes are heard at once while it plays in My Channel." else "Play it in My Channel to hear your changes as you make them.",
                 color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp),
             )
         }

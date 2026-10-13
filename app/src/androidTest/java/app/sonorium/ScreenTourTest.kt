@@ -45,13 +45,13 @@ class ScreenTourTest {
             // Top bar: the server button (Connect) → Servers, then Back
             device.findObject(By.descStartsWith("Servers:"))?.let { it.click(); settle(); shot("servers-from-top-bar"); back() }
             // Headphone button
-            device.findObject(By.desc("My channel"))?.let { it.click(); settle(); shot("headphone"); back() }
+            device.findObject(By.desc("My Channel"))?.let { it.click(); settle(); shot("headphone"); back() }
             // Themes › Import theme: the unlock screen
             openPage("Themes")
             device.findObject(By.text("Import theme"))?.let { it.click(); settle(); shot("import-asks-unlock"); back() }
             // Unlocked (test build's local yes), still no themes
             runBlocking { (context.applicationContext as SonoriumApp).entitlement.purchase() }
-            device.findObject(By.desc("My channel"))?.let { it.click(); settle(); shot("headphone-unlocked-no-themes"); back() }
+            device.findObject(By.desc("My Channel"))?.let { it.click(); settle(); shot("headphone-unlocked-no-themes"); back() }
             openPage("Themes")
             shot("themes-unlocked-no-themes")
         }
@@ -66,7 +66,7 @@ class ScreenTourTest {
             settle(2_000)
             shot("main")
             tourPages()
-            device.findObject(By.desc("My channel"))?.let { it.click(); settle(); shot("headphone"); back() }
+            device.findObject(By.desc("My Channel"))?.let { it.click(); settle(); shot("headphone"); back() }
             openPage("Themes")
             device.findObject(By.text("On this phone"))?.let { it.click(); settle(); shot("themes-on-this-phone") }
             device.findObject(By.descStartsWith("More for "))?.let { it.click(); settle(800); shot("theme-card-menu"); back() }
@@ -84,7 +84,7 @@ class ScreenTourTest {
                 settle(8_000)
                 shot("cold-start")
                 tourPages()
-                device.findObject(By.desc("My channel"))?.let { it.click(); settle(); shot("headphone"); back() }
+                device.findObject(By.desc("My Channel"))?.let { it.click(); settle(); shot("headphone"); back() }
                 device.findObject(By.descStartsWith("Servers:"))?.let { it.click(); settle(); shot("servers"); back() }
                 network(true)
                 settle(30_000)
@@ -122,7 +122,7 @@ class ScreenTourTest {
         launch {
             settle(4_000)
             shot("main-after-restart")
-            device.findObject(By.desc("My channel"))?.let { it.click(); settle(); shot("headphone-after-restart"); back() }
+            device.findObject(By.desc("My Channel"))?.let { it.click(); settle(); shot("headphone-after-restart"); back() }
         }
     }
 
