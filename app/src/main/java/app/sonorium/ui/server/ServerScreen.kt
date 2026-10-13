@@ -144,6 +144,16 @@ fun ServerScreen(
     val themeImport = rememberOwnThemeImport(model, folderPicker)
     androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
+    // An imported zip: the user's own file, so asked before it's deleted
+    model.zipToDelete.collectAsState().value?.let { (_, name) ->
+        ConfirmDialog(
+            title = "Delete “$name”?",
+            sub = "The theme is imported. Its music stays; only the zip file is deleted.",
+            action = "Delete",
+            onConfirm = { model.answerZip(true) },
+            onDismiss = { model.answerZip(false) },
+        )
+    }
     // What goes beyond the sample on this device's own entry: the unlock screen
     val unlockAsked by model.unlockAsked.collectAsState()
     if (unlockAsked) UnlockScreen(model, onClose = model::unlockClosed, onUnlocked = { model.unlockClosed(); model.refreshLocalThemes() })
@@ -212,7 +222,11 @@ fun ServerScreen(
                             page == Page.Themes && (state.record == null || (state.onDevice && model.entitlement.isPro.collectAsState().value && localFolder != app.sonorium.local.ThemeStore.FolderState.OK)) ->
                                 LocalThemesPage(model, hasServer = false)
                             page == Page.Themes && state.failure != null -> NoConnection(state, page, onServers = onServers, onRetry = { model.connect() }, onPhone = { model.useDevice() })
-                            page == Page.Themes -> ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
+                            page == Page.Themes -> Column(Modifier.fillMaxSize()) {
+                                // A theme that just arrived on this device getting ready, with its progress
+                                if (state.onDevice) Column(Modifier.padding(horizontal = 12.dp, vertical = 4.dp)) { ReadyingLine() }
+                                ThemesPage(state, model, onEdit = { model.openThemeEditor(it) })
+                            }
                             else -> ChannelsPage(
                                 state = state,
                                 model = model,

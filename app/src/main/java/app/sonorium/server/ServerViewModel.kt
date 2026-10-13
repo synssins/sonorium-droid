@@ -872,7 +872,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    fun importTheme(fileName: String, bytes: ByteArray) = viewModelScope.launch {
+    fun importTheme(fileName: String, bytes: ByteArray, source: android.net.Uri? = null) = viewModelScope.launch {
         val api = api ?: return@launch
         toast("Importing theme…", error = false)
         try {
@@ -880,6 +880,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             api.refreshThemes()
             refreshThemeList()
             toast("Imported \"${r.themeFolder}\" (${r.filesExtracted} files)", error = false)
+            source?.let { _zipToDelete.value = it to fileName }
         } catch (e: Exception) {
             failOr(e, "Failed to import theme")
         }
@@ -996,6 +997,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         // The theme chosen to play on the phone follows its folder (updated, removed, folder gone); the sample is always there
         val device = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { SampleTheme.with(app, if (app.entitlement.isPro.value) list else emptyList()) }
         PhoneThemeActions.synced(app, device)
+        // Themes that just arrived (saved from a server, imported, the starter themes, the sample) get ready now
+        PhonePlayer.prepareInBackground(app, device)
     }
 
     /**
@@ -1021,6 +1024,21 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         // The Save to phone that asked for the folder carries on now
         pending?.let { saveThemeToPhone(it) }
         return true
+    }
+
+    private val _zipToDelete = MutableStateFlow<Pair<android.net.Uri, String>?>(null)
+    /** A theme zip picked from storage and imported: asked whether to delete it (it's the user's own file). */
+    val zipToDelete: StateFlow<Pair<android.net.Uri, String>?> = _zipToDelete.asStateFlow()
+
+    /** Deletes the imported zip ([delete] true) or keeps it. */
+    fun answerZip(delete: Boolean) {
+        val (uri, name) = _zipToDelete.value ?: return
+        _zipToDelete.value = null
+        if (!delete) return
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val ok = runCatching { android.provider.DocumentsContract.deleteDocument(getApplication<Application>().contentResolver, uri) }.getOrDefault(false)
+            toast(if (ok) "Deleted “$name”" else "Couldn't delete “$name”. Delete it in the Files app.", error = !ok)
+        }
     }
 
     /** Switches the app to this device's own entry (with Pro); false when it isn't available. */
@@ -1078,6 +1096,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 val plan = getApplication<Application>().contentResolver.openInputStream(uri)?.use { app.themeStore.importZip(it, fileName) }
                     ?: throw ThemeStore.ImportProblem("Couldn't open that file")
                 toast(PhoneThemeActions.importedText(plan), error = false)
+                _zipToDelete.value = uri to fileName
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: ThemeStore.ImportProblem) {

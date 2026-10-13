@@ -62,6 +62,8 @@ object PhonePlayer {
         val sampleEnded: Boolean = false,
         /** Sleep timer: when it ends (elapsed-realtime ms), null without one. */
         val sleepAt: Long? = null,
+        /** A theme on this device being got ready in the background (it just arrived): name, files done, files. */
+        val readying: Triple<String, Int, Int>? = null,
     )
 
     /** The engine's status as a server channel reports it (sequence step, playlist entry, recent changes). */
@@ -91,6 +93,8 @@ object PhonePlayer {
         appContext = context.applicationContext
         if (restored) return
         restored = true
+        // The themes got ready before (their versions), so a restart doesn't get them ready again
+        prefs(context).all.forEach { (k, v) -> if (k.startsWith(KEY_READY) && v is String) ready[k.removePrefix(KEY_READY)] = v }
         val volume = prefs(context).getInt(KEY_VOLUME, app.sonorium.local.DeviceSettings.get(context).volume).coerceIn(0, 100)
         val p = prefs(context)
         _state.update { it.copy(volume = volume, playlistMode = p.getBoolean(KEY_PLAYLIST_MODE, false), playlistId = p.getString(KEY_PLAYLIST, null)) }
@@ -290,9 +294,12 @@ object PhonePlayer {
                 if (openFor != theme.version) {
                     // This theme's files changed since the engine opened it: let go of them before they're rebuilt
                     if (openFolder == theme.folder) closeEngine()
-                    _state.update { it.copy(preparing = 0 to theme.tracks, preparingName = null, error = null, notice = null) }
-                    val prepared = ThemePrep.prepare(app, app.themeStore, theme) { done, total ->
-                        if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = done to total) else it }
+                    // Got ready when it arrived: straight to playing; else (or changed since) now, with progress
+                    val prepared = if (isReady(app, theme)) ThemePrep.prepared(app, theme.folder) else {
+                        _state.update { it.copy(preparing = 0 to theme.tracks, preparingName = null, error = null, notice = null) }
+                        ThemePrep.prepare(app, app.themeStore, theme) { done, total ->
+                            if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = done to total) else it }
+                        }
                     }
                     ensureActive()
                     prepareLinked(app, theme)
@@ -306,7 +313,7 @@ object PhonePlayer {
                     val sequences = withContext(Dispatchers.IO) { PhoneEngine.sequences() }
                     openFor = theme.version
                     openFolder = theme.folder
-                    ready[theme.folder] = theme.version
+                    markReady(app, theme)
                     resetSequenceWatch()
                     _state.update { st ->
                         st.copy(
@@ -384,6 +391,44 @@ object PhonePlayer {
 
     /** A playlist's later themes being got ready while it plays. */
     private var laterPrep: Job? = null
+
+    /** Themes that arrived on this device (download, import, starter themes, the sample), got ready one at a time. */
+    private var arrivals: Job? = null
+
+    /**
+     * Gets every theme in [themes] that isn't ready yet ready in the background, one at a time, so a theme is
+     * never first decoded when it's played. The theme the engine has open is left as it is.
+     */
+    fun prepareInBackground(context: Context, themes: List<LocalTheme>) {
+        val app = context.applicationContext as SonoriumApp
+        restore(app)
+        val todo = themes.filter { !isReady(app, it) && it.tracks > 0 && it.folder != openFolder }
+        if (todo.isEmpty() || arrivals?.isActive == true) return
+        arrivals = scope.launch {
+            try {
+                for (t in todo) {
+                    if (isReady(app, t) || t.folder == openFolder) continue
+                    _state.update { it.copy(readying = Triple(t.name, 0, t.tracks)) }
+                    runCatching {
+                        ThemePrep.prepare(app, app.themeStore, t) { done, total -> _state.update { it.copy(readying = Triple(t.name, done, total)) } }
+                    }.onSuccess { markReady(app, t) }
+                        .onFailure { e -> if (e is CancellationException) throw e; Log.w(TAG, "Couldn't get ${t.folder} ready", e) }
+                }
+            } finally {
+                _state.update { it.copy(readying = null) }
+            }
+        }
+    }
+
+    /** [theme] was got ready at its current version and its prepared copy is still there. */
+    private fun isReady(context: Context, theme: LocalTheme): Boolean =
+        ready[theme.folder] == theme.version && ThemePrep.prepared(context, theme.folder).let { it.themeDir.isDirectory && it.pcmDir.isDirectory }
+
+    /** [theme]'s prepared copy is current (kept across restarts, so nothing is got ready twice). */
+    private fun markReady(context: Context, theme: LocalTheme) {
+        ready[theme.folder] = theme.version
+        prefs(context).edit { putString(KEY_READY + theme.folder, theme.version) }
+    }
 
     /** Versions of the themes whose prepared copy is current (folder → [LocalTheme.version]). */
     private val ready = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -754,6 +799,7 @@ object PhonePlayer {
     private const val KEY_VOLUME = "volume"
     private const val KEY_PLAYLIST_MODE = "playlist_mode"
     private const val KEY_SAMPLE_DAY = "sample_day"
+    private const val KEY_READY = "ready:"
     private const val KEY_SAMPLE_SECONDS = "sample_seconds"
     private const val KEY_CHOICE = "choice:"
     @Volatile private var appContext: Context? = null

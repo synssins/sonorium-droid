@@ -197,6 +197,7 @@ fun DeviceOutput(model: ServerViewModel = androidx.lifecycle.viewmodel.compose.v
     }
     s.error?.let { Text(it, color = Palette.danger, fontSize = 13.sp) }
     s.notice?.let { Text(it, color = Palette.textSecondary, fontSize = 13.sp) }
+    ReadyingLine()
     // The free sample's time for today is used up: said here only (no notification, no sound)
     val pro by model.entitlement.isPro.collectAsState()
     if (s.sampleEnded && !pro) {
@@ -212,6 +213,18 @@ fun DeviceOutput(model: ServerViewModel = androidx.lifecycle.viewmodel.compose.v
     }
     if (s.sequenceFinished) Text("Sequence finished. It stays on its last preset.", color = Palette.textSecondary, fontSize = 13.sp)
     CastRow(s.theme?.name.orEmpty(), allow = model::proOrAsk)
+}
+
+/** A theme that just arrived on this device being got ready in the background, with its progress. */
+@Composable
+fun ReadyingLine() {
+    val s by PhonePlayer.state.collectAsState()
+    val (name, done, total) = s.readying ?: return
+    Text("Getting “$name” ready: $done of $total files", color = Palette.textSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+    LinearProgressIndicator(
+        progress = { if (total == 0) 0f else done.toFloat() / total },
+        color = Palette.accent, trackColor = Palette.border, modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /** "4:05" / "1:02:03". */

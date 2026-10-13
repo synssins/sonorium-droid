@@ -115,7 +115,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
         if (uri != null) {
             val name = uri.lastPathSegment?.substringAfterLast('/')?.let { if (it.endsWith(".zip")) it else "$it.zip" } ?: "theme.zip"
             runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
-                ?.let { model.importTheme(name, it) } ?: model.toast("Couldn’t import the theme", error = true)
+                ?.let { model.importTheme(name, it, uri) } ?: model.toast("Couldn’t import the theme", error = true)
         }
     }
 

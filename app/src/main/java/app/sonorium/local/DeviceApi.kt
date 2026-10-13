@@ -470,6 +470,8 @@ class DeviceApi(private val context: Context) : Interceptor {
 
     private fun changed(type: String) {
         if (type.startsWith("theme.")) listed = null
+        // A theme created or imported here gets ready at once (never first when it's played)
+        if (type == "theme.created") PhonePlayer.prepareInBackground(context, themesNow())
         _events.tryEmit(type)
     }
 
