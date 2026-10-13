@@ -92,6 +92,15 @@ Every green build gets the next numbered release right away (`v0.1.0-alphaN`, re
 android.yml run_workflow with `release`). Chris tests from the numbered releases, not `ci-latest`;
 a green build without a release blocks his testing.
 
+## Roadmap (Chris, 2026-10-12)
+- Home-screen widgets in several sizes: minimal (Play/Pause), theme select, a more advanced one
+  (theme, preset/sequence/playlist). No editing from any widget.
+- Maybe later: a media library (Android Auto, Wear OS, Assistant browsing themes/presets/playlists).
+- Done in 787fa44: the lock-screen/notification control is live (no seek bar), branded, with
+  Previous/Next preset or step, Next theme and Stop.
+- Phone Theme Editor (edit like the WebUI) on the server's Core modules (theme_edit, reload_theme):
+  in progress; upload/links/renames need later Core work (to-app/51 "Later").
+
 ## State at hand-over
 - **`085a06b` green** (API 35 + 26, 5 device tests): Chris's alpha14 bugs 1 and 3 (Unlock returns; theme
   switch crossfades via the engine-runners engine, synced from the server repo), sequences in On this
