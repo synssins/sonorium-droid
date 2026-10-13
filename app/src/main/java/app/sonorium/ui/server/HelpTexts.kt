@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -387,7 +388,7 @@ object HelpTexts {
 
 /** A help panel (`?`): full screen on a phone, with ×. */
 @Composable
-fun HelpPanel(title: String, lines: List<HelpLine>, onClose: () -> Unit) {
+fun HelpPanel(title: String, lines: List<HelpLine>, onGuide: (() -> Unit)? = null, onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         EditorSurface {
             Column(Modifier.fillMaxSize()) {
@@ -424,6 +425,16 @@ fun HelpPanel(title: String, lines: List<HelpLine>, onClose: () -> Unit) {
                                 ),
                             )
                         }
+                    }
+                    // The page's guide again (coach marks over the page)
+                    onGuide?.let { show ->
+                        Spacer(Modifier.height(16.dp))
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = show,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                            modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                        ) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.coach_show), color = Palette.text) }
                     }
                     Spacer(Modifier.height(24.dp))
                 }

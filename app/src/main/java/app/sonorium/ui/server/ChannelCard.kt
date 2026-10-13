@@ -46,6 +46,7 @@ import app.sonorium.net.Session
 import app.sonorium.server.ChannelRules
 import app.sonorium.server.ServerState
 import app.sonorium.ui.Palette
+import app.sonorium.ui.coach.coachTarget
 import kotlinx.coroutines.delay
 
 /** Capabilities a Sonorium lists for making and editing channels, and for listening to them from this device. */
@@ -298,7 +299,8 @@ fun ChannelCard(
                     contentColor = if (playing) Palette.danger else Palette.bar,
                 ),
                 border = if (playing) BorderStroke(1.dp, Palette.danger.copy(alpha = 0.5f)) else null,
-                modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp)
+                    .then(Modifier.coachTarget(app.sonorium.ui.coach.Targets.PLAY)),
             ) {
                 Icon(if (playing) SIcons.Stop else SIcons.Play, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
@@ -387,6 +389,7 @@ fun ChannelRow(session: Session, state: ServerState, onExpand: () -> Unit, onTog
                 shape = RoundedCornerShape(8.dp),
                 border = if (playing) BorderStroke(1.dp, Palette.danger.copy(alpha = 0.5f)) else null,
                 modifier = Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp)
+                    .coachTarget(app.sonorium.ui.coach.Targets.PLAY)
                     .semantics { contentDescription = if (playing) "Stop ${session.name}" else "Play ${session.name}" }
                     .clickable(onClick = onTogglePlay),
             ) {

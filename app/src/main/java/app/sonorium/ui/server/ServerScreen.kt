@@ -69,6 +69,7 @@ import app.sonorium.net.Session
 import app.sonorium.server.ServerState
 import app.sonorium.server.ServerViewModel
 import app.sonorium.ui.Palette
+import app.sonorium.ui.coach.coachTarget
 import kotlinx.coroutines.launch
 
 /** A menu item: native pages have a screen here; the rest open the web UI at that page for now. */
@@ -142,7 +143,17 @@ fun ServerScreen(
     androidx.activity.compose.BackHandler(enabled = drawer.isOpen || drawer.targetValue == DrawerValue.Open) { scope.launch { drawer.close() } }
     val folderPicker = rememberOwnThemesFolderPicker(model)
     val themeImport = rememberOwnThemeImport(model, folderPicker)
-    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, LocalHelpInTopBar provides true) {
+    val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val coach = remember { app.sonorium.ui.coach.CoachState(appContext) }
+    // First run: the guide over the main screen, once the first page has settled (item 12)
+    val firstRun = app.sonorium.ui.coach.Guides.firstRun()
+    LaunchedEffect(state.connecting, page) {
+        if (!state.connecting && page == Page.Channels) {
+            kotlinx.coroutines.delay(800)
+            coach.showOnce(firstRun)
+        }
+    }
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport, LocalOnDevice provides state.onDevice, LocalHelpInTopBar provides true, app.sonorium.ui.coach.LocalCoach provides coach) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     // An imported zip: the user's own file, so asked before it's deleted
     model.zipToDelete.collectAsState().value?.let { (_, name) ->
@@ -279,6 +290,8 @@ fun ServerScreen(
             onClose = { linking = null },
         )
     }
+    // Over everything: a guide, when one shows
+    app.sonorium.ui.coach.CoachOverlay(coach)
     }
 }
 
@@ -319,6 +332,7 @@ private fun TopBar(
             shape = RoundedCornerShape(8.dp),
             border = if (live || record == null) null else androidx.compose.foundation.BorderStroke(1.dp, Palette.border),
             modifier = Modifier.height(TOP_BAR_CONTROL.dp).widthIn(max = 200.dp)
+                .coachTarget(app.sonorium.ui.coach.Targets.SERVERS)
                 .semantics { contentDescription = if (record?.device == true) "$label, this device" else "Servers: $label" + (status?.let { ", $it" } ?: "") }
                 .clickable(onClick = onServers),
         ) {

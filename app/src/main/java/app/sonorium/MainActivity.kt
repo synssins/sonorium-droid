@@ -35,16 +35,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         // A fresh start: the splash, then the main screen, always (with the last server, or none)
         val route = savedInstanceState == null && !handleLink(intent) && !intent.getBooleanExtra(EXTRA_SHOW_LIST, false)
-        // The first-run wizard (a framework, off until approved: FirstRun.ENABLED)
-        val wizard = route && app.sonorium.ui.wizard.FirstRun.shouldShow(this)
-        if (route && !wizard) openMain()
+        // First run: a guide over the main screen itself (coach marks), no separate wizard
+        if (route) openMain()
         setContent {
             SonoriumTheme {
                 when {
-                    wizard -> app.sonorium.ui.wizard.FirstRunWizard(onFinish = {
-                        app.sonorium.ui.wizard.FirstRun.markDone(this)
-                        openMain()
-                    })
                     route -> app.sonorium.ui.Splash()
                     else -> StartScreen(linkModel, onBack = if (isTaskRoot) null else ::finish)
                 }

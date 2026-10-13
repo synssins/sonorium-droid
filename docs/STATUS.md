@@ -84,8 +84,8 @@ hash), `.sonorium-package.json` marker with the server's playback values, read b
 `PackageDownloadTest`), 5 the entitlement screen (local "yes" in test builds).
 Code: `local/ThemeStore.kt` (SAF folder), `local/ProEntitlement.kt`, `engine/` (ThemePrep, PhoneEngine,
 EngineDataSource, PhonePlayerService, PhonePlayer), `ui/server/LocalThemesPage.kt`, `PhoneView.kt`,
-`app/src/main/python/phone.py` (+ Engine Lab's engine files via Chaquopy `srcDir`). First-run wizard:
-`ui/wizard/FirstRunWizard.kt`, off (`FirstRun.ENABLED`).
+`app/src/main/python/phone.py` (+ Engine Lab's engine files via Chaquopy `srcDir`). First run and
+first visits: guides over the app itself (coach marks, `ui/coach/`).
 
 ## Hand-over (2026-10-13)
 A new app session takes over. Start with the handoff repo: `shared/app-session-handover.md` (protocol with

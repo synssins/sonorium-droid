@@ -30,6 +30,11 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class EndToEndTest {
+    init {
+        // The guides would cover the screens these tests drive (ScreenTourTest records them)
+        app.sonorium.ui.coach.CoachState.ENABLED = false
+    }
+
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val device = UiDevice.getInstance(instrumentation)
     private val args = InstrumentationRegistry.getArguments()

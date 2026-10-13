@@ -58,4 +58,17 @@
     <string name="backup_deleted">Backups deleted</string>
     <string name="backup_load_failed">Couldn\'t load your backups</string>
     <string name="try_again">Try again</string>
+    <!-- Guides (coach marks over the app) -->
+    <string name="coach_skip">Skip</string>
+    <string name="coach_next">Next</string>
+    <string name="coach_done">Done</string>
+    <string name="coach_step">Step %1$d of %2$d</string>
+    <string name="coach_show">Show the guide</string>
+    <!-- First run (Chris's wording) -->
+    <string name="coach_play_title">Play a theme</string>
+    <string name="coach_play_text">Pressing this will start the audio playback.</string>
+    <string name="coach_connections_title">Connections</string>
+    <string name="coach_connections_text">Connect to a Sonorium server, switch between servers on your network, or switch to this device.</string>
+    <string name="coach_add_title">Add a server</string>
+    <string name="coach_add_text">Scan a Link App QR code from your Sonorium Server\'s website, or enter its address</string>
 </resources>

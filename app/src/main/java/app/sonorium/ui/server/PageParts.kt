@@ -261,6 +261,8 @@ fun HelpButton(view: String) {
     val (title, all) = HelpTexts.PAGES[view] ?: return
     val lines = if (LocalOnDevice.current) HelpTexts.forDevice(all) else all
     var open by remember { mutableStateOf(false) }
+    val coach = app.sonorium.ui.coach.LocalCoach.current
+    val guide = app.sonorium.ui.coach.Guides.forHelp(view)
     IconBox(SIcons.Help, "Help: $title", { open = true }, size = app.sonorium.ui.UiSize.STANDARD)
-    if (open) HelpPanel(title, lines) { open = false }
+    if (open) HelpPanel(title, lines, onGuide = if (coach != null && guide != null) ({ open = false; coach.show(guide) }) else null) { open = false }
 }

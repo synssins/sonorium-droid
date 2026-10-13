@@ -192,6 +192,20 @@ class ScreenTourTest {
     private fun settle(ms: Long = 1_500) {
         Thread.sleep(ms)
         if (device.hasObject(By.textContains("isn't responding"))) device.findObject(By.text("Wait"))?.click()
+        guide()
+    }
+
+    /** A guide over the screen (coach marks): each step recorded, then Next until Done. */
+    private fun guide() {
+        var step = 0
+        while (step < 8) {
+            val next = device.findObject(By.text("Next")) ?: device.findObject(By.text("Done")) ?: return
+            if (!device.hasObject(By.descStartsWith("Step "))) return
+            step++
+            shot("guide-$step")
+            next.click()
+            Thread.sleep(800)
+        }
     }
 
     private fun shot(name: String) {
