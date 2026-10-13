@@ -34,7 +34,7 @@ class PackageDownloadTest {
 
     @Test
     fun downloadsAThemeAndPlaysItOnThePhone() = runBlocking {
-        val record = app.servers.servers.first().firstOrNull()
+        val record = app.servers.servers.first().firstOrNull { !it.device }
         assumeNotNull("No linked server (EndToEndTest links one)", record)
         record!!
         val token = app.servers.token(record.id)
