@@ -1,16 +1,22 @@
 ## What's new in this build
 
+- **The first Save to phone works:** after choosing the themes folder, the save waits for the connection to your Sonorium instead of giving up, then downloads the theme you asked for.
+- **Picking a playlist while a sequence plays:** the card shows the playlist's first entry at once, the theme already playing isn't got ready again, and the lock screen shows "Entry 1 of n".
+- **Steps keep counting:** a sequence's countdown can't freeze any more.
+- On your device, the Preview mix button's description no longer mentions speakers.
+- Theme exports and downloads carry tidy metadata.
+
+## Please test
+
+- Fresh install: link your Sonorium, Themes › a theme's ⋯ › Save to phone, unlock, choose the folder: the theme arrives with your server's presets.
+- Your device › My channel: while a sequence plays, pick a playlist.
+
+### Earlier (alpha21)
 - **Timers keep time on your device:** sequence steps and playlist entries change when their countdown says, also where the sound drains faster than real time.
 - **Picking a playlist while a sequence plays:** the sequence stops at once, the card shows the playlist and its entries while its themes get ready, and the lock screen shows the entry's theme and "Entry n of m".
 - **Words for the device:** on your device, help and labels describe the device (no speakers, New Channel or Save to phone lines; the mute button says Mute).
 - **Your preset is kept:** the preset or sequence you chose for a theme is still chosen after the app restarts.
 - The starter themes lost some stale entries that ended up in exports.
-
-## Please test
-
-- Your device › My channel: start a sequence and time a step against a clock; play a playlist and time an entry.
-- While a sequence plays, pick a playlist: the sequence stops, the card shows the playlist's first entry.
-- Choose a preset, close the app fully, open it again: the preset is still chosen.
 
 ### Earlier (alpha20)
 - **Previews on your device:** the ▶ on a theme in Themes, Preview mix in the Theme Editor, and the ▶ of a linked file all play from the device itself, while My channel keeps playing.
