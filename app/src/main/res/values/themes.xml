@@ -5,4 +5,12 @@
         <item name="android:statusBarColor">@color/bar</item>
         <item name="android:navigationBarColor">@color/bar</item>
     </style>
+    <!-- A widget's button runs in an activity no one sees -->
+    <style name="Theme.Sonorium.Invisible" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
 </resources>

@@ -18,6 +18,7 @@ import app.sonorium.local.ThemeSync
 import app.sonorium.local.ThemeBackup
 import app.sonorium.local.PhonePlaylists
 import app.sonorium.R
+import app.sonorium.widget.WidgetUpdater
 import app.sonorium.net.PackageSummary
 import app.sonorium.data.ServerRecord
 import app.sonorium.ui.server.bytesText
@@ -350,6 +351,17 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         _state.update { it.copy(sessions = sessions, sessionsLoaded = true) }
         // Preset menus for every theme in use (cached per theme)
         sessions.mapNotNull { it.themeId }.distinct().filter { it !in _state.value.presets }.forEach { loadPresets(it) }
+        // Home-screen widgets on this server's channels follow what the app just read
+        val s = _state.value
+        if (!s.onDevice) s.record?.let { record ->
+            runCatching {
+                WidgetUpdater.updateServer(
+                    app, record.id, record.displayName, sessions,
+                    themeName = { id -> s.theme(id)?.name },
+                    presetName = { session -> session.presetId?.takeIf { it.isNotEmpty() }?.let { pid -> s.presets[session.themeId]?.presets?.firstOrNull { it.id == pid }?.name } },
+                )
+            }
+        }
     }
 
     private suspend fun refreshSpeakers() {

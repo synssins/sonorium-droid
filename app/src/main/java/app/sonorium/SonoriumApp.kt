@@ -6,7 +6,9 @@ import android.provider.Settings
 import app.sonorium.data.ServerStore
 import app.sonorium.link.Linker
 import app.sonorium.net.PinnedTls
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 class SonoriumApp : Application() {
@@ -39,6 +41,13 @@ class SonoriumApp : Application() {
     override fun onCreate() {
         super.onCreate()
         CrashLog.install(this)
+        // Home-screen widgets on this device's own channel follow its player
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main).launch {
+            app.sonorium.engine.PhonePlayer.state
+                .map { s -> listOf(s.playing, s.sampleEnded, app.sonorium.engine.PhonePlayer.title(s), app.sonorium.engine.PhonePlayer.subtitle(s)) }
+                .distinctUntilChanged()
+                .collect { runCatching { app.sonorium.widget.WidgetUpdater.updateDevice(this@SonoriumApp) } }
+        }
     }
 
     private fun deviceInfo(): Linker.DeviceInfo {

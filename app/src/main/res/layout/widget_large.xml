@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 4x2: where (a server or this device) and the channel, theme and preset or step, previous / play / next -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/widget_source"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/widget_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:id="@+id/widget_controls"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/widget_previous"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/widget_button_quiet"
+            android:contentDescription="@string/widget_previous"
+            android:src="@drawable/ic_widget_previous" />
+
+        <ImageButton
+            android:id="@+id/widget_play"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:background="@drawable/widget_button"
+            android:contentDescription="@string/widget_play"
+            android:src="@drawable/ic_widget_play" />
+
+        <ImageButton
+            android:id="@+id/widget_next"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/widget_button_quiet"
+            android:contentDescription="@string/widget_next"
+            android:src="@drawable/ic_widget_next" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_action"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center"
+        android:textColor="@color/accent"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+</LinearLayout>

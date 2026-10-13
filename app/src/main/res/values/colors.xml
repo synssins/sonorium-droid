@@ -3,4 +3,9 @@
     <!-- From the web UI's styles.css; no new colours (UI_STYLE.md). -->
     <color name="background">#1A1A2E</color>
     <color name="bar">#0F172A</color>
+    <color name="card">#1F2937</color>
+    <color name="text">#F8FAFC</color>
+    <color name="text_secondary">#94A3B8</color>
+    <color name="accent">#06D6A0</color>
+    <color name="danger">#EF4444</color>
 </resources>

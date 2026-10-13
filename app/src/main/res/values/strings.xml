@@ -114,4 +114,25 @@
     <string name="volume_keys_title">Control theme playback volume in sync with device volume</string>
     <string name="volume_keys_tip">The volume buttons change the open channel\'s speaker volume in steps of 5% while Sonorium is on screen</string>
     <string name="volume_keys_section">On this phone</string>
+    <!-- Home-screen widgets -->
+    <string name="widget_small_description">One channel: Play and Stop</string>
+    <string name="widget_large_description">One channel: what plays, Play and Stop, previous and next</string>
+    <string name="widget_play">Play</string>
+    <string name="widget_stop">Stop</string>
+    <string name="widget_previous">Previous preset or step</string>
+    <string name="widget_next">Next preset, step or entry</string>
+    <string name="widget_stopped">Stopped</string>
+    <string name="widget_default_settings">Default settings</string>
+    <string name="widget_step">Step %1$d of %2$d · %3$s</string>
+    <string name="widget_entry">Entry %1$d of %2$d · %3$s</string>
+    <string name="widget_unreachable">Can\'t reach %1$s</string>
+    <string name="widget_retry">Retry</string>
+    <string name="widget_gone">This channel isn\'t there any more</string>
+    <string name="widget_choose">Choose a channel</string>
+    <string name="widget_sample_limit">Today\'s free listening is used up</string>
+    <string name="widget_unlock">Unlock Pro</string>
+    <string name="widget_my_channel">My channel</string>
+    <string name="widget_config_title">Choose a channel</string>
+    <string name="widget_config_loading">Looking for channels…</string>
+    <string name="widget_config_none">No channels</string>
 </resources>
