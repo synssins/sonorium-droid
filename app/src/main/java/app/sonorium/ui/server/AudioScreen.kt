@@ -169,6 +169,32 @@ fun AudioPage(model: ServerViewModel) {
                     }
                 }
             }
+            // This phone's own setting (not the server's): the volume buttons and a server channel (item 15)
+            val onDevice = model.state.collectAsState().value.onDevice
+            if (!onDevice) {
+                val keys by model.volumeKeys.collectAsState()
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    androidx.compose.ui.res.stringResource(app.sonorium.R.string.volume_keys_section).uppercase(), color = Palette.textMuted,
+                    fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    Modifier.fillMaxWidth().background(Palette.card, RoundedCornerShape(8.dp)).border(1.dp, Palette.border, RoundedCornerShape(8.dp))
+                        .padding(12.dp).heightIn(min = app.sonorium.ui.UiSize.ROW.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.volume_keys_title), color = Palette.text, fontSize = 14.sp)
+                        Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.volume_keys_tip), color = Palette.textSecondary, fontSize = 12.sp)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    androidx.compose.material3.Switch(
+                        checked = keys, onCheckedChange = { model.setVolumeKeys(it) },
+                        colors = androidx.compose.material3.SwitchDefaults.colors(checkedTrackColor = Palette.accent, checkedThumbColor = Palette.bar),
+                    )
+                }
+            }
             Spacer(Modifier.heightIn(min = 24.dp))
         }
     }

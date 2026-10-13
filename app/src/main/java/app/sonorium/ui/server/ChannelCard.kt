@@ -281,7 +281,11 @@ fun ChannelCard(
                     border = if (muted) Palette.danger else Palette.border,
                     size = app.sonorium.ui.UiSize.SMALL,
                 )
-                PercentSlider(session.volume, "Volume: ${session.name}", { actions.setVolume(session, it) }, Modifier.weight(1f).padding(start = 8.dp))
+                // On this device the phone's media volume is the loudness (item 15): no slider
+                if (state.onDevice) Text(
+                    androidx.compose.ui.res.stringResource(app.sonorium.R.string.volume_phone_hint), color = Palette.textSecondary,
+                    fontSize = 13.sp, modifier = Modifier.weight(1f).padding(start = 12.dp),
+                ) else PercentSlider(session.volume, "Volume: ${session.name}", { actions.setVolume(session, it) }, Modifier.weight(1f).padding(start = 8.dp))
             }
 
             // Listen row (this device): where a channel can be listened to from another device
@@ -293,7 +297,11 @@ fun ChannelCard(
                     border = if (listening) Palette.accent else Palette.border,
                     size = app.sonorium.ui.UiSize.SMALL,
                 )
-                PercentSlider(listenVolume, "Volume on this device: ${session.name}", actions.setListenVolume, Modifier.weight(1f).padding(start = 8.dp), onChange = actions.setListenVolume)
+                // Listening plays at full volume: the phone's media volume is the loudness (item 15)
+                Text(
+                    androidx.compose.ui.res.stringResource(app.sonorium.R.string.listen_here), color = if (listening) Palette.text else Palette.textSecondary,
+                    fontSize = 13.sp, modifier = Modifier.weight(1f).padding(start = 12.dp),
+                )
             }
 
             RecentChanges(session)

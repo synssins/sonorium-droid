@@ -132,6 +132,8 @@ fun ServerScreen(
             model.requestedPage.value = null
         }
     }
+    // The volume buttons act on a channel only while Channels shows (item 15)
+    LaunchedEffect(page) { model.channelsShown = page == Page.Channels }
     // A page this account can't open (e.g. restored after Android closed the app): back to Channels (QA 20)
     LaunchedEffect(page, state.me) {
         val perm = page.perm

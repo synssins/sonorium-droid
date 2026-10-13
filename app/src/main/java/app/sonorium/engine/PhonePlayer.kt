@@ -95,7 +95,8 @@ object PhonePlayer {
         restored = true
         // The themes got ready before (their versions), so a restart doesn't get them ready again
         prefs(context).all.forEach { (k, v) -> if (k.startsWith(KEY_READY) && v is String) ready[k.removePrefix(KEY_READY)] = v }
-        val volume = prefs(context).getInt(KEY_VOLUME, app.sonorium.local.DeviceSettings.get(context).volume).coerceIn(0, 100)
+        // Full volume: the phone's media volume is the loudness (item 15)
+        val volume = 100
         val p = prefs(context)
         _state.update { it.copy(volume = volume, playlistMode = p.getBoolean(KEY_PLAYLIST_MODE, false), playlistId = p.getString(KEY_PLAYLIST, null)) }
     }

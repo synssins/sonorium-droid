@@ -108,4 +108,10 @@
     <string name="found_add_description">Add %1$s at %2$s</string>
     <string name="address_label">Address</string>
     <string name="address_placeholder">https://sonorium.local:8808/</string>
+    <!-- Volume (item 15): playback on this phone follows the phone's media volume -->
+    <string name="volume_phone_hint">Loudness: this phone\'s volume buttons</string>
+    <string name="listen_here">Listen on this device</string>
+    <string name="volume_keys_title">Control theme playback volume in sync with device volume</string>
+    <string name="volume_keys_tip">The volume buttons change the open channel\'s speaker volume in steps of 5% while Sonorium is on screen</string>
+    <string name="volume_keys_section">On this phone</string>
 </resources>

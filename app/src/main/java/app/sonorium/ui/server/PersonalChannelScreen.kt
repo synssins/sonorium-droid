@@ -146,11 +146,6 @@ fun PersonalChannelScreen(
                         placeholder = "No presets available",
                         enabled = hasPresets,
                     )
-                    // This device's volume only; each device keeps its own
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(SIcons.Headphones, null, tint = if (on) Palette.accent else Palette.textSecondary, modifier = Modifier.size(UiSize.GLYPH_SMALL.dp))
-                        PercentSlider(listenVolume, "Volume on this device", model::setListenVolume, Modifier.weight(1f).padding(start = 12.dp), onChange = model::setListenVolume)
-                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("Announcements", color = Palette.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
                         Switch(

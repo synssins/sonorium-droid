@@ -138,7 +138,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     private val prefs = application.getSharedPreferences("sonorium", Context.MODE_PRIVATE)
 
     /** This device's listen volume (native-api.md 1.2), remembered on the device. */
-    private val _listenVolume = MutableStateFlow(prefs.getInt("listenVolume", 100))
+    /** Listening on this phone plays at full volume: the phone's media volume is the loudness (item 15). */
+    private val _listenVolume = MutableStateFlow(100)
     val listenVolume: StateFlow<Int> = _listenVolume.asStateFlow()
 
     fun open(id: String?) {
@@ -503,9 +504,12 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     // ---------- Card actions (native-api.md 1.1, "Card actions") ----------
 
-    fun togglePlay(session: Session) = act {
-        if (session.isPlaying) it.stop(session.id) else it.play(session.id)
-        refreshSessions()
+    fun togglePlay(session: Session) {
+        lastChannel = session.id
+        act {
+            if (session.isPlaying) it.stop(session.id) else it.play(session.id)
+            refreshSessions()
+        }
     }
 
     fun setTheme(session: Session, themeId: String) {
@@ -530,7 +534,48 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    // ---------- Volume buttons for a server channel (item 15, setting off by default) ----------
+
+    private val _volumeKeys = MutableStateFlow(prefs.getBoolean(KEY_VOLUME_KEYS, false))
+    /** "Control theme playback volume in sync with device volume": the volume buttons nudge the open channel. */
+    val volumeKeys: StateFlow<Boolean> = _volumeKeys.asStateFlow()
+
+    fun setVolumeKeys(on: Boolean) {
+        _volumeKeys.value = on
+        prefs.edit().putBoolean(KEY_VOLUME_KEYS, on).apply()
+    }
+
+    /** Channels shows (set by the screen): the volume buttons act on a channel only there. */
+    @Volatile var channelsShown: Boolean = false
+
+    /** The channel touched last (its volume, Play, opened): the one the volume buttons change. */
+    private var lastChannel: String? = null
+
+    fun touchedChannel(sessionId: String) {
+        lastChannel = sessionId
+    }
+
+    /**
+     * A volume button: with the setting on and a server's channel on screen, that channel's speaker volume goes
+     * up or down by [delta] (relative, never set outright). False when it isn't for a channel (the phone's own
+     * volume then changes as usual).
+     */
+    fun nudgeVolume(delta: Int): Boolean {
+        val s = _state.value
+        if (!_volumeKeys.value || !channelsShown || s.onDevice || api == null) return false
+        val open = s.sessions.filter { _expanded.value[it.id] == true }
+        val target = s.sessions.firstOrNull { it.id == lastChannel }
+            ?: open.singleOrNull()
+            ?: s.sessions.filter { it.isPlaying }.singleOrNull()
+            ?: s.sessions.singleOrNull()
+            ?: return false
+        val volume = (target.volume + delta).coerceIn(0, 100)
+        if (volume != target.volume) setVolume(target, volume)
+        return true
+    }
+
     fun setVolume(session: Session, volume: Int) {
+        lastChannel = session.id
         val before = session.volume
         _state.update { s -> s.copy(sessions = s.sessions.map { if (it.id == session.id) it.copy(volume = volume) else it }) }
         viewModelScope.launch {
@@ -744,14 +789,16 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun setExpanded(sessionId: String, open: Boolean) {
+        if (open) lastChannel = sessionId
         _expanded.update { it + (sessionId to open) }
         prefs.edit().putStringSet(expandedKey(), _expanded.value.map { (id, o) -> "$id=${if (o) 1 else 0}" }.toSet()).apply()
     }
 
+    /** No in-app volume for playback on this phone any more (item 15): kept at 100 %. */
+    @Suppress("UNUSED_PARAMETER")
     fun setListenVolume(volume: Int) {
-        _listenVolume.value = volume
-        prefs.edit().putInt("listenVolume", volume).apply()
-        ListenController.state.value?.let { ListenController.setVolume(getApplication(), it.sessionId, volume) }
+        _listenVolume.value = 100
+        ListenController.state.value?.let { ListenController.setVolume(getApplication(), it.sessionId, 100) }
     }
 
     // ---------- Playlists (native-api.md Phase 2, Playlists) ----------
@@ -1860,6 +1907,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
 
     private companion object {
         const val CAP_BACKUP = "theme_backup"
+        const val KEY_VOLUME_KEYS = "volumeKeys"
         /** A backup started by the app at most this often (ms); the Backups page's Back up now any time. */
         const val BACKUP_GAP_MS = 5 * 60_000L
         const val EVENT_TYPES =
