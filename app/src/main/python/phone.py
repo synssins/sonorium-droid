@@ -59,6 +59,21 @@ class Player:
             self._mirrors.insert(0, mirror_lookup(theme_dir, cache_dir))
         self.engine.set_theme(theme_dir, preset_id=preset_id, sequence_id=sequence_id or None)
 
+    def start_playlist(self, playlist_json, themes_root, pcm_root):
+        """
+        Plays a playlist (the server's JSON) from its first entry. Its themes are prepared copies under
+        themes_root, their decoded audio in the same layout under pcm_root.
+        """
+        root = os.path.realpath(themes_root)
+        if root not in self._roots:
+            # After every theme's own mirror: any prepared theme's files map to its decoded audio
+            self._roots.append(root)
+            self._mirrors.append(mirror_lookup(themes_root, pcm_root))
+        return json.dumps(self.engine.start_playlist(json.loads(playlist_json), themes_root=themes_root), default=str)
+
+    def stop_playlist(self):
+        return bool(self.engine.stop_playlist())
+
     def sequences(self):
         """[{"id", "name"}] as JSON."""
         return json.dumps([{"id": sid, "name": name or sid} for sid, name in (self.engine.sequences or {}).items()])

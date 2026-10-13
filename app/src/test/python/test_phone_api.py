@@ -297,6 +297,34 @@ class PhoneApiTest(unittest.TestCase):
             self.assertEqual(phone_api.NOT_HERE, body["error"])
         self.assertEqual(404, self.call("GET", ["tracks"], theme_id="nope")[0])
 
+    def pl(self, method, playlist_id="", body=None):
+        answer = json.loads(phone_api.playlists(method, playlist_id, json.dumps(body) if body is not None else "",
+                                                str(self.tmp / "playlists.json"), str(self.root)))
+        return answer["status"], answer["body"]
+
+    def test_playlists(self):
+        self.assertEqual((200, {"playlists": []}), self.pl("GET"))
+        entry = {"theme_id": "engine-test-theme", "preset_id": "calm", "sequence_id": None}
+        status, body = self.pl("POST", body={"name": "Evening", "entries": [entry], "order": "shuffle"})
+        self.assertEqual(201, status, body)
+        pid = body["id"]
+        self.assertEqual(("Evening", "shuffle", 1800.0, "calm"), (body["name"], body["order"], body["play_min"], body["entries"][0]["preset_id"]))
+        self.assertTrue(body["entries"][0]["id"])
+        self.assertEqual(409, self.pl("POST", body={"name": " evening ", "entries": [entry]})[0])
+        self.assertEqual(400, self.pl("POST", body={"name": "X", "entries": [{"theme_id": "nope"}]})[0])
+        self.assertEqual(400, self.pl("POST", body={"name": "X", "entries": [{**entry, "preset_id": "nope"}]})[0])
+        status, body = self.pl("PUT", pid, {"name": "Night", "repeat": False})
+        self.assertEqual((200, "Night", False), (status, body["name"], body["repeat"]))
+        self.assertEqual(["Night"], [p["name"] for p in self.pl("GET")[1]["playlists"]])
+        self.assertEqual(404, self.pl("PUT", "nope", {"name": "A"})[0])
+        self.assertEqual(200, self.pl("DELETE", pid)[0])
+        self.assertEqual([], self.pl("GET")[1]["playlists"])
+        # Every theme's presets and sequences for the playlist editor
+        self.call("POST", ["sequences"], {"name": "Night", "presets": ["calm", "busy"]})
+        catalog = json.loads(phone_api.catalog_presets(str(self.root)))
+        self.assertEqual(["calm", "busy"], [p["id"] for p in catalog["engine-test-theme"]["presets"]])
+        self.assertEqual(["night"], [q["id"] for q in catalog["engine-test-theme"]["sequences"]])
+
     def test_opening_writes_nothing(self):
         # Themes open without converting: "auto" stays "auto" (the server converts it with the real files),
         # nothing is written, and no decoded audio is needed

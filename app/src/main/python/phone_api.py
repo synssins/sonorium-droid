@@ -493,3 +493,84 @@ def _seconds(wav):
             return max(0, wav.stat().st_size - 44) / (2.0 * SAMPLE_RATE)
         except OSError:
             return None
+
+
+# --- playlists on this phone ---------------------------------------------------------
+
+def playlists(method, playlist_id, body, store, catalog_root):
+    """
+    The server's /api/playlists routes for playlists kept on this phone, with Core's
+    sonorium.core.playlists (same checks, same JSON, so they can travel to a server):
+
+        GET  (playlist_id "")  -> {"playlists": [...]}
+        POST (playlist_id "")  -> the new playlist (201)
+        PUT  playlist_id       -> the playlist as saved
+        DELETE playlist_id     -> {"status": "ok"}
+
+    store: the JSON file they're kept in; catalog_root: a folder per theme on this
+    phone (its metadata.json and presets.json, named by anything: themes are found
+    by their metadata.json id). Returns the JSON text {"status": int, "body": ...}.
+    """
+    from sonorium.core import playlists as pl
+    try:
+        method = method.upper()
+        data = json.loads(body) if body else None
+        lookups = pl.folder_lookups(catalog_root)
+        found = pl.load_playlists(store)
+        changed = any(pl.ensure_entry_ids(p) for p in found.values())
+        if not playlist_id and method == "GET":
+            if changed:
+                pl.save_playlists(store, found)
+            status, answer = 200, {"playlists": [pl.to_response(pid, p) for pid, p in found.items()]}
+        elif not playlist_id and method == "POST":
+            pid, saved = pl.create_playlist(found, _object(data), *lookups)
+            pl.save_playlists(store, found)
+            status, answer = 201, pl.to_response(pid, saved)
+        elif playlist_id and playlist_id not in found:
+            status, answer = 404, _error("Playlist not found")
+        elif playlist_id and method == "PUT":
+            saved = pl.update_playlist(found, playlist_id, _object(data), *lookups)
+            pl.save_playlists(store, found)
+            status, answer = 200, pl.to_response(playlist_id, saved)
+        elif playlist_id and method == "DELETE":
+            pl.delete_playlist(found, playlist_id)
+            pl.save_playlists(store, found)
+            status, answer = 200, {"status": "ok", "playlist_id": playlist_id}
+        else:
+            status, answer = 501, _error(NOT_HERE)
+    except _Http as e:
+        status, answer = e.status, _error(str(e))
+    except pl.PlaylistConflict as e:
+        status, answer = 409, _error(str(e))
+    except pl.PlaylistError as e:
+        status, answer = 400, _error(str(e))
+    except json.JSONDecodeError:
+        status, answer = 400, _error("Invalid JSON body")
+    except Exception as e:  # noqa: BLE001 - an answer, never a crash in the app
+        status, answer = 500, _error(f"{type(e).__name__}: {e}")
+    return json.dumps({"status": status, "body": answer}, default=str)
+
+
+def catalog_presets(catalog_root):
+    """
+    Every theme in the catalog's presets and sequences as GET /themes/{id}/presets
+    answers them, by theme id: {"<id>": {"presets": [...], "sequences": [...],
+    "default_has_intrusion": bool}}. A theme that can't be read is left out.
+    """
+    root = Path(catalog_root)
+    out = {}
+    try:
+        folders = sorted(p for p in root.iterdir() if p.is_dir())
+    except OSError:
+        folders = []
+    for folder in folders:
+        theme_id = (_raw_metadata(folder) or {}).get("id")
+        if not isinstance(theme_id, str) or not theme_id:
+            continue
+        try:
+            answer = _presets(theme_id, folder, root)
+        except Exception:  # noqa: BLE001 - one broken theme doesn't hide the others
+            continue
+        answer.pop("theme_id", None)
+        out[theme_id] = answer
+    return json.dumps(out, default=str)
