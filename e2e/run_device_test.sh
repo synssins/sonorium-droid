@@ -33,7 +33,8 @@ e2e=$?
 
 # The top bar and the help buttons on a tablet too (help right-aligned under the server button on every
 # screen size: Chris), landscape-wide like a large tablet
-if [ "$e2e" -eq 0 ]; then
+# (Android 9+: the Android 8 image's launcher crashes on a size change, which covers the app)
+if [ "$e2e" -eq 0 ] && [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" -ge 28 ]; then
   adb shell wm size 2560x1600; adb shell wm density 320; sleep 3
   adb shell am instrument -w -r -e class app.sonorium.TopBarTest "$RUNNER" | tee e2e-out/topbar-tablet.txt | tail -3
   cat e2e-out/topbar-tablet.txt >> e2e-out/instrumentation.txt

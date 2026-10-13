@@ -1,6 +1,5 @@
 package app.sonorium
 
-import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -28,10 +27,10 @@ class QaSmokeTest {
 
     @Test
     fun theReleaseBuildPlaysOnTheDevice() {
-        val launch = instrumentation.context.packageManager.getLaunchIntentForPackage(pkg)
-        assertNotNull("The QA build isn't installed", launch)
+        // Through the shell: Android 11+ hides other apps from this one (package visibility)
+        assertTrue("The QA build isn't installed", shell("pm path $pkg").contains("package:"))
         shell("logcat -c")
-        instrumentation.context.startActivity(launch!!.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+        shell("monkey -p $pkg -c android.intent.category.LAUNCHER 1")
         assertNotNull("The QA build didn't open", device.wait(Until.hasObject(By.pkg(pkg).depth(0)), 30_000))
         // The first-run guide: through it
         repeat(4) {
