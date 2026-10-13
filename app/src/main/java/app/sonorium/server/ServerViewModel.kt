@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.sonorium.engine.PhonePlayer
 import app.sonorium.SonoriumApp
 import app.sonorium.local.LocalTheme
 import app.sonorium.local.PhoneThemeApi
@@ -1225,6 +1226,8 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val e = _editor.value ?: return
         e.close()
         _editor.value = null
+        // Edited on this phone: My channel shows the theme's new presets and sequences
+        if (e.onPhone) PhonePlayer.reloadLists(getApplication())
         if (_state.value.presets.containsKey(e.themeId) || _state.value.sessions.any { it.themeId == e.themeId }) loadPresetsAsync(e.themeId)
     }
 

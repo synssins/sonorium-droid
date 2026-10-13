@@ -84,6 +84,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
     var creating by remember { mutableStateOf(false) }
     var managing by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf<ThemeSummary?>(null) }
+    var updating by remember { mutableStateOf<ThemeSummary?>(null) }
     var pendingExport by remember { mutableStateOf<ByteArray?>(null) }
     val packages by model.packages.collectAsState()
     val localThemes by model.localThemes.collectAsState()
@@ -203,7 +204,11 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                         phoneBlocked = app.sonorium.local.PackageRules.blocked(packages?.get(t.id), localThemes),
                         onPhone = app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) != app.sonorium.local.PackageRules.OnPhone.NONE,
                         downloading = downloads[t.id],
-                        onSaveToPhone = { saveToPhone(t.id) },
+                        onSaveToPhone = {
+                            // Updating replaces the phone's folder: confirm first, phone edits are lost
+                            if (app.sonorium.local.PackageRules.onPhone(packages?.get(t.id), localThemes) == app.sonorium.local.PackageRules.OnPhone.UPDATE) updating = t
+                            else saveToPhone(t.id)
+                        },
                         onCancelSave = { model.cancelSaveToPhone(t.id) },
                     )
                 }
@@ -228,6 +233,12 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
         UnlockScreen(model, onClose = { unlockFor = null }, onUnlocked = { unlockFor = null; saveToPhone(id) })
     }
     if (managing) CategoriesDialog(state, model, onClosedChip = { if (chip == it) chip = ThemeRules.ALL }, onDismiss = { managing = false })
+    updating?.let { t ->
+        ConfirmDialog(
+            "Update “${t.name}” on this phone?", "Changes made to it on this phone are replaced by the server's version.", "Update", danger = false,
+            onConfirm = { saveToPhone(t.id) }, onDismiss = { updating = null },
+        )
+    }
     deleting?.let { t ->
         ConfirmDialog("Delete “${t.name}”?", "The theme and its tracks are removed from the server.", "Delete", onConfirm = { model.deleteTheme(t) }, onDismiss = { deleting = null })
     }

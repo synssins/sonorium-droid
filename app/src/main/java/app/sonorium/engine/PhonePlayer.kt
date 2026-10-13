@@ -110,6 +110,28 @@ object PhonePlayer {
         if (switching) play(context)
     }
 
+    /**
+     * The chosen theme's presets or sequences may have changed (the Theme Editor closed): reads its
+     * presets.json again. The playing preset or sequence stays chosen while it still exists.
+     */
+    fun reloadLists(context: Context) {
+        val theme = _state.value.theme ?: return
+        val app = context.applicationContext as SonoriumApp
+        scope.launch {
+            val text = runCatching { app.themeStore.readFile(theme, "presets.json") }.getOrNull() ?: return@launch
+            val presets = PhoneEngine.presetsFromJson(text)
+            val sequences = PhoneEngine.sequencesFromJson(text)
+            _state.update { st ->
+                if (st.theme?.docId != theme.docId) st
+                else st.copy(
+                    presets = presets, sequences = sequences,
+                    presetId = st.presetId?.let { id -> if (presets.any { it.id == id }) id else presets.firstOrNull { it.isDefault }?.id },
+                    sequenceId = st.sequenceId?.takeIf { id -> sequences.any { it.id == id } },
+                )
+            }
+        }
+    }
+
     /** Play: prepares the theme the first time (decoding its audio once), opens the engine, starts playback. */
     fun play(context: Context) {
         restore(context)
