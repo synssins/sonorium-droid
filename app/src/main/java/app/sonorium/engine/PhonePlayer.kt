@@ -125,8 +125,14 @@ object PhonePlayer {
         val app = context.applicationContext as SonoriumApp
         val switching = _state.value.playing
         prefs(context).edit { putString(KEY_THEME_DOC, theme.docId).putString(KEY_THEME_FOLDER, theme.folder) }
+        // The choice kept for this theme shows at once; it's checked against the theme's lists once they're read
+        val keptNow = prefs(context).let { p -> p.getString(KEY_CHOICE + theme.docId, null) ?: p.getString(KEY_CHOICE + theme.folder, null) }
         _state.update {
-            it.copy(theme = theme, presets = emptyList(), presetId = null, sequences = emptyList(), sequenceId = null, step = null, sequenceFinished = false, error = null, notice = null)
+            it.copy(
+                theme = theme, presets = emptyList(), sequences = emptyList(), step = null, sequenceFinished = false, error = null, notice = null,
+                presetId = keptNow?.takeIf { k -> k.isNotEmpty() && !k.startsWith("seq:") },
+                sequenceId = keptNow?.takeIf { k -> k.startsWith("seq:") }?.removePrefix("seq:"),
+            )
         }
         scope.launch {
             // Read again a few times when the theme's files can't be read yet (right after a start)
@@ -144,9 +150,12 @@ object PhonePlayer {
                 val keptPreset = kept?.takeIf { !it.startsWith("seq:") && (it.isEmpty() || presets.any { p -> p.id == it }) }
                 Log.println(Log.WARN, TAG, "Kept choice for ${theme.folder}: ${kept ?: "none"} (${presets.size} presets, ${sequences.size} sequences)")
                 _state.update {
+                    // A choice no longer there (preset deleted meanwhile) gives way to the kept one or the default
+                    val seq = it.sequenceId?.takeIf { id -> sequences.any { q -> q.id == id } } ?: keptSeq
+                    val preset = it.presetId?.takeIf { id -> presets.any { p -> p.id == id } }
                     it.copy(
-                        presets = presets, sequences = sequences, sequenceId = it.sequenceId ?: keptSeq,
-                        presetId = it.presetId ?: keptPreset?.ifEmpty { null } ?: if (keptPreset == null && keptSeq == null) presets.firstOrNull { p -> p.isDefault }?.id else null,
+                        presets = presets, sequences = sequences, sequenceId = seq,
+                        presetId = preset ?: keptPreset?.ifEmpty { null } ?: if (keptPreset == null && seq == null) presets.firstOrNull { p -> p.isDefault }?.id else null,
                     )
                 }
             }
@@ -280,17 +289,21 @@ object PhonePlayer {
     /** The themes [theme] links files from, got ready too (their decoded audio plays the linked tracks). */
     private suspend fun prepareLinked(app: SonoriumApp, theme: LocalTheme) {
         val meta = runCatching { app.themeStore.readFile(theme, "metadata.json") }.getOrNull() ?: return
-        val ids = runCatching {
+        // Source theme id → the tracks of it that are linked
+        val wanted = runCatching {
             val links = org.json.JSONObject(meta).optJSONObject("links") ?: return
-            links.keys().asSequence().mapNotNull { k -> links.optJSONObject(k)?.optString("theme")?.ifEmpty { null } }.toSet()
+            links.keys().asSequence().mapNotNull { k -> links.optJSONObject(k) }
+                .mapNotNull { l -> l.optString("theme").ifEmpty { null }?.let { it to l.optString("track") } }
+                .groupBy({ it.first }, { it.second }).mapValues { it.value.toSet() }
         }.getOrNull().orEmpty()
-        if (ids.isEmpty()) return
+        if (wanted.isEmpty()) return
         val themes = withContext(Dispatchers.IO) { runCatching { app.themeStore.list() }.getOrDefault(emptyList()) }
         for (t in themes) {
-            if (t.metaId !in ids || t.docId == theme.docId || ready[t.folder] == t.version || openFolder == t.folder) continue
-            runCatching { ThemePrep.prepare(app, app.themeStore, t) { _, _ -> } }
-                .onSuccess { ready[t.folder] = t.version }
-                .onFailure { Log.w(TAG, "Couldn't get ${t.folder} ready for its linked files", it) }
+            val tracks = wanted[t.metaId] ?: continue
+            if (t.docId == theme.docId || ready[t.folder] == t.version || openFolder == t.folder) continue
+            // Only the linked files are decoded (the rest of that theme when it plays itself)
+            runCatching { ThemePrep.prepare(app, app.themeStore, t, only = tracks) { _, _ -> } }
+                .onFailure { Log.w(TAG, "Couldn't get ${t.folder}'s linked files ready", it) }
         }
     }
 

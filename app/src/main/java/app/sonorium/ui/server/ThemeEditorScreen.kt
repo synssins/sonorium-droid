@@ -805,7 +805,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                             val added = already(t.id)
                             val playing = ui.filePreview == "pk:${src.id}:${t.id}"
                             Row(Modifier.fillMaxWidth().heightIn(min = 52.dp), verticalAlignment = Alignment.CenterVertically) {
-                                IconBox(if (playing) SIcons.Stop else SIcons.Play, if (playing) "Stop preview" else "Preview", { editor.toggleFilePreview("pk:${src.id}:${t.id}", t.previewUrl) }, size = app.sonorium.ui.UiSize.SMALL)
+                                IconBox(if (playing) SIcons.Stop else SIcons.Play, (if (playing) "Stop preview: " else "Preview: ") + t.displayName.ifEmpty { t.name }, { editor.toggleFilePreview("pk:${src.id}:${t.id}", t.previewUrl) }, size = app.sonorium.ui.UiSize.SMALL)
                                 Spacer(Modifier.width(8.dp))
                                 Column(Modifier.weight(1f)) {
                                     Text(t.displayName.ifEmpty { t.name }, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -172,9 +172,18 @@ class DeviceApi(private val context: Context) : Interceptor {
         val now = st.now
         val playlistOn = st.playlistMode && st.playlistId != null
         val cast = CastController.state.value.speaker
-        val themeId = if (playlistOn && now.playlist != null) now.playlist.themeId else st.theme?.let(::idOf)
-        val presetId = if (playlistOn) now.playlistEntry?.presetId ?: now.presetId else st.presetId
-        val sequenceId = if (playlistOn) now.playlistEntry?.sequenceId else st.sequenceId
+        // A playlist chosen: what the engine plays of it, else (themes getting ready, or after a restart) its first entry
+        if (playlistOn && PhonePlaylists.playlists.value.isEmpty()) refreshPlaylists()
+        val running = now.playlist?.takeIf { playlistOn && it.id == st.playlistId }
+        val chosen = if (playlistOn) PhonePlaylists.playlists.value.firstOrNull { it.id == st.playlistId } else null
+        val firstEntry = chosen?.entries?.firstOrNull()
+        val playlistStatus = running ?: chosen?.let { p ->
+            app.sonorium.net.PlaylistStatus(id = p.id, name = p.name, entryIndex = 0, position = 0, entries = p.entries.size, themeId = firstEntry?.themeId)
+        }
+        val entry = if (running != null) now.playlistEntry else firstEntry
+        val themeId = if (playlistOn) playlistStatus?.themeId ?: st.theme?.let(::idOf) else st.theme?.let(::idOf)
+        val presetId = if (playlistOn) entry?.presetId ?: (if (running != null) now.presetId else null) else st.presetId
+        val sequenceId = if (playlistOn) entry?.sequenceId else st.sequenceId
         val session = Session(
             id = CHANNEL_ID,
             name = MY_CHANNEL,
@@ -187,10 +196,7 @@ class DeviceApi(private val context: Context) : Interceptor {
             presetChoice = sequenceId?.let { "seq:$it" } ?: presetId ?: "",
             playlistId = if (st.playlistMode) st.playlistId else null,
             sequence = if (!playlistOn) now.sequence?.takeIf { st.sequenceId != null } else null,
-            // Until the engine runs it (themes getting ready): the playlist, its first entry, no countdown
-            playlist = if (playlistOn) now.playlist?.takeIf { it.id == st.playlistId } ?: PhonePlaylists.playlists.value.firstOrNull { it.id == st.playlistId }?.let { p ->
-                app.sonorium.net.PlaylistStatus(id = p.id, name = p.name, entryIndex = 0, position = 0, entries = p.entries.size, themeId = p.entries.firstOrNull()?.themeId)
-            } else null,
+            playlist = if (playlistOn) playlistStatus else null,
             speakersMuted = st.muted,
             recent = now.recent,
             announcements = false,

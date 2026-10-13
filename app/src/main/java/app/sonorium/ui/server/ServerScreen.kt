@@ -506,7 +506,8 @@ private fun ChannelsPage(
             next = model::next,
             themeMode = model::enterThemeMode,
             playlistMode = model::enterPlaylistMode,
-            pickPlaylist = { s, id -> state.playlists.firstOrNull { it.id == id }?.let { model.pickPlaylist(s, it) } },
+            // The playlists as they are now (these actions are remembered across recompositions)
+            pickPlaylist = { s, id -> model.state.value.playlists.firstOrNull { it.id == id }?.let { model.pickPlaylist(s, it) } },
             edit = onEdit,
             delete = model::delete,
             stopCasting = model::stopCasting,

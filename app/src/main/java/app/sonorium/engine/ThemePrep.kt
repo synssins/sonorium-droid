@@ -38,15 +38,22 @@ object ThemePrep {
     private val mutex = Mutex()
 
     /** [progress] gets (done, total) audio files. Throws [Problem] with a message for the user when it can't. */
-    suspend fun prepare(context: Context, store: ThemeStore, theme: LocalTheme, progress: (Int, Int) -> Unit): Prepared = mutex.withLock {
+    suspend fun prepare(
+        context: Context, store: ThemeStore, theme: LocalTheme,
+        /** Only these tracks' audio ("Bells", "Group/Bells"; null: all), e.g. the files another theme links. */
+        only: Set<String>? = null,
+        progress: (Int, Int) -> Unit,
+    ): Prepared = mutex.withLock {
         withContext(Dispatchers.IO) {
             val themeDir = themeDir(context, theme.folder)
             val pcmDir = pcmDir(context, theme.folder)
             val files = runCatching { store.files(theme) }
                 .onFailure { Log.w(TAG, "Couldn't list ${theme.folder}", it) }
                 .getOrElse { throw Problem("Couldn't open “${theme.name}”. Check that it's still in your themes folder.") }
-            val audio = files.filter { ThemeStore.isAudio(it.path) }
-            if (audio.isEmpty()) throw Problem("“${theme.name}” has no audio files")
+            val all = files.filter { ThemeStore.isAudio(it.path) }
+            fun keyOf(f: ThemeStore.ThemeFile) = f.path.substringBeforeLast('.')
+            val audio = if (only == null) all else all.filter { keyOf(it) in only }
+            if (all.isEmpty()) throw Problem("“${theme.name}” has no audio files")
             val stampFile = File(pcmDir, ".stamps.json")
             val stamps = runCatching { if (stampFile.exists()) JSONObject(stampFile.readText()) else JSONObject() }.getOrDefault(JSONObject())
             fun stampOf(f: ThemeStore.ThemeFile) = "${f.bytes}:${f.modified}"
@@ -92,7 +99,9 @@ object ThemePrep {
             } finally {
                 runCatching { stampFile.writeText(stamps.toString()) }
             }
-            if (skipped.size == audio.size) throw Problem("Couldn't read any of “${theme.name}”'s audio files")
+            // The others listed (stand-ins), so the theme's folder is whole; their audio comes when it plays itself
+            if (only != null) all.filter { keyOf(it) !in only }.forEach { f -> File(themeDir, f.path).apply { parentFile?.mkdirs(); createNewFile() } }
+            if (audio.isNotEmpty() && skipped.size == audio.size) throw Problem("Couldn't read any of “${theme.name}”'s audio files")
             progress(audio.size, audio.size)
             Prepared(themeDir, pcmDir, skipped)
         }
