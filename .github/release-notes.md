@@ -1,12 +1,17 @@
 ## What's new in this build
 
-- **Tablets:** Add playlist and Create theme stay open when the keyboard comes up (they closed themselves on a tablet).
-- **Add from another theme** lists the other theme's tracks also before that theme has been played on your device (it said "Can't reach the server.").
+- **A sample theme for everyone:** right after installing, with no internet, no server and nothing unlocked, your device shows up with one theme (Tavern) ready to play in My channel, with its presets and sequences, Next, volume and the lock screen.
+- Your device is in the Servers list for everyone; a first start with nothing else chosen opens it.
+- Beyond the sample (more themes on your device, editing, playlists, Cast from your device), the app shows the unlock first.
 
 ## Please test
 
-- On a tablet: Playlists › Add playlist, type a name; Themes › Create theme.
-- Your device › a theme › Edit › Add from another theme › a theme you haven't played yet: its tracks are listed.
+- Fresh install, no internet: open the app: My channel shows Tavern; Play.
+- Without unlocking: Mix, Add playlist, Create theme and Cast… show the unlock.
+
+### Earlier (alpha25)
+- **Tablets:** Add playlist and Create theme stay open when the keyboard comes up (they closed themselves on a tablet).
+- **Add from another theme** lists the other theme's tracks also before that theme has been played on your device (it said "Can't reach the server.").
 
 ### Earlier (alpha24)
 - **Playlists from the Channels page:** picking a playlist on a channel card plays it (it did nothing before).
