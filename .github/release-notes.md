@@ -1,13 +1,21 @@
 ## What's new in this build
 
-- **Previews on your device:** the ▶ on a theme in Themes, Preview mix in the Theme Editor, and the ▶ of a linked file all play from the device itself, while My channel keeps playing.
-- **The first Save to phone downloads:** after choosing the themes folder, the theme you asked for is saved (it could be dropped before).
-- My channel on the device refreshes when something changes, not every second.
+- **Timers keep time on your device:** sequence steps and playlist entries change when their countdown says, also where the sound drains faster than real time.
+- **Picking a playlist while a sequence plays:** the sequence stops at once, the card shows the playlist and its entries while its themes get ready, and the lock screen shows the entry's theme and "Entry n of m".
+- **Words for the device:** on your device, help and labels describe the device (no speakers, New Channel or Save to phone lines; the mute button says Mute).
+- **Your preset is kept:** the preset or sequence you chose for a theme is still chosen after the app restarts.
+- The starter themes lost some stale entries that ended up in exports.
 
 ## Please test
 
-- Your device › Themes › ▶ on a theme; Theme Editor › Preview mix, change a volume: the preview follows.
-- Fresh install: Save to phone on a server theme, choose the folder: that theme arrives with your server's presets.
+- Your device › My channel: start a sequence and time a step against a clock; play a playlist and time an entry.
+- While a sequence plays, pick a playlist: the sequence stops, the card shows the playlist's first entry.
+- Choose a preset, close the app fully, open it again: the preset is still chosen.
+
+### Earlier (alpha20)
+- **Previews on your device:** the ▶ on a theme in Themes, Preview mix in the Theme Editor, and the ▶ of a linked file all play from the device itself, while My channel keeps playing.
+- **The first Save to phone downloads:** after choosing the themes folder, the theme you asked for is saved (it could be dropped before).
+- My channel on the device refreshes when something changes, not every second.
 
 ### Earlier (alpha19)
 - **Your device in the Servers list:** this phone or tablet shows up in the list (with a device icon) next to your Sonorium. Choose it and the whole app works with the device's own themes, presets, sequences and playlists, played on the device; choose your Sonorium to go back. Nothing is copied between them (Save to phone and Update on phone still bring a theme down).
