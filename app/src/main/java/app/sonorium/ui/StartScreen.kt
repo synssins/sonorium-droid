@@ -30,6 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import app.sonorium.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -108,6 +111,7 @@ fun StartScreen(model: LinkViewModel, onBack: (() -> Unit)? = null) {
                         Card { TypeAddress(onConnect = { typing = false; model.connectToAddress(it) }, onCancel = { typing = false }) }
                     } else {
                         ServerList(servers, model)
+                        FoundServers(servers, model)
                         LinkButtons(model, onType = { typing = true })
                     }
                 }
@@ -229,13 +233,52 @@ private fun LinkButtons(model: LinkViewModel, onType: () -> Unit) {
     }
 }
 
+/**
+ * Sonorium servers announcing themselves on this network that this phone isn't linked to: one tap goes on
+ * as an address typed in (the security words, then sign in). Looked for while the list shows.
+ */
+@Composable
+private fun FoundServers(servers: List<ServerRecord>, model: LinkViewModel) {
+    val context = LocalContext.current
+    val discovery = remember { app.sonorium.link.ServerDiscovery(context) }
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        discovery.start()
+        onDispose { discovery.stop() }
+    }
+    val found by discovery.found.collectAsState()
+    val linked = servers.map { it.id }.toSet()
+    val fresh = found.filter { it.id !in linked }
+    if (fresh.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            androidx.compose.ui.res.stringResource(R.string.found_title).uppercase(), color = Palette.textMuted,
+            fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.8.sp,
+        )
+        fresh.forEach { f ->
+            val description = androidx.compose.ui.res.stringResource(R.string.found_add_description, f.name, f.address)
+            Card(Modifier.clickable { model.connectToAddress(f.address) }.semantics { contentDescription = description }) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.ROW.dp)) {
+                    androidx.compose.material3.Icon(app.sonorium.ui.server.SIcons.Server, null, tint = Palette.textSecondary, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(f.name, color = Palette.text, fontWeight = FontWeight.Medium, maxLines = 1)
+                        Text(listOf(f.address, f.version).filter { it.isNotEmpty() }.joinToString(" · "), color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1)
+                    }
+                    Text(androidx.compose.ui.res.stringResource(R.string.found_add), color = Palette.accent, fontWeight = FontWeight.Medium)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun TypeAddress(onConnect: (String) -> Unit, onCancel: () -> Unit) {
     var address by rememberSaveable { mutableStateOf("") }
     SField(
         value = address,
         onValueChange = { address = it },
-        label = { Text("Address") },
+        label = { Text(androidx.compose.ui.res.stringResource(R.string.address_label)) },
+        placeholder = { Text(androidx.compose.ui.res.stringResource(R.string.address_placeholder), color = Palette.textMuted) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
         modifier = Modifier.fillMaxWidth(),

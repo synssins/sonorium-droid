@@ -102,4 +102,10 @@
     <string name="coach_editor_presets_text">Save the mix as a preset, or load another one. A sequence plays presets one after another.</string>
     <string name="coach_editor_save_title">Save theme</string>
     <string name="coach_editor_save_text">Keeps every change. Cancel puts the theme back as it was.</string>
+    <!-- Servers list: Sonorium servers announcing themselves on this network (mDNS) -->
+    <string name="found_title">Found on your network</string>
+    <string name="found_add">Add</string>
+    <string name="found_add_description">Add %1$s at %2$s</string>
+    <string name="address_label">Address</string>
+    <string name="address_placeholder">https://sonorium.local:8808/</string>
 </resources>
