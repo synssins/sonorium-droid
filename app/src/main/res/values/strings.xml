@@ -113,7 +113,7 @@
     <string name="listen_here">Listen on this device</string>
     <string name="volume_keys_title">Control theme playback volume in sync with device volume</string>
     <string name="volume_keys_tip">The volume buttons change the open channel\'s speaker volume in steps of 5% while Sonorium is on screen</string>
-    <string name="volume_keys_section">On this phone</string>
+    <string name="volume_keys_section">On this device</string>
     <!-- Home-screen widgets -->
     <string name="widget_small_description">One channel: Play and Stop</string>
     <string name="widget_large_description">One channel: what plays, Play and Stop, previous and next</string>
@@ -136,7 +136,7 @@
     <string name="widget_config_loading">Looking for channels…</string>
     <string name="widget_config_none">No channels</string>
     <!-- Themes on this device, unlocked, before a themes folder is chosen -->
-    <string name="folder_choose_line">Choose a folder on this phone for your themes: saved, imported and new ones go there.</string>
+    <string name="folder_choose_line">Choose a folder on this device for your themes: saved, imported and new ones go there.</string>
     <string name="folder_missing_line">Your themes folder can\'t be found. Choose it again, or a new one.</string>
     <string name="folder_choose">Choose folder</string>
     <!-- This phone's own settings (Audio Settings › On this phone); wording proposed -->
@@ -148,7 +148,7 @@
     <!-- My Channel with the chosen server out of reach (Chris, item 2) -->
     <string name="cant_reach">Can\'t reach %1$s</string>
     <string name="play_on_device">Play on this device</string>
-    <!-- Audio Settings › On this phone: where the themes on this device are (wording proposed) -->
+    <!-- Audio Settings › On this device: where the themes on this device are (wording proposed) -->
     <string name="folder_title">Themes folder</string>
     <string name="folder_used">%1$s · %2$s used</string>
     <string name="folder_change">Change…</string>
