@@ -34,6 +34,10 @@ class Player:
     def __init__(self, theme_dir, cache_dir, preset_id=None, volume=1.0, seed=0, sequence_id=None):
         self._mirrors = [mirror_lookup(theme_dir, cache_dir)]
         self._roots = [os.path.realpath(theme_dir)]
+        # Linked files and playlist entries: other prepared themes beside it, their audio beside its own
+        themes_root, pcm_root = os.path.dirname(os.path.realpath(theme_dir)), os.path.dirname(os.path.realpath(cache_dir))
+        self._roots.append(themes_root)
+        self._mirrors.append(mirror_lookup(themes_root, pcm_root))
         self.engine = Engine(
             theme_dir,
             preset_id=preset_id or None,

@@ -139,8 +139,18 @@ class PhoneApiTest(unittest.TestCase):
         # Errors as the server answers them
         self.assertEqual((404, "Track not found"), self.err("PUT", ["tracks", "Nope", "volume"], {"volume": 0.5}))
         self.assertEqual((400, "Volume is required"), self.err("PUT", ["tracks", "Drone", "volume"], {}))
-        self.assertEqual(501, self.call("POST", ["tracks", "Drone", "move"], {"group": "Birds"})[0])
+        # Moving a track: Core moves its file; the user's folder follows the ops
+        status, body = self.call("POST", ["tracks", "Drone", "move"], {"group": "Birds"})
+        self.assertEqual((200, "Birds/Drone"), (status, body["track"]))
+        new_key, change, _ = te.track_move(self.reference, te.load(self.reference), "Drone", "Birds")
+        te.save_group_change(self.reference, te.load(self.reference), change)
         self.same_files()
+        self.same_user_folder()
+        self.assertEqual(200, self.call("POST", ["tracks", "Birds/Drone", "move"], {"group": None})[0])
+        new_key, change, _ = te.track_move(self.reference, te.load(self.reference), "Birds/Drone", None)
+        te.save_group_change(self.reference, te.load(self.reference), change)
+        self.same_files()
+        self.same_user_folder()
 
         self.assertEqual(200, self.call("POST", ["tracks", "reset"])[0])
         te.reset_theme_tracks(self.reference)
@@ -213,6 +223,10 @@ class PhoneApiTest(unittest.TestCase):
         key = body["links"][0]["key"]
         te.add_links(self.reference, self.tmp / "reference" / "Other", ["Drone"])
         self.same_files()
+        # Export: the documents as the server's export writes them, the linked file to copy in from its theme
+        exported = json.loads(phone_api.export_documents(str(self.theme), str(self.root)))
+        self.assertNotIn("links", json.loads(exported["metadata"]))
+        self.assertEqual([[key + ".wav", "Other", "Drone.wav"]], exported["linked"])
         self.assertEqual((404, "Source theme not found"), self.err("POST", ["links"], {"theme": "nope", "tracks": ["Drone"]}))
         self.assertEqual(200, self.call("DELETE", ["links", key])[0])
         te.remove_link(self.reference, key)
@@ -291,7 +305,7 @@ class PhoneApiTest(unittest.TestCase):
         self.assertIn("group_crossfade_max", answer["body"]["values"])
 
     def test_not_here(self):
-        for method, segments in (("POST", ["tracks", "Drone", "move"]), ("POST", ["links", "Drone", "copy-in"])):
+        for method, segments in (("POST", ["links", "Drone", "copy-in"]),):
             status, body = self.call(method, segments, {})
             self.assertEqual(501, status, segments)
             self.assertEqual(phone_api.NOT_HERE, body["error"])

@@ -85,10 +85,14 @@ class PhoneThemeEditorTest {
             assertTrue(File(source, "Hum.wav").isFile)
             assertTrue(!File(source, "Drones").exists())
 
+            // Moving a track moves its file in the theme's folder
+            api.moveTrack(folder, "Hum", "Birds")
+            assertTrue(File(source, "Birds/Hum.wav").isFile)
+
             // What the phone can't do yet answers 501 with a message
             try {
-                api.moveTrack(folder, "Hum", "Birds")
-                fail("Moving a track should not work on the phone")
+                api.json("POST", "themes/$folder/links/Hum/copy-in", buildJsonObject {})
+                fail("Copying a linked file in should not work on the phone")
             } catch (e: ApiException) {
                 assertEquals(501, e.status)
                 assertTrue(e.detail, e.detail.contains("phone"))

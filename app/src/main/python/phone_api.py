@@ -29,8 +29,8 @@ in the user's themes folder. Upload's body here is JSON: {"filename", "path"}
 Themes are loaded without converting (theme_edit.convert_on_load = False):
 nothing is written on open, and the stand-ins' lengths are never read.
 
-What the phone can't do yet answers 501 {"detail"/"error": NOT_HERE}: moving
-tracks, copying a linked file in, and the server-wide category list changes.
+What the phone can't do yet answers 501 {"detail"/"error": NOT_HERE}: copying a
+linked file in, and the server-wide category list changes.
 """
 import json
 import os
@@ -136,6 +136,8 @@ def _theme_route(method, theme_id, s, query, data, folder, root, pcm, decoder=No
         if s == ["tracks", "reset"] and method == "POST":
             te.reset_theme_tracks(folder)
             return 200, {"status": "ok", "theme_id": theme_id}
+        if len(s) == 3 and s[2] == "move" and method == "POST":
+            return 200, _move_track(folder, s[1], _object(data))
         if len(s) == 3 and method == "PUT":
             return 200, _set_track(folder, s[1], s[2], _object(data))
     elif head == "groups":
@@ -351,6 +353,25 @@ def _tracks(theme_id, folder, root, pcm):
         tracks.append(track)
     tracks.sort(key=lambda t: t["name"].lower())
     return {"theme_id": theme_id, "theme_name": metadata.name, "short_file_threshold": threshold, "tracks": tracks}
+
+
+def _move_track(folder, key, body):
+    """
+    POST /themes/{id}/tracks/{key}/move (api.py move_track_to_group): into a group (made if
+    missing) or, with {"group": null}, to the top level; a linked file only changes key.
+    """
+    if "group" not in body:
+        raise _Http(400, "'group' is required (a group name, or null for the top level)")
+    group = body["group"]
+    ops = te.FileOps(folder)
+    metadata = te.load(folder)
+    new_key, change, _ = te.track_move(folder, metadata, key, group)
+    if isinstance(group, str) and group:
+        ops.made_dir(folder / group)
+    if change is not None:
+        ops.change(change)
+        te.save_group_change(folder, metadata, change)
+    return {"track": new_key, "ops": ops.done()}
 
 
 def _set_track(folder, key, setting, body):
@@ -574,3 +595,31 @@ def catalog_presets(catalog_root):
         answer.pop("theme_id", None)
         out[theme_id] = answer
     return json.dumps(out, default=str)
+
+
+# --- export ----------------------------------------------------------------------------
+
+def export_documents(theme_dir, themes_root):
+    """
+    What the server's export (core/theme_package.build_package) writes besides the theme's own
+    files: metadata.json and presets.json as exported (links dropped, their settings kept), and
+    each linked file to copy in as [path in the theme, source theme folder name, path in it].
+    The app zips them with the theme's files ("<folder>/<path>", as theme_package.write_zip).
+    """
+    from sonorium.core import theme_package
+    folder = Path(theme_dir)
+    root = Path(themes_root)
+    metadata, presets = tm.theme_documents_for_export(folder)
+    linked = []
+    for relative, source in intrusions.export_entries(folder, metadata, intrusions.folder_for_id_in(root)):
+        source = Path(source)
+        try:
+            rel = source.relative_to(root)
+        except ValueError:
+            continue
+        linked.append([Path(relative).as_posix(), rel.parts[0], Path(*rel.parts[1:]).as_posix()])
+    return json.dumps({
+        "metadata": theme_package.dump_json(metadata).decode("utf-8"),
+        "presets": theme_package.dump_json(presets).decode("utf-8"),
+        "linked": linked,
+    })

@@ -367,8 +367,7 @@ private fun TrackMenu(t: EditorTrack, section: Section, group: TrackGroup?, ui: 
                     editor.exclusiveOff(t)
                 }
             }
-            // Moving a track: not on this phone yet
-            if (ui.groupsOk && !editor.onPhone) {
+            if (ui.groupsOk) {
                 HorizontalDivider(color = Palette.border)
                 Text("Move to", color = Palette.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
                 val here = ThemeEditorRules.groupOf(t)?.takeIf { group != null }

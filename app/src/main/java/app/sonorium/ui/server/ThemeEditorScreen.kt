@@ -179,8 +179,8 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                     }
                     IconBox(SIcons.Help, "How a theme plays", { help = true }, size = app.sonorium.ui.UiSize.STANDARD)
                     Spacer(Modifier.width(6.dp))
-                    // A theme on this phone is already its own folder (in the Files app): no server export
-                    if (!editor.onPhone) {
+                    // Export: from a Sonorium, and from this device's own entry (its themes as the server exports them)
+                    if (!editor.onPhone || state.onDevice) {
                         MoreMenu("More theme options", listOf(MenuAction("Export theme", SIcons.Download) {
                             model.toast("Preparing export…", error = false)
                             model.exportTheme(ThemeSummary(editor.themeId, ui.title)) { name, bytes ->
@@ -196,7 +196,7 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                 LazyColumn(Modifier.weight(1f).fillMaxWidth().padding(horizontal = 12.dp)) {
                     item(key = "details") { DetailsBlock(ui, editor, onPending = { pendingCategory = it }) }
                     item(key = "toolbar") {
-                        Toolbar(ui, editor, onUpload = ::upload, onPicker = { picker = true }, onReset = {
+                        Toolbar(ui, editor, links = !editor.onPhone || state.onDevice, onUpload = ::upload, onPicker = { picker = true }, onReset = {
                             ask = Ask("Reset all tracks and groups to defaults?", null, "Reset") { editor.resetAll() }
                         }, onSequence = { id -> editor.openSequence(id) })
                     }
@@ -375,7 +375,7 @@ private fun CategoriesField(ui: EditorUi, editor: ThemeEditor, onPending: (Strin
 // ---------- Tracks toolbar ----------
 
 @Composable
-private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Unit, onPicker: () -> Unit, onReset: () -> Unit, onSequence: (String?) -> Unit) {
+private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload: (String?) -> Unit, onPicker: () -> Unit, onReset: () -> Unit, onSequence: (String?) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Tracks", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
@@ -408,7 +408,7 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Un
                     }
                 }
             }
-            if (!editor.onPhone) ToolButton("Add from another theme", SIcons.Link, "Add from another theme", onClick = onPicker)
+            if (links) ToolButton("Add from another theme", SIcons.Link, "Add from another theme", onClick = onPicker)
             ToolButton("Reset all", SIcons.Refresh, "Reset all", onClick = onReset)
         }
         if (ui.waiting) Text("Updating…", color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
@@ -416,8 +416,7 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Un
             val phone = app.sonorium.engine.PhonePlayer.state.collectAsState().value
             val playing = phone.playing && phone.theme?.folder?.let(app.sonorium.local.PhoneThemeApi::safe) == editor.themeId
             Text(
-                (if (playing) "Changes are heard at once while it plays in My channel. " else "Play it in My channel to hear your changes as you make them. ") +
-                    "Some changes need your server: links, and moving tracks between groups.",
+                if (playing) "Changes are heard at once while it plays in My channel." else "Play it in My channel to hear your changes as you make them.",
                 color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp),
             )
         }

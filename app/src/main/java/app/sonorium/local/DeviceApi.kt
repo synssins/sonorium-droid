@@ -100,7 +100,13 @@ class DeviceApi(private val context: Context) : Interceptor {
             s == listOf("extensions") -> return ok(buildJsonObject { put("connections", JsonArray(emptyList())); put("pages", JsonArray(emptyList())) })
             s.size == 2 && s[0] == "themes" && m == "DELETE" -> return ok(deleteTheme(s[1]))
             s.size == 3 && s[0] == "themes" && s[2] == "favorite" && m == "POST" -> return ok(favorite(s[1]))
+            s.size == 3 && s[0] == "themes" && s[2] == "export" && m == "GET" -> return export(request, s[1])
             s.size >= 3 && s[0] == "themes" -> {
+                // Linking from another theme: its prepared copy is where Core reads it
+                if (s.getOrNull(2) == "links") {
+                    if (s.getOrNull(3) == "source") s.getOrNull(4)?.let { editorFor(it) }
+                    if (s.size == 3 && m == "POST") (body(request)["theme"] as? JsonPrimitive)?.contentOrNullSafe()?.let { runCatching { editorFor(it) } }
+                }
                 // The Theme Editor's routes (and a theme's presets): Core's code on the theme's prepared copy
                 val editor = editorFor(s[1])
                 val response = editor.intercept(chain)
@@ -228,6 +234,47 @@ class DeviceApi(private val context: Context) : Interceptor {
         return synchronized(editors) {
             editors[t.folder] ?: runBlocking { PhoneThemeApi.openApi(context, store, t) }.also { editors[t.folder] = it }
         }
+    }
+
+    /** GET /themes/{id}/export: the server's export zip ("<folder>/<path>"), linked files copied in. */
+    private fun export(request: Request, id: String): Response {
+        val t = theme(id)
+        editorFor(id)
+        val root = PhoneThemeApi.themesRoot(context)
+        val docs = SonoriumApi.json.parseToJsonElement(
+            app.sonorium.engine.PhoneEngine.module(context, "phone_api")
+                .callAttr("export_documents", File(root, PhoneThemeApi.safe(t.folder)).path, root.path).toString(),
+        ) as JsonObject
+        val prefix = t.folder
+        val out = File.createTempFile("export", ".zip", context.cacheDir)
+        val resolver = context.contentResolver
+        java.util.zip.ZipOutputStream(out.outputStream().buffered()).use { zip ->
+            fun put(name: String, input: java.io.InputStream) {
+                zip.putNextEntry(java.util.zip.ZipEntry("$prefix/$name"))
+                input.use { it.copyTo(zip) }
+                zip.closeEntry()
+            }
+            val files = runBlocking { store.files(t) }
+            val skip = Regex("""^(metadata|presets)\.json(\..*)?$""")
+            files.filter { !(it.path.indexOf('/') < 0 && skip.matches(it.path)) && it.path != ThemeStore.MARKER }
+                .sortedBy { it.path }
+                .forEach { f -> resolver.openInputStream(f.uri)?.let { put(f.path, it) } }
+            val all = themesNow()
+            (docs["linked"] as? JsonArray).orEmpty().forEach { e ->
+                val row = (e as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content } ?: return@forEach
+                if (row.size != 3) return@forEach
+                val source = all.firstOrNull { PhoneThemeApi.safe(it.folder) == row[1] } ?: return@forEach
+                val file = runBlocking { store.files(source) }.firstOrNull { it.path == row[2] } ?: return@forEach
+                resolver.openInputStream(file.uri)?.let { put(row[0], it) }
+            }
+            put("metadata.json", ((docs["metadata"] as JsonPrimitive).content).byteInputStream())
+            put("presets.json", ((docs["presets"] as JsonPrimitive).content).byteInputStream())
+        }
+        val safeName = t.folder.map { c -> if (c.isLetterOrDigit() || c in "._- ") c else '_' }.joinToString("")
+        val bytes = out.readBytes().also { out.delete() }
+        return Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+            .header("Content-Disposition", "attachment; filename=\"$safeName.zip\"")
+            .body(bytes.toResponseBody("application/zip".toMediaType())).build()
     }
 
     private fun createTheme(body: JsonObject): JsonObject {

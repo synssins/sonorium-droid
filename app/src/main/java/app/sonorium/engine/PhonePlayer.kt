@@ -190,6 +190,8 @@ object PhonePlayer {
                         if (self?.isActive == true) _state.update { if (it.preparing != null) it.copy(preparing = done to total) else it }
                     }
                     ensureActive()
+                    prepareLinked(app, theme)
+                    ensureActive()
                     val s = _state.value
                     val presets = withContext(Dispatchers.IO) {
                         // Already playing another theme: crossfade to this one; else open the engine on it
@@ -240,6 +242,23 @@ object PhonePlayer {
                 }
             }
             else -> PhonePlayerService.retitle(title)
+        }
+    }
+
+    /** The themes [theme] links files from, got ready too (their decoded audio plays the linked tracks). */
+    private suspend fun prepareLinked(app: SonoriumApp, theme: LocalTheme) {
+        val meta = runCatching { app.themeStore.readFile(theme, "metadata.json") }.getOrNull() ?: return
+        val ids = runCatching {
+            val links = org.json.JSONObject(meta).optJSONObject("links") ?: return
+            links.keys().asSequence().mapNotNull { k -> links.optJSONObject(k)?.optString("theme")?.ifEmpty { null } }.toSet()
+        }.getOrNull().orEmpty()
+        if (ids.isEmpty()) return
+        val themes = withContext(Dispatchers.IO) { runCatching { app.themeStore.list() }.getOrDefault(emptyList()) }
+        for (t in themes) {
+            if (t.metaId !in ids || t.docId == theme.docId || ready[t.folder] == t.version || openFolder == t.folder) continue
+            runCatching { ThemePrep.prepare(app, app.themeStore, t) { _, _ -> } }
+                .onSuccess { ready[t.folder] = t.version }
+                .onFailure { Log.w(TAG, "Couldn't get ${t.folder} ready for its linked files", it) }
         }
     }
 
