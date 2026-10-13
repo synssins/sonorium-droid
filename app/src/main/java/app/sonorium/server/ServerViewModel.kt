@@ -1025,7 +1025,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 }
                 runCatching { downloader.cleanStale(_downloads.value.keys) }
-                val local = _localThemes.value ?: app.themeStore.list()
+                // The starter themes go in first (a fresh folder): a starter copy of this theme is then replaced, not doubled
+                runCatching { StarterThemes.installOnce(getApplication(), app.themeStore) }
+                val local = app.themeStore.list()
                 val replacing = PhoneThemeActions.localCopy(themeId, local)
                 var last = 0L
                 val saved = downloader.download(api, themeId, replacing) { done, total ->
@@ -1227,7 +1229,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         e.close()
         _editor.value = null
         // Edited on this phone: My channel shows the theme's new presets and sequences
-        if (e.onPhone) PhonePlayer.reloadLists(getApplication())
+        if (e.onPhone) {
+            PhonePlayer.reloadLists(getApplication())
+            // Files may have been added or moved (upload, groups): sizes, track counts, prepared copy
+            refreshLocalThemes()
+        }
         if (_state.value.presets.containsKey(e.themeId) || _state.value.sessions.any { it.themeId == e.themeId }) loadPresetsAsync(e.themeId)
     }
 

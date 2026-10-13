@@ -73,10 +73,22 @@ class PhoneThemeEditorTest {
             assertTrue(api.sequenceDefaults(folder).holdMax > 0)
             assertTrue((api.json("GET", "settings/playback-values")["values"] as kotlinx.serialization.json.JsonObject).containsKey("group_crossfade_min"))
 
+            // Upload and groups: Core changes the prepared copy, and its file operations reach the theme's folder
+            api.uploadTrack(folder, "Hum.wav", File(source, "Drone.wav").readBytes(), "Hums")
+            assertTrue(File(source, "Hums/Hum.wav").length() > 1000)
+            assertEquals(0L, File(themeDir, "Hums/Hum.wav").length())  // back to a stand-in
+            assertTrue(JSONObject(File(source, "metadata.json").readText()).getJSONObject("tracks").has("Hums/Hum"))
+            api.renameTrackGroup(folder, "Hums", "Drones")
+            assertTrue(File(source, "Drones/Hum.wav").isFile)
+            assertTrue(api.editorTracks(folder).any { it.name == "Drones/Hum" })
+            api.deleteTrackGroup(folder, "Drones")
+            assertTrue(File(source, "Hum.wav").isFile)
+            assertTrue(!File(source, "Drones").exists())
+
             // What the phone can't do yet answers 501 with a message
             try {
-                api.uploadTrack(folder, "x.wav", ByteArray(4), null)
-                fail("Upload should not work on the phone")
+                api.moveTrack(folder, "Hum", "Birds")
+                fail("Moving a track should not work on the phone")
             } catch (e: ApiException) {
                 assertEquals(501, e.status)
                 assertTrue(e.detail, e.detail.contains("phone"))

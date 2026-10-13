@@ -100,9 +100,7 @@ object PhonePlayer {
             it.copy(theme = theme, presets = emptyList(), presetId = null, sequences = emptyList(), sequenceId = null, step = null, sequenceFinished = false, error = null, notice = null)
         }
         scope.launch {
-            val text = runCatching { app.themeStore.readFile(theme, "presets.json") }.getOrNull().orEmpty()
-            val presets = PhoneEngine.presetsFromJson(text)
-            val sequences = PhoneEngine.sequencesFromJson(text)
+            val (presets, sequences) = readLists(app, theme) ?: (emptyList<PhoneEngine.Preset>() to emptyList())
             if (_state.value.theme?.docId == theme.docId && _state.value.presets.isEmpty()) {
                 _state.update { it.copy(presets = presets, sequences = sequences, presetId = it.presetId ?: presets.firstOrNull { p -> p.isDefault }?.id) }
             }
@@ -118,9 +116,7 @@ object PhonePlayer {
         val theme = _state.value.theme ?: return
         val app = context.applicationContext as SonoriumApp
         scope.launch {
-            val text = runCatching { app.themeStore.readFile(theme, "presets.json") }.getOrNull() ?: return@launch
-            val presets = PhoneEngine.presetsFromJson(text)
-            val sequences = PhoneEngine.sequencesFromJson(text)
+            val (presets, sequences) = readLists(app, theme) ?: return@launch
             _state.update { st ->
                 if (st.theme?.docId != theme.docId) st
                 else st.copy(
@@ -130,6 +126,21 @@ object PhonePlayer {
                 )
             }
         }
+    }
+
+    /**
+     * A theme's presets and sequences read from its folder: presets.json, or the presets in its
+     * metadata.json when presets.json is missing or has none (starter themes). Null when neither reads.
+     */
+    private suspend fun readLists(app: SonoriumApp, theme: LocalTheme): Pair<List<PhoneEngine.Preset>, List<PhoneEngine.Sequence>>? {
+        val text = runCatching { app.themeStore.readFile(theme, "presets.json") }.getOrNull()
+        val presets = text?.let { PhoneEngine.presetsFromJson(it) }.orEmpty()
+        val sequences = text?.let { PhoneEngine.sequencesFromJson(it) }.orEmpty()
+        if (presets.isNotEmpty()) return presets to sequences
+        val meta = runCatching { app.themeStore.readFile(theme, "metadata.json") }.getOrNull()
+        val fromMeta = meta?.let { PhoneEngine.presetsFromMetadata(it) }.orEmpty()
+        if (text == null && meta == null) return null
+        return fromMeta to sequences
     }
 
     /** Play: prepares the theme the first time (decoding its audio once), opens the engine, starts playback. */

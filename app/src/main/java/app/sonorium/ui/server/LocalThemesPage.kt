@@ -309,11 +309,23 @@ private fun FolderExplainDialog(changing: Boolean, onChoose: () -> Unit, onDismi
 }
 
 /**
+ * The main screen's Import theme, which outlives the pages like [LocalThemesFolderPicker]: a page can
+ * leave the screen while Android's file picker is open and the picked zip would be lost (validation
+ * alpha16: the first import after linking came back with nothing imported).
+ */
+val LocalThemeImport = androidx.compose.runtime.staticCompositionLocalOf<(() -> Unit)?> { null }
+
+/** Import theme: the main screen's one, or a page's own when there is none. */
+@Composable
+fun rememberThemeImport(model: ServerViewModel, folderPicker: ThemesFolderPicker = rememberThemesFolderPicker(model)): () -> Unit =
+    LocalThemeImport.current ?: rememberOwnThemeImport(model, folderPicker)
+
+/**
  * Import theme: the unlock first (paid features), then the themes folder (explained), then the zip
  * picker. Returns what the Import button calls.
  */
 @Composable
-fun rememberThemeImport(model: ServerViewModel, folderPicker: ThemesFolderPicker = rememberThemesFolderPicker(model)): () -> Unit {
+fun rememberOwnThemeImport(model: ServerViewModel, folderPicker: ThemesFolderPicker): () -> Unit {
     val context = LocalContext.current
     var unlock by remember { mutableStateOf(false) }
     val pickZip = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -337,7 +349,8 @@ fun rememberThemeImport(model: ServerViewModel, folderPicker: ThemesFolderPicker
         }
     }
     if (unlock) UnlockScreen(model, onClose = { unlock = false }, onUnlocked = { unlock = false; go() })
-    return { go() }
+    // The same function across recompositions: it's handed down the main screen
+    return remember { { go() } }
 }
 
 @Composable

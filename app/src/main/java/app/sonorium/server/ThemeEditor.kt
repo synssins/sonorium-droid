@@ -93,7 +93,7 @@ class ThemeEditor(
     private val onThemeSaved: () -> Unit,
     /**
      * A theme on this phone ([app.sonorium.local.PhoneThemeApi] answers [api]): the screens hide what
-     * the phone can't do yet (upload, linked files, moving tracks, group create/rename/delete, Preview mix).
+     * the phone can't do yet (adding linked files, moving tracks, Preview mix).
      */
     val onPhone: Boolean = false,
 ) {

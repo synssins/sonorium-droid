@@ -14,13 +14,14 @@ filesystem paths that Sonorium discovers and maps to the persistent theme_id.
 
 from __future__ import annotations
 
+import json
 import shutil
 import uuid
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Optional
 
-from sonorium.core import theme_presets
+from sonorium.core import plugin_data, theme_presets
 from sonorium.core.theme_presets import (
     METADATA_FILE,
     PRESETS_FILE,
@@ -65,15 +66,23 @@ class TrackSettings:
     pause_min: float = 30.0         # Ebb & Flow: the pause, seconds (random in this range)
     pause_max: float = 300.0
     rise: float = 0.0               # Ebb & Flow: how fast it rises, 0 gradual .. 1 sudden
+    # Plugin attributes on this track (and, in a group, this file): {plugin_id:
+    # {name: value}}, only what installed plugins declare (core/plugin_data.py)
+    plugins: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        return asdict(self)
+        data = asdict(self)
+        if not data["plugins"]:
+            del data["plugins"]
+        return data
 
     @classmethod
     def from_dict(cls, data: dict) -> TrackSettings:
         if data is None:
             return cls()
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+        settings = cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__ and k != "plugins"})
+        settings.plugins = plugin_data.clean_block(data.get("plugins"), plugin_data.TRACK_CLASSES, "Track")
+        return settings
 
 
 # Ebb & Flow settings, in metadata.json and presets under these names
@@ -148,6 +157,9 @@ class ThemeMetadata:
     intrusions_retired: bool = False
     auto_retired: bool = False
 
+    # Plugin attributes on the theme itself: {plugin_id: {name: value}} (core/plugin_data.py)
+    plugins: dict = field(default_factory=dict)
+
     # Problems found while loading (e.g. a broken file), for the UI. Not saved.
     problems: list[str] = field(default_factory=list, compare=False)
 
@@ -198,6 +210,8 @@ class ThemeMetadata:
                 data[marker] = True
         if self.attribution:
             data["attribution"] = self.attribution
+        if self.plugins:
+            data["plugins"] = self.plugins
         return data
 
     @classmethod
@@ -222,6 +236,8 @@ class ThemeMetadata:
                 for k, v in data['tracks'].items()
             }
 
+        # Plugin attributes: only what installed plugins declare (core/plugin_data.py)
+        kwargs['plugins'] = plugin_data.clean_block(data.get('plugins'), ("theme",), f"Theme '{data.get('name', '')}'")
         return cls(**kwargs)
 
 
@@ -379,7 +395,26 @@ def _retire_intrusions(folder: Path, metadata: ThemeMetadata, doc: dict) -> bool
 
 
 def track_seconds(path: Path) -> Optional[float]:
-    """A file's length in seconds, as playback reads it (None when playback can't be loaded)."""
+    """
+    A file's length in seconds; None when it can't be read, holds no audio,
+    or playback can't be loaded. (played_seconds is the length playback uses.)
+    """
+    try:
+        from sonorium.recording import SAMPLE_RATE, file_length_samples
+    except Exception:
+        return None
+    try:
+        samples = file_length_samples(Path(path))
+    except Exception:
+        return None
+    return samples / SAMPLE_RATE if samples and samples > 0 else None
+
+
+def played_seconds(path: Path) -> Optional[float]:
+    """
+    A file's length in seconds as playback uses it: a file that can't be read
+    counts as one minute (recording.AudioFile). None when playback can't be loaded.
+    """
     try:
         from sonorium.recording import AudioFile
     except Exception:
@@ -441,7 +476,7 @@ def _retire_auto(folder: Path, metadata: ThemeMetadata) -> bool:
         if path is None:
             seconds[key] = None  # missing: left as "auto"
             continue
-        seconds[key] = track_seconds(path)
+        seconds[key] = played_seconds(path)
         if seconds[key] is None:
             return False  # lengths can't be read here: next time
 
@@ -576,9 +611,16 @@ def _save_presets_verified(folder: Path, presets: dict) -> None:
         raise OSError(f"{PRESETS_FILE} did not read back the same")
 
 
-def load_theme_folder(folder: Path) -> ThemeMetadata:
+def load_theme_folder(folder: Path, convert: bool = True) -> ThemeMetadata:
     """
     Load a theme folder's metadata and presets, converting a 1.0 theme to 2.0.
+
+    convert=False writes nothing at all (no conversion saved, no backup, no
+    broken file renamed): the 1.0 fields and Ebb & Flow Duration are converted
+    in memory only (a later save writes them, as the server would have), and
+    the conversions that move files or need the audio files' lengths
+    (intrusion groups, "auto" modes) are left undone and unmarked, so the
+    server makes them when it next loads the theme.
 
     Conversion (idempotent):
       - presets in metadata.json move to presets.json (presets.json wins on the
@@ -599,7 +641,7 @@ def load_theme_folder(folder: Path) -> ThemeMetadata:
     problems: list[str] = []
     meta_path = folder / METADATA_FILE
 
-    metadata, raw = _read_metadata(folder, problems, rename_broken=True)
+    metadata, raw = _read_metadata(folder, problems, rename_broken=convert)
     is_new = metadata is None
     if is_new:
         metadata = ThemeMetadata(name=folder.name)
@@ -610,14 +652,20 @@ def load_theme_folder(folder: Path) -> ThemeMetadata:
         legacy_presets = dict(raw["presets"])
     legacy = raw is not None and _is_legacy(raw)
 
-    doc, presets_broken = _read_presets_doc(folder, problems, rename_broken=True)
+    doc, presets_broken = _read_presets_doc(folder, problems, rename_broken=convert)
     presets = dict(legacy_presets)
     presets.update(doc.get("presets") or {})
+    plugin_data.filter_presets(presets, f"Theme '{metadata.name or folder.name}'")
     metadata.presets = presets
 
     if legacy:
         _convert_fields(metadata)
     flipped = _convert_ebb_duration(metadata, raw)
+    if not convert:
+        if not metadata.name:
+            metadata.name = folder.name
+        metadata.problems = problems
+        return metadata
     # Moves files, so it backs up (and checks the folder can be written) first
     regrouped = _retire_intrusions(folder, metadata, doc)
     presets = metadata.presets
@@ -681,6 +729,53 @@ def save_theme_folder(folder: Path, metadata: ThemeMetadata) -> bool:
     except OSError as e:
         logger.error(f"Failed to save theme files in {folder}: {e}")
         return False
+
+
+def drop_unknown_plugin_data(folder: Path) -> bool:
+    """
+    An imported theme folder's metadata.json and presets.json with only the
+    plugin attributes this Sonorium's installed plugins declare (strict: no
+    plugin, no values). What goes is logged at info. Run before the theme
+    loads. Returns True when a file changed; a broken or missing file is left
+    for load_theme_folder.
+    """
+    folder = Path(folder)
+    label = f"Imported theme '{folder.name}'"
+    changed = False
+    try:
+        raw = theme_presets.read_json(folder / METADATA_FILE)
+        if raw is not None:
+            before = json.dumps(raw, sort_keys=True)
+            if "plugins" in raw:
+                kept = plugin_data.clean_block(raw.get("plugins"), ("theme",), label, strict=True)
+                if kept:
+                    raw["plugins"] = kept
+                else:
+                    del raw["plugins"]
+            for key, entry in (raw.get("tracks") or {}).items() if isinstance(raw.get("tracks"), dict) else ():
+                if isinstance(entry, dict) and "plugins" in entry:
+                    kept = plugin_data.clean_block(entry.get("plugins"), plugin_data.TRACK_CLASSES,
+                                                   f"{label}, track '{key}'", strict=True)
+                    if kept:
+                        entry["plugins"] = kept
+                    else:
+                        del entry["plugins"]
+            plugin_data.filter_presets(raw.get("presets"), label, strict=True)  # a 1.0 theme's presets
+            plugin_data.filter_groups(raw.get("groups"), label, strict=True)
+            if json.dumps(raw, sort_keys=True) != before:
+                theme_presets.write_json_atomic(folder / METADATA_FILE, raw)
+                changed = True
+        doc = theme_presets.read_json(folder / PRESETS_FILE)
+        if doc is not None and (isinstance(doc.get("presets"), dict) or isinstance(doc.get("sequences"), dict)):
+            before = json.dumps(doc, sort_keys=True)
+            plugin_data.filter_presets(doc.get("presets"), label, strict=True)
+            plugin_data.filter_sequences(doc.get("sequences"), label, strict=True)
+            if json.dumps(doc, sort_keys=True) != before:
+                theme_presets.write_json_atomic(folder / PRESETS_FILE, doc)
+                changed = True
+    except (BrokenJsonError, OSError) as e:
+        logger.debug(f"{label}: plugin attributes not checked before loading ({e})")
+    return changed
 
 
 def theme_documents_for_export(folder: Path) -> tuple[dict, dict]:

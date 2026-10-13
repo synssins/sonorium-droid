@@ -384,13 +384,13 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Un
         }
         FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SequencesMenu(ui, editor, onSequence)
-            // On this phone: no Preview mix (the theme plays live in My channel), Upload or links (they need the server)
+            // On this phone: no Preview mix (the theme plays live in My channel) or links (they need the server)
             if (!editor.onPhone) ToolButton(
                 if (ui.previewMix) "Stop preview" else "Preview mix", if (ui.previewMix) SIcons.Stop else SIcons.Play,
                 "Play the whole theme on this device, with your changes, without changing the speakers", pressed = ui.previewMix,
             ) { editor.togglePreviewMix() }
             var uploadMenu by remember { mutableStateOf(false) }
-            if (!editor.onPhone) Box {
+            Box {
                 ToolButton("Upload", SIcons.Upload, "Upload") { uploadMenu = true }
                 DropdownMenu(expanded = uploadMenu, onDismissRequest = { uploadMenu = false }, containerColor = Palette.card) {
                     Text("Upload to", color = Palette.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
@@ -417,7 +417,7 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, onUpload: (String?) -> Un
             val playing = phone.playing && phone.theme?.folder?.let(app.sonorium.local.PhoneThemeApi::safe) == editor.themeId
             Text(
                 (if (playing) "Changes are heard at once while it plays in My channel. " else "Play it in My channel to hear your changes as you make them. ") +
-                    "Some changes need your server: adding files, links, and moving or renaming groups.",
+                    "Some changes need your server: links, and moving tracks between groups.",
                 color = Palette.textMuted, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp),
             )
         }

@@ -54,6 +54,12 @@ class PhoneThemeApi(
 
         /** A track's own audio file ([key] "Rain", "Birds/Robin"): its data, length and file name; null when not found. */
         fun audio(key: String): Triple<InputStream, Long, String>?
+
+        /**
+         * A change's file operations (group made, renamed or removed, a file uploaded) repeated where the
+         * theme lives; "write"/"copy" take the file from [from] (the prepared copy). Throws when they can't be.
+         */
+        fun apply(ops: List<ThemeStore.FileOp>, from: File)
     }
 
     /** What the editor needs: its API on this theme, the client (for ▶ previews), and the theme. */
@@ -71,13 +77,35 @@ class PhoneThemeApi(
         if (request.url.host != HOST) return chain.proceed(request)
         val segments = request.url.pathSegments.dropWhile { it.isEmpty() }.let { if (it.firstOrNull() == "api") it.drop(1) else it }
         if (request.method == "GET" && segments.size == 5 && segments[0] == "themes" && segments[4] == "audio") return audio(request, segments[3])
-        // Only JSON bodies go to phone_api: an upload's multipart body isn't JSON (it would answer 400
-        // "Invalid JSON body" instead of saying the phone can't do that, 501)
-        val text = request.body?.takeIf { it.contentType()?.subtype?.contains("json") != false }
-            ?.let { b -> Buffer().also { b.writeTo(it) }.readUtf8() }.orEmpty()
-        val (status, body) = call(request.method, segments, query(request.url), text)
+        // An upload's file (multipart) is saved first; phone_api gets its name and where it is
+        val multipart = request.body as? okhttp3.MultipartBody
+        val saved = multipart?.let { saveUpload(it) }
+        val (status, body) = try {
+            val text = when {
+                multipart != null -> saved?.let { (name, file) ->
+                    JsonObject(mapOf("filename" to JsonPrimitive(name), "path" to JsonPrimitive(file.path))).toString()
+                }.orEmpty()
+                // Only JSON bodies go to phone_api
+                else -> request.body?.takeIf { it.contentType()?.subtype?.contains("json") != false }
+                    ?.let { b -> Buffer().also { b.writeTo(it) }.readUtf8() }.orEmpty()
+            }
+            call(request.method, segments, query(request.url), text)
+        } finally {
+            saved?.second?.delete()
+        }
         return Response.Builder().request(request).protocol(Protocol.HTTP_1_1).code(status).message(if (status in 200..299) "OK" else "Error")
             .body(body.toResponseBody(JSON)).build()
+    }
+
+    /** The multipart body's "file" part saved in the cache: its file name and where; null when there's none. */
+    private fun saveUpload(body: okhttp3.MultipartBody): Pair<String, File>? {
+        val part = body.parts.firstOrNull { p -> p.headers?.get("Content-Disposition")?.contains("name=\"file\"") == true }
+            ?: return null
+        val name = UPLOAD_NAME.find(part.headers?.get("Content-Disposition").orEmpty())?.groupValues?.get(1)?.ifBlank { null }
+            ?: return null
+        val file = File.createTempFile("upload", ".part", context.cacheDir)
+        file.outputStream().use { out -> Buffer().also { part.body.writeTo(it) }.copyTo(out) }
+        return name to file
     }
 
     /** One request through phone_api.handle: (status, JSON body). */
@@ -95,13 +123,23 @@ class PhoneThemeApi(
         val parsed = runCatching { SonoriumApi.json.parseToJsonElement(answer) as JsonObject }.getOrNull() ?: return error(500, "Something went wrong on this phone")
         val status = (parsed["status"] as? JsonPrimitive)?.intOrNull ?: 500
         val out = parsed["body"]?.toString() ?: "{}"
-        // What changed goes back to the theme's folder, and a playing mix follows it
+        val ops = (parsed["ops"] as? JsonArray).orEmpty().mapNotNull { e ->
+            val o = e as? JsonObject ?: return@mapNotNull null
+            fun s(k: String) = (o[k] as? JsonPrimitive)?.takeIf { it.isString }?.content
+            ThemeStore.FileOp(s("op") ?: return@mapNotNull null, s("src"), s("dst"))
+        }
+        // What changed goes back to the theme's folder (file operations first), and a playing mix follows it
+        val written = ops.filter { it.op == "write" }.mapNotNull { it.dst }.toSet()
         val changed = SETTINGS.mapNotNull { name ->
             val now = File(themeDir, name).takeIf(File::exists)?.readBytes() ?: return@mapNotNull null
-            if (before[name]?.contentEquals(now) == true) null else name to now
+            if (name in written || before[name]?.contentEquals(now) == true) null else name to now
         }
-        if (changed.isNotEmpty()) {
+        if (changed.isNotEmpty() || ops.isNotEmpty()) {
             try {
+                if (ops.isNotEmpty()) {
+                    source.apply(ops, themeDir)
+                    afterOps(ops)
+                }
                 changed.forEach { (name, bytes) -> source.write(name, bytes) }
             } catch (e: Exception) {
                 Log.e(TAG, "Couldn't write the theme's files back", e)
@@ -110,6 +148,34 @@ class PhoneThemeApi(
             if (PhoneEngine.isOpen) runCatching { PhoneEngine.reloadTheme() }.onFailure { Log.w(TAG, "The engine couldn't reload the theme", it) }
         }
         status to out
+    }
+
+    /**
+     * The prepared copy after its file operations reached the theme's folder: an uploaded file goes back
+     * to an empty stand-in, and decoded audio follows moved files and folders (nothing is decoded again).
+     */
+    private fun afterOps(ops: List<ThemeStore.FileOp>) {
+        val pcm = File(pcmRoot, folder)
+        ops.forEach { op ->
+            val src = op.src
+            val dst = op.dst
+            when (op.op) {
+                "write", "copy" -> if (dst != null && ThemeStore.isAudio(dst)) runCatching { File(themeDir, dst).writeBytes(ByteArray(0)) }
+                "move" -> if (src != null && dst != null) runCatching {
+                    val dir = File(pcm, src)
+                    if (dir.isDirectory) {
+                        File(pcm, dst).parentFile?.mkdirs()
+                        dir.renameTo(File(pcm, dst))
+                    } else if (ThemeStore.isAudio(src)) {
+                        val wav = File(pcm, src.substringBeforeLast('.') + ".wav")
+                        val to = File(pcm, dst.substringBeforeLast('.') + ".wav")
+                        to.parentFile?.mkdirs()
+                        if (wav.exists()) wav.renameTo(to)
+                    }
+                }
+                "delete" -> if (src != null) runCatching { File(pcm, src).takeIf { it.isDirectory }?.delete() }
+            }
+        }
     }
 
     private fun audio(request: okhttp3.Request, key: String): Response {
@@ -137,6 +203,7 @@ class PhoneThemeApi(
         private val SETTINGS = listOf("metadata.json", "presets.json")
         private val LOCK = Any()
         private val SETTINGS_FILE = Regex("""(?i).*\.json$""")
+        private val UPLOAD_NAME = Regex("""filename="([^"]*)"""")
 
         fun themesRoot(context: Context) = File(context.filesDir, "engine/themes")
         fun pcmRoot(context: Context) = File(context.filesDir, "engine/pcm")
@@ -170,16 +237,21 @@ class PhoneThemeApi(
             if (files.isEmpty()) throw ThemePrep.Problem(cantOpen)
             val folder = safe(theme.folder)
             val dir = File(themesRoot(app), folder)
+            // Core opens it without converting (phone_api), so the stand-ins are enough: nothing to decode first
             prepareSettings(app, dir, files)
-            val needsAudio = runCatching {
-                PhoneEngine.module(app, "phone_api").callAttr("needs_audio", dir.path, File(pcmRoot(app), folder).path).toBoolean()
-            }.getOrDefault(false)
-            if (needsAudio) ThemePrep.prepare(app, store, theme) { _, _ -> }
-            val audio = files.filter { ThemeStore.isAudio(it.path) }.associateBy { it.path.substringBeforeLast('.') }
+            var audio = files.filter { ThemeStore.isAudio(it.path) }.associateBy { it.path.substringBeforeLast('.') }
             val api = PhoneThemeApi(app, themesRoot(app), pcmRoot(app), folder, object : Source {
                 override fun write(name: String, bytes: ByteArray) = kotlinx.coroutines.runBlocking { store.writeFile(theme, name, bytes) }
                 override fun audio(key: String) = audio[key]?.let { f ->
                     app.contentResolver.openInputStream(f.uri)?.let { Triple(it, f.bytes, f.path) }
+                }
+                override fun apply(ops: List<ThemeStore.FileOp>, from: File) = kotlinx.coroutines.runBlocking {
+                    try {
+                        store.applyOps(theme, ops, from)
+                    } finally {
+                        // Files moved or added: previews find them where they are now
+                        audio = store.files(theme).filter { ThemeStore.isAudio(it.path) }.associateBy { it.path.substringBeforeLast('.') }
+                    }
                 }
             })
             return api.session(ThemeSummary(folder, name = theme.name, icon = theme.icon, description = theme.description, categories = theme.categories, totalTracks = theme.tracks))
@@ -199,6 +271,19 @@ class PhoneThemeApi(
                 override fun audio(key: String) = audioDir?.walkTopDown()
                     ?.firstOrNull { it.isFile && ThemeStore.isAudio(it.name) && it.relativeTo(audioDir).path.substringBeforeLast('.') == key }
                     ?.let { Triple(it.inputStream(), it.length(), it.name) }
+                override fun apply(ops: List<ThemeStore.FileOp>, from: File) {
+                    val to = writeBackTo ?: return
+                    ops.forEach { op ->
+                        val src = op.src
+                        val dst = op.dst
+                        when (op.op) {
+                            "mkdir" -> if (dst != null) File(to, dst).mkdirs()
+                            "move" -> if (src != null && dst != null) File(to, dst).also { it.parentFile?.mkdirs(); File(to, src).renameTo(it) }
+                            "write", "copy" -> if (dst != null) File(from, dst).copyTo(File(to, dst), overwrite = true)
+                            "delete" -> if (src != null) File(to, src).deleteRecursively()
+                        }
+                    }
+                }
             })
             return api.session(ThemeSummary(folder, name = folder))
         }

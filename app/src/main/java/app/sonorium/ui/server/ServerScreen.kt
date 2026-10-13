@@ -140,7 +140,8 @@ fun ServerScreen(
     // Registered later, so it goes first: Back with the menu open just closes the menu (R10)
     androidx.activity.compose.BackHandler(enabled = drawer.isOpen || drawer.targetValue == DrawerValue.Open) { scope.launch { drawer.close() } }
     val folderPicker = rememberOwnThemesFolderPicker(model)
-    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker) {
+    val themeImport = rememberOwnThemeImport(model, folderPicker)
+    androidx.compose.runtime.CompositionLocalProvider(LocalToast provides toast, LocalThemesFolderPicker provides folderPicker, LocalThemeImport provides themeImport) {
     themeEditor?.let { ThemeEditorScreen(it, model, state) }
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {

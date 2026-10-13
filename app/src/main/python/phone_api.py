@@ -9,7 +9,7 @@ the files come out as the server writes them and the answers have the
 server's JSON shapes.
 
     handle(method, path, query, body, themes_root, pcm_root=None, current=None)
-        -> '{"status": 200, "body": {...}}'
+        -> '{"status": 200, "body": {...}[, "ops": [...]]}'
 
 - path: the part after /api/, as a JSON list of decoded path segments
   ('["themes", "Rain", "tracks", "Birds/Robin", "volume"]': a track key holds
@@ -20,14 +20,20 @@ server's JSON shapes.
 - pcm_root: the decoded audio beside them (files/engine/pcm), for file lengths.
 - current: the folder name of the theme being edited (for settings/playback-values).
 
-What the phone can't do yet answers 501 {"detail"/"error": NOT_HERE}: upload,
-linked files (add/remove/copy in), group create/rename/delete, moving tracks
-(these move audio files, which live in the user's themes folder) and the
-server-wide category list changes.
+Changes that make, move or remove files (group create/rename/delete, linked
+files, upload) are made on the prepared copy by Core's folder functions; their
+file operations come back as "ops" (theme_edit.FileOps) for the app to repeat
+in the user's themes folder. Upload's body here is JSON: {"filename", "path"}
+(the app saved the file it was sent at "path"), the group a query parameter.
+
+Themes are loaded without converting (theme_edit.convert_on_load = False):
+nothing is written on open, and the stand-ins' lengths are never read.
+
+What the phone can't do yet answers 501 {"detail"/"error": NOT_HERE}: moving
+tracks, copying a linked file in, and the server-wide category list changes.
 """
 import json
 import os
-import re
 from pathlib import Path
 
 os.environ.setdefault("SONORIUM_LOG_LEVEL", "warning")
@@ -37,9 +43,12 @@ from sonorium import playback_values as _values  # noqa: E402
 from sonorium.core import intrusions, sequences as seq, theme_edit as te, theme_groups, theme_presets  # noqa: E402
 from sonorium.core import theme_metadata as tm  # noqa: E402
 
+# Opening a theme writes nothing (no conversion, backup or broken-file rename): conversions that need
+# the real audio files are left to the server
+te.convert_on_load = False
+
 NOT_HERE = "Not available for themes on this phone yet"
 OLD_FORMAT = "This theme is in an older format. Open it once on your server to update it, then edit it here."
-NOT_READY = "This theme isn't ready yet. Play it once on this phone, then edit it."
 MARKER = ".sonorium-package.json"
 TRACK_SETTINGS = ("volume", "presence", "muted", "playback_mode", "seamless_loop", "exclusive")
 SAMPLE_RATE = 44100
@@ -59,21 +68,25 @@ def handle(method, path, query, body, themes_root, pcm_root=None, current=None):
         data = json.loads(body) if body else None
         status, answer = _route(method.upper(), segments, params or {}, data, Path(themes_root),
                                 Path(pcm_root) if pcm_root else None, current)
+        ops = answer.pop("ops", None) if isinstance(answer, dict) else None
     except _Http as e:
-        status, answer = e.status, _error(str(e))
+        status, answer, ops = e.status, _error(str(e)), None
     except (te.EditError,) as e:
-        status, answer = e.status, _error(str(e))
+        status, answer, ops = e.status, _error(str(e)), None
     except theme_groups.GroupError as e:
-        status, answer = getattr(e, "status", 400), _error(str(e))
+        status, answer, ops = getattr(e, "status", 400), _error(str(e)), None
     except seq.SequenceError as e:
-        status, answer = 400, _error(str(e))
+        status, answer, ops = 400, _error(str(e)), None
     except json.JSONDecodeError:
-        status, answer = 400, _error("Invalid JSON body")
+        status, answer, ops = 400, _error("Invalid JSON body"), None
     except (TypeError, ValueError) as e:
-        status, answer = 400, _error(f"Invalid value: {e}")
+        status, answer, ops = 400, _error(f"Invalid value: {e}"), None
     except Exception as e:  # noqa: BLE001 - an answer, never a crash in the app
-        status, answer = 500, _error(f"{type(e).__name__}: {e}")
-    return json.dumps({"status": status, "body": answer}, default=str)
+        status, answer, ops = 500, _error(f"{type(e).__name__}: {e}"), None
+    out = {"status": status, "body": answer}
+    if ops is not None:
+        out["ops"] = ops
+    return json.dumps(out, default=str)
 
 
 def _error(message):
@@ -93,18 +106,6 @@ def package_values(theme_dir):
         return {}
 
 
-def needs_audio(theme_dir, pcm_dir):
-    """
-    True when editing this theme needs its decoded audio first: Core's one-time
-    conversion of "auto" playback modes reads the files' lengths (it would read
-    the empty stand-ins wrong) and a decoded file is missing.
-    """
-    raw = _raw_metadata(Path(theme_dir))
-    if raw is None or raw.get("auto_retired"):
-        return False
-    return any(not _wav(Path(theme_dir), Path(pcm_dir), p).exists() for p in _audio_files(Path(theme_dir)))
-
-
 # --- routing -----------------------------------------------------------------------
 
 def _route(method, s, query, data, root, pcm_root, current):
@@ -122,14 +123,12 @@ def _route(method, s, query, data, root, pcm_root, current):
     if raw is not None and not raw.get("intrusions_retired") and any(
             isinstance(g, dict) and g.get("mode") == "intrusion" for g in (raw.get("groups") or {}).values()):
         raise _Http(409, OLD_FORMAT)  # Core's conversion moves audio files: the server does it
-    if pcm is not None and needs_audio(folder, pcm):
-        raise _Http(409, NOT_READY)
     decoder = decoders.PcmFileDecoder(lookup=decoders.mirror_lookup(folder, pcm)) if pcm else None
     with decoders.use_decoder(decoder), _values.use_values(package_values(str(folder))):
-        return _theme_route(method, s[1], s[2:], query, data, folder, root, pcm)
+        return _theme_route(method, s[1], s[2:], query, data, folder, root, pcm, decoder)
 
 
-def _theme_route(method, theme_id, s, query, data, folder, root, pcm):
+def _theme_route(method, theme_id, s, query, data, folder, root, pcm, decoder=None):
     head = s[0]
     if head == "tracks":
         if s == ["tracks"] and method == "GET":
@@ -145,15 +144,27 @@ def _theme_route(method, theme_id, s, query, data, folder, root, pcm):
         if len(s) == 2 and method == "PUT":
             settings = te.set_group(folder, s[1], **_object(data))
             return 200, {"name": s[1], "settings": settings}
+        if s == ["groups"] and method == "POST":
+            ops = te.FileOps(folder)
+            name = te.create_group(folder, _object(data).get("name"))
+            ops.made_dir(folder / name)
+            return 201, {"name": name, "ops": ops.done()}
+        if len(s) == 3 and s[2] == "rename" and method == "POST":
+            result = te.rename_group(folder, s[1], _object(data).get("name"))
+            return 200, {"name": result["name"], "tracks": result["tracks"], "ops": result["ops"]}
+        if len(s) == 2 and method == "DELETE":
+            return 200, te.delete_group(folder, s[1])
+    elif head == "links":
+        return _link_route(method, s[1:], data, folder, root, pcm)
+    elif head == "upload" and method == "POST" and len(s) == 1:
+        return 200, _upload(theme_id, folder, query, _object(data))
     elif head == "rename" and method == "PUT" and len(s) == 1:
         return 200, _rename_theme(folder, _object(data))
     elif head == "metadata" and method == "PUT" and len(s) == 1:
         return 200, _set_metadata(folder, _object(data))
     elif head == "categories" and method == "POST" and len(s) == 1:
-        metadata = te.load(folder)
-        metadata.categories = list(_object(data).get("categories", []))
-        te.save(folder, metadata)
-        return 200, {"theme_id": theme_id, "categories": metadata.categories}
+        categories = te.set_categories(folder, list(_object(data).get("categories", [])))
+        return 200, {"theme_id": theme_id, "categories": categories}
     elif head == "presets":
         return _preset_route(method, theme_id, s[1:], data, folder, root)
     elif head == "sequence_defaults" and len(s) == 1:
@@ -168,8 +179,68 @@ def _theme_route(method, theme_id, s, query, data, folder, root, pcm):
     elif head == "sequences":
         return _sequence_route(method, theme_id, s[1:], data, folder)
     elif head == "transition_tracks" and method == "GET" and len(s) == 1:
-        return 200, _transition_tracks(theme_id, folder, root, query)
+        return 200, te.transition_tracks(folder, query.get("preset"), query.get("prev") or None,
+                                         query.get("next") or None, themes_root=root, decoder=decoder)
     raise _Http(501, NOT_HERE)
+
+
+def _link_route(method, s, data, folder, root, pcm):
+    """Linked files (api.py add_links, delete_link, list_link_source_tracks)."""
+    if not s and method == "POST":
+        body = _object(data)
+        source_id = body.get("theme")
+        if not isinstance(source_id, str) or not source_id:
+            raise _Http(400, "'theme' (the source theme id) is required")
+        te.clean_link_request(body.get("group"), body.get("tracks"))
+        return 201, te.add_links(folder, _source(root, source_id), body.get("tracks"), body.get("group"))
+    if len(s) == 2 and s[0] == "source" and method == "GET":
+        return 200, _source_tracks(folder, root, pcm, s[1])
+    if len(s) == 1 and method == "DELETE":
+        return 200, te.remove_link(folder, s[0])
+    raise _Http(501, NOT_HERE)
+
+
+def _source(root, source_id):
+    try:
+        return _folder(root, source_id)
+    except _Http:
+        raise _Http(404, "Source theme not found")
+
+
+def _source_tracks(folder, root, pcm, source_id):
+    """GET /themes/{id}/links/source/{source_id}: another theme's own files, to link from."""
+    from urllib.parse import quote
+    from sonorium.theme_files import track_display_name, track_key
+    metadata = te.load(folder)
+    source = _source(root, source_id)
+    source_metadata = te.load(source)
+    source_pcm = (pcm.parent / source.name) if pcm is not None else None
+    linked_as = {(link.get("theme"), link.get("track")): key for key, link in (metadata.links or {}).items()}
+    tracks = []
+    for path in _audio_files(source):
+        key = track_key(source, path)
+        seconds = _seconds(_wav(source, source_pcm, path)) if source_pcm is not None else None
+        tracks.append({
+            "id": key, "name": key, "display_name": track_display_name(key),
+            "group": key.split("/", 1)[0] if "/" in key else None,
+            "duration_seconds": round(seconds, 1) if seconds else None,
+            "preview_url": f"/api/themes/{quote(source_metadata.id, safe='')}/tracks/{quote(key, safe='')}/audio",
+            "linked_as": linked_as.get((source_metadata.id, key)),
+        })
+    tracks.sort(key=lambda t: t["name"].lower())
+    return {"theme_id": metadata.id, "source": {"id": source_metadata.id, "name": source_metadata.name},
+            "same_theme": source_metadata.id == metadata.id, "tracks": tracks}
+
+
+def _upload(theme_id, folder, query, body):
+    """POST /themes/{id}/upload (web/api_v2.py upload_theme_file), the file already saved at body["path"]."""
+    path, filename = body.get("path"), body.get("filename")
+    if not path or not filename:
+        raise _Http(400, "No file provided")
+    group = body.get("group") or query.get("group") or None
+    saved = te.upload(folder, filename, Path(path), group)
+    return {"status": "ok", "filename": saved["filename"], "size": saved["size"], "theme_id": theme_id,
+            "group": saved["group"], "track": saved["track"], "ops": saved["ops"]}
 
 
 def _preset_route(method, theme_id, s, data, folder, root):
@@ -180,7 +251,8 @@ def _preset_route(method, theme_id, s, data, folder, root):
             name = data.get("name") if isinstance(data, dict) else None
             return 200, {"status": "ok", **te.new_preset(folder, name)}
     elif s == ["import"] and method == "POST":
-        return 200, _import_preset(folder, _object(data))
+        body = _object(data)
+        return 200, te.import_preset(folder, body.get("preset_json"), body.get("name"))
     elif len(s) == 1:
         pid = s[0]
         if method == "GET":
@@ -334,147 +406,16 @@ def _presets(theme_id, folder, root):
             "sequences": [seq.to_choice(sid, d, defaults, marks) for sid, d in seq.load_sequences(folder).items()]}
 
 
-def _import_preset(folder, body):
-    """POST /themes/{id}/presets/import (api.py import_preset): same checks and answer."""
-    preset_json = body.get("preset_json")
-    name = body.get("name")
-    if not preset_json:
-        raise _Http(400, "No preset JSON provided")
-    try:
-        preset_data = json.loads(preset_json)
-    except json.JSONDecodeError as e:
-        raise _Http(400, f"Invalid JSON: {e}")
-    if not isinstance(preset_data, dict):
-        raise _Http(400, "Preset must be a JSON object")
-    if "tracks" in preset_data:
-        tracks = preset_data["tracks"]
-        imported_name = preset_data.get("name", name or "Imported Preset")
-    else:
-        tracks = preset_data
-        imported_name = name or "Imported Preset"
-    if not isinstance(tracks, dict):
-        raise _Http(400, "Tracks must be a JSON object")
-    metadata = te.load(folder)
-    valid = set(te.track_keys(folder, metadata))
-    validated, unknown = {}, []
-    for track_name, settings in tracks.items():
-        if track_name not in valid:
-            unknown.append(track_name)
-            continue
-        if not isinstance(settings, dict):
-            continue
-        validated[track_name] = {
-            "volume": float(settings.get("volume", 1.0)),
-            "presence": float(settings.get("presence", 1.0)),
-            "playback_mode": str(settings.get("playback_mode", "auto")),
-            "seamless_loop": bool(settings.get("seamless_loop", False)),
-            "exclusive": bool(settings.get("exclusive", False)),
-            "muted": bool(settings.get("muted", False)),
-        }
-    if not validated:
-        raise _Http(400, "No valid track settings found in preset")
-    preset_id = re.sub(r'[^a-z0-9]+', '_', imported_name.lower()).strip('_') or "imported"
-    base_id, counter = preset_id, 1
-    while preset_id in metadata.presets:
-        preset_id = f"{base_id}_{counter}"
-        counter += 1
-    metadata.presets[preset_id] = {"name": imported_name, "is_default": False, "tracks": validated}
-    te.save(folder, metadata)
-    result = {"status": "ok", "preset_id": preset_id, "name": imported_name, "tracks_imported": len(validated)}
-    if unknown:
-        result["unknown_tracks"] = unknown
-        result["warning"] = f"{len(unknown)} track(s) not found in theme"
-    return result
-
-
 def _rename_theme(folder, body):
     """PUT /themes/{id}/rename (api.py rename_theme): the display name; the folder stays."""
-    new_name = str(body.get("name", "")).strip()
-    if not new_name:
-        raise _Http(400, "Name is required")
-    metadata = te.load(folder)
-    old_name, metadata.name = metadata.name, new_name
-    te.save(folder, metadata)
-    return {"status": "ok", "old_name": old_name, "new_name": new_name, "theme_id": metadata.id}
+    old_name, new_name = te.rename_theme(folder, str(body.get("name", "")).strip())
+    return {"status": "ok", "old_name": old_name, "new_name": new_name, "theme_id": te.load(folder).id}
 
 
 def _set_metadata(folder, body):
     """PUT /themes/{id}/metadata (web/api_v2.py update_theme_metadata): description, icon, short_file_threshold."""
-    path = folder / theme_presets.METADATA_FILE
-    try:
-        metadata = theme_presets.read_json(path) or {}
-    except theme_presets.BrokenJsonError as e:
-        raise _Http(409, f"metadata.json can't be read ({e})")
-    if "description" in body:
-        metadata["description"] = body["description"]
-    if "icon" in body:
-        if body["icon"]:
-            metadata["icon"] = body["icon"]
-        else:
-            metadata.pop("icon", None)
-    if "short_file_threshold" in body:
-        threshold = float(body["short_file_threshold"])
-        if threshold < 0:
-            raise _Http(400, "short_file_threshold must be >= 0")
-        metadata["short_file_threshold"] = threshold
-    theme_presets.write_json_atomic(path, metadata)
-    return {"status": "ok", "metadata": metadata}
-
-
-def _transition_tracks(theme_id, folder, root, query):
-    """
-    GET /themes/{id}/transition_tracks (web/api_v2.py get_transition_tracks), on
-    the theme loaded as the engine loads it (file lengths from the decoded audio).
-    """
-    from sonorium.core.transitions import EPS, track_level
-    from sonorium.engine.theme_loader import load_theme
-    from sonorium.recording import (GROUP_MODE_MERRY_GO_ROUND, PlaybackMode, TrackView, group_mode,
-                                    preset_group_overrides, preset_track_overrides)
-    preset, prev, nxt = query.get("preset"), query.get("prev"), query.get("next")
-    loaded = load_theme(folder, themes_root=root)
-    presets = loaded.presets
-    for value in (preset, prev, nxt):
-        if value and value not in presets:
-            raise _Http(404, f"Preset '{value}' not found")
-    theme = loaded.theme
-    groups = getattr(theme, "groups", None) or {}
-    labels = {PlaybackMode.SPARSE: "Intermittent", PlaybackMode.PRESENCE: "Ebb & Flow", PlaybackMode.CONTINUOUS: "Background"}
-
-    def overrides(pid):
-        p = presets.get(pid) or {}
-        return {**preset_track_overrides(p.get("tracks", {})), **preset_group_overrides(p.get("groups", {}))}
-
-    def rows(before_id, after_id, side):
-        if not before_id or not after_id:
-            return []
-        before, after = overrides(before_id), overrides(after_id)
-        result = []
-        for instance in list(theme.tracks):
-            group = getattr(instance.meta, "group", None)
-            if group and group_mode(groups.get(group)) == GROUP_MODE_MERRY_GO_ROUND:
-                continue
-            va, vb = TrackView(instance, before), TrackView(instance, after)
-            la, lb = track_level(va), track_level(vb)
-            if (side == "in" and lb > la + EPS) or (side == "out" and lb < la - EPS):
-                view = vb if side == "in" else va
-                try:
-                    mode = labels.get(view._resolve_playback_mode(), "Background")
-                except Exception:  # noqa: BLE001 - as the server
-                    mode = "Background"
-                try:
-                    duration = round(float(instance.meta.duration_seconds), 1)
-                except Exception:  # noqa: BLE001
-                    duration = 0.0
-                result.append({
-                    "key": instance.name, "name": instance.name.split("/", 1)[-1], "group": group, "mode": mode,
-                    "from": round(la, 4), "to": round(lb, 4),
-                    "presence_from": round(float(va.presence), 4), "presence_to": round(float(vb.presence), 4),
-                    "duration_seconds": duration,
-                })
-        return result
-
-    return {"theme_id": theme_id, "preset": preset, "prev": prev, "next": nxt,
-            "in": rows(prev, preset, "in"), "out": rows(preset, nxt, "out")}
+    values = {k: body[k] for k in ("description", "icon", "short_file_threshold") if k in body}
+    return {"status": "ok", "metadata": te.set_metadata_fields(folder, values)}
 
 
 # --- helpers -----------------------------------------------------------------------

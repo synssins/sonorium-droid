@@ -69,7 +69,7 @@ fun PersonalChannelScreen(
     val folder by model.localFolder.collectAsState()
     val isPro by model.entitlement.isPro.collectAsState()
     val phone by PhonePlayer.state.collectAsState()
-    var onPhone by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(state.record == null || state.failure != null) }
+    var onPhone by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(state.record == null || state.failure != null || phone.playing || phone.preparing != null) }
     val channel = state.personal
     Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), contentAlignment = Alignment.TopCenter) {
         Column(Modifier.widthIn(max = 460.dp).fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

@@ -116,8 +116,7 @@ private fun SectionHeader(section: Section, count: Int, ui: EditorUi, hooks: Lis
             Spacer(Modifier.width(8.dp))
             CountBadge(count)
             Spacer(Modifier.weight(1f))
-            // On this phone groups can't be made yet (a group is a folder of audio files: the server makes it)
-            if (section.groupMode != null && ui.groupsOk && !hooks.editor.onPhone) {
+            if (section.groupMode != null && ui.groupsOk) {
                 OutlinedButton(
                     onClick = { hooks.editor.newGroup(section) },
                     shape = RoundedCornerShape(8.dp),
@@ -368,7 +367,7 @@ private fun TrackMenu(t: EditorTrack, section: Section, group: TrackGroup?, ui: 
                     editor.exclusiveOff(t)
                 }
             }
-            // Moving moves the audio file: not on this phone yet
+            // Moving a track: not on this phone yet
             if (ui.groupsOk && !editor.onPhone) {
                 HorizontalDivider(color = Palette.border)
                 Text("Move to", color = Palette.textMuted, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
@@ -388,7 +387,7 @@ private fun TrackMenu(t: EditorTrack, section: Section, group: TrackGroup?, ui: 
                 text = { Text("Reset track", color = if (on) Palette.text else Palette.textMuted) },
                 onClick = { open = false; editor.resetTrack(t) },
             )
-            if (link && !editor.onPhone) {
+            if (link) {
                 HorizontalDivider(color = Palette.border)
                 DropdownMenuItem(
                     leadingIcon = { Icon(SIcons.Link, null, tint = Palette.danger, modifier = Modifier.size(16.dp)) },
@@ -543,8 +542,8 @@ private fun GroupBlock(g: TrackGroup, section: Section, members: List<EditorTrac
                     g.name, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .weight(1f, fill = false)
-                        .combinedClickable(onClick = {}, onDoubleClick = { if (!editor.onPhone) editor.startRename(g.name) }, onLongClick = { if (!editor.onPhone) editor.startRename(g.name) })
-                        .semantics { contentDescription = if (editor.onPhone) g.name else "${g.name}. Double-click to rename" },
+                        .combinedClickable(onClick = {}, onDoubleClick = { editor.startRename(g.name) }, onLongClick = { editor.startRename(g.name) })
+                        .semantics { contentDescription = "${g.name}. Double-click to rename" },
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(if (members.size == 1) "1 track" else "${members.size} tracks", color = Palette.textMuted, fontSize = 12.sp)
@@ -619,8 +618,6 @@ private fun GroupTiming(g: TrackGroup, section: Section, editor: ThemeEditor) {
 private fun GroupMenu(g: TrackGroup, section: Section, hooks: ListHooks) {
     val editor = hooks.editor
     var open by remember { mutableStateOf(false) }
-    // On this phone only Ebb & Flow's Rise is here (rename, upload and delete need the server)
-    if (editor.onPhone && section != Section.EbbFlow) return
     Box {
         IconBox(SIcons.More, "More for group ${g.name}", { open = true }, size = app.sonorium.ui.UiSize.SMALL)
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 240.dp)) {
@@ -636,18 +633,18 @@ private fun GroupMenu(g: TrackGroup, section: Section, hooks: ListHooks) {
                 }
                 HorizontalDivider(color = Palette.border)
             }
-            if (!editor.onPhone) DropdownMenuItem(
+            DropdownMenuItem(
                 leadingIcon = { Icon(SIcons.Edit, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
                 text = { Text("Rename…", color = Palette.text) },
                 onClick = { open = false; editor.startRename(g.name) },
             )
-            if (!editor.onPhone) DropdownMenuItem(
+            DropdownMenuItem(
                 leadingIcon = { Icon(SIcons.Upload, null, tint = Palette.textSecondary, modifier = Modifier.size(16.dp)) },
                 text = { Text("Upload into ${g.name}", color = Palette.text) },
                 onClick = { open = false; hooks.upload(g.name) },
             )
-            if (!editor.onPhone) HorizontalDivider(color = Palette.border)
-            if (!editor.onPhone) DropdownMenuItem(
+            HorizontalDivider(color = Palette.border)
+            DropdownMenuItem(
                 leadingIcon = { Icon(SIcons.Trash, null, tint = Palette.danger, modifier = Modifier.size(16.dp)) },
                 text = { Text("Delete group…", color = Palette.danger) },
                 onClick = { open = false; hooks.setDeleting(g.name) },

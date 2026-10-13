@@ -34,6 +34,8 @@ data class LocalTheme(
     val contentHash: String? = null,
     /** The theme's own id from its metadata.json (the server's theme id, for a theme exported from a server). */
     val metaId: String? = null,
+    /** One of the starter themes the app ships with, as copied in (not saved from a server). */
+    val starter: Boolean = false,
 ) {
     /** Changes when the theme's files change (an update, or files copied in): its prepared copy is then stale. */
     val version: String get() = "$docId|${contentHash.orEmpty()}|$bytes|$tracks"
@@ -145,6 +147,7 @@ class ThemeStore(private val context: Context) {
             categories = (meta?.get("categories") as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.content }.orEmpty(),
             tracks = audio.size, bytes = bytes, themeId = m("theme_id"), contentHash = m("content_hash"),
             metaId = s("id")?.ifBlank { null },
+            starter = marker == null && s("id")?.let { it in StarterThemes.ids(context) } == true,
         )
     }
 
@@ -288,6 +291,88 @@ class ThemeStore(private val context: Context) {
             ?: throw ImportProblem(CANT_WRITE)
         out.use { it.write(bytes) }
     }
+
+    /**
+     * Repeats a Theme Editor change's file operations (Core's `theme_edit.FileOps`: mkdir, move, copy,
+     * write, delete; paths relative to the theme folder with "/") in [theme]'s folder. "write" and "copy"
+     * take the file from [from] (the prepared copy Core changed). Throws [ImportProblem] when one fails.
+     */
+    suspend fun applyOps(theme: LocalTheme, ops: List<FileOp>, from: File) = withContext(Dispatchers.IO) {
+        val tree = root ?: throw ImportProblem(CANT_WRITE)
+        fun find(path: String): Doc? {
+            var parent = theme.docId
+            var found: Doc? = null
+            for (part in path.split('/').filter { it.isNotEmpty() }) {
+                found = children(tree, parent).firstOrNull { it.name == part } ?: return null
+                parent = found.id
+            }
+            return found
+        }
+        fun dir(path: String): String {
+            var parent = theme.docId
+            for (part in path.split('/').filter { it.isNotEmpty() }) {
+                parent = children(tree, parent).firstOrNull { it.name == part && it.isDir }?.id
+                    ?: create(tree, parent, DocumentsContract.Document.MIME_TYPE_DIR, part)
+            }
+            return parent
+        }
+        fun parentOf(path: String) = path.substringBeforeLast('/', "")
+        fun nameOf(path: String) = path.substringAfterLast('/')
+        for (op in ops) {
+            when (op.op) {
+                "mkdir" -> dir(op.dst ?: continue)
+                "move" -> {
+                    val src = op.src ?: continue
+                    val dst = op.dst ?: continue
+                    val doc = find(src) ?: throw ImportProblem("Couldn't find $src in the theme's folder")
+                    var id = doc.id
+                    if (parentOf(src) != parentOf(dst)) {
+                        val fromParent = DocumentsContract.buildDocumentUriUsingTree(tree, find(parentOf(src))?.id ?: theme.docId)
+                        val toParent = DocumentsContract.buildDocumentUriUsingTree(tree, dir(parentOf(dst)))
+                        val moved = runCatching { DocumentsContract.moveDocument(resolver, DocumentsContract.buildDocumentUriUsingTree(tree, id), fromParent, toParent) }
+                            .onFailure { Log.w(TAG, "Couldn't move $src", it) }.getOrNull()
+                        id = if (moved != null) DocumentsContract.getDocumentId(moved) else copyFile(tree, doc, DocumentsContract.getDocumentId(toParent))
+                    }
+                    val name = nameOf(dst)
+                    if (nameOf(src) != name) {
+                        // A case-only rename goes through a temporary name (some storage ignores case)
+                        if (name.equals(nameOf(src), ignoreCase = true)) id = rename(tree, id, "${WORK_PREFIX}rename-${System.currentTimeMillis()}")
+                        rename(tree, id, name)
+                    }
+                }
+                "write", "copy" -> {
+                    val dst = op.dst ?: continue
+                    val file = File(from, dst)
+                    if (!file.isFile) throw ImportProblem("Couldn't find $dst to save")
+                    val parent = dir(parentOf(dst))
+                    val name = nameOf(dst)
+                    val existing = children(tree, parent).firstOrNull { it.name == name && !it.isDir }
+                    val out = existing?.let { e -> runCatching { resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, e.id), "wt") }.getOrNull() }
+                        ?: run {
+                            existing?.let { delete(tree, it.id) }
+                            resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, create(tree, parent, mimeOf(name), name)), "w")
+                        }
+                        ?: throw ImportProblem(CANT_WRITE)
+                    out.use { o -> file.inputStream().use { it.copyTo(o) } }
+                }
+                "delete" -> find(op.src ?: continue)?.let { if (!delete(tree, it.id)) throw ImportProblem(CANT_WRITE) }
+                else -> Log.w(TAG, "Unknown file operation ${op.op}")
+            }
+        }
+    }
+
+    /** A file copied into another folder (storage without moves), the original removed; the copy's id. */
+    private fun copyFile(tree: Uri, doc: Doc, toParent: String): String {
+        if (doc.isDir) throw ImportProblem(CANT_WRITE)
+        val id = create(tree, toParent, mimeOf(doc.name), doc.name)
+        val out = resolver.openOutputStream(DocumentsContract.buildDocumentUriUsingTree(tree, id), "w") ?: throw ImportProblem(CANT_WRITE)
+        out.use { o -> resolver.openInputStream(DocumentsContract.buildDocumentUriUsingTree(tree, doc.id))?.use { it.copyTo(o) } ?: throw ImportProblem(CANT_WRITE) }
+        delete(tree, doc.id)
+        return id
+    }
+
+    /** One of Core's file operations (theme_edit.FileOps). */
+    data class FileOp(val op: String, val src: String?, val dst: String?)
 
     /** Removes a theme folder from the phone. */
     suspend fun remove(theme: LocalTheme): Boolean = withContext(Dispatchers.IO) {

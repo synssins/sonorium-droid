@@ -5,6 +5,8 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -16,18 +18,31 @@ object StarterThemes {
     private const val ASSETS = "starter-themes"
     private const val KEY = "starterThemesInstalled"
 
+    /** One copy at a time: a Save to phone waits for it, so its theme replaces the starter copy instead of sitting next to it. */
+    private val lock = Mutex()
+    @Volatile private var starterIds: Set<String>? = null
+
+    /** The metadata.json ids of the starter themes (to tell a starter copy from a theme saved from a server). */
+    fun ids(context: Context): Set<String> = starterIds ?: context.assets.list(ASSETS).orEmpty().mapNotNull { theme ->
+        runCatching {
+            context.assets.open("$ASSETS/$theme/metadata.json").use { org.json.JSONObject(it.readBytes().decodeToString()).optString("id") }
+        }.getOrNull()?.ifBlank { null }
+    }.toSet().also { starterIds = it }
+
     /** Copies the starter themes into the chosen themes folder the first time; true when it did. */
-    suspend fun installOnce(context: Context, store: ThemeStore): Boolean = withContext(Dispatchers.IO) {
+    suspend fun installOnce(context: Context, store: ThemeStore): Boolean = withContext(Dispatchers.IO) { lock.withLock { copyAll(context, store) } }
+
+    private fun copyAll(context: Context, store: ThemeStore): Boolean {
         val prefs = context.getSharedPreferences("sonorium", Context.MODE_PRIVATE)
-        if (prefs.getBoolean(KEY, false)) return@withContext false
-        val tree = store.root ?: return@withContext false
+        if (prefs.getBoolean(KEY, false)) return false
+        val tree = store.root ?: return false
         val resolver = context.contentResolver
         val rootId = DocumentsContract.getTreeDocumentId(tree)
-        val existing = children(context, tree, rootId).map { it.lowercase() }.toSet()
         val themes = context.assets.list(ASSETS).orEmpty().sorted()
         var copied = false
         for (theme in themes) {
-            if (theme.lowercase() in existing) continue
+            // Listed again for each theme: a folder of that name made meanwhile is left alone
+            if (theme.lowercase() in children(context, tree, rootId).map { it.lowercase() }) continue
             try {
                 val folder = create(context, tree, rootId, DocumentsContract.Document.MIME_TYPE_DIR, theme)
                 for (file in context.assets.list("$ASSETS/$theme").orEmpty()) {
@@ -42,7 +57,7 @@ object StarterThemes {
             }
         }
         prefs.edit().putBoolean(KEY, true).apply()
-        copied
+        return copied
     }
 
     private fun children(context: Context, tree: Uri, parentId: String): List<String> {

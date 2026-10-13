@@ -43,8 +43,10 @@ object PackageRules {
     fun onPhone(pkg: PackageSummary?, local: List<LocalTheme>?): OnPhone {
         if (pkg == null) return OnPhone.NONE
         val mine = localCopy(pkg.themeId, local) ?: return OnPhone.NONE
-        // An imported copy has no content hash to compare: it counts as on the phone
-        return if (mine.contentHash == null || mine.contentHash == pkg.contentHash) OnPhone.SAVED else OnPhone.UPDATE
+        // An imported copy has no content hash to compare: it counts as on the phone. A starter theme as the
+        // app shipped it may differ from the server's copy (presets, sequences): the server's is offered.
+        if (mine.contentHash == null) return if (mine.starter) OnPhone.UPDATE else OnPhone.SAVED
+        return if (mine.contentHash == pkg.contentHash) OnPhone.SAVED else OnPhone.UPDATE
     }
 
     /** The menu entry for a server theme, or null when it's on the phone and current, can't be copied, or there are no packages. */

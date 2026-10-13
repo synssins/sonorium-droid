@@ -48,6 +48,10 @@ class PhoneApiTest(unittest.TestCase):
         # The same theme edited with theme_edit directly (the server's way)
         self.reference = self.tmp / "reference" / self.folder
         shutil.copytree(source, self.reference)
+        # The user's themes folder (real audio files): the app repeats the returned "ops" there
+        self.user = self.tmp / "user" / self.folder
+        shutil.copytree(source, self.user)
+        self.ops = []
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -56,7 +60,37 @@ class PhoneApiTest(unittest.TestCase):
         path = json.dumps(["themes", theme_id or self.folder] + list(segments))
         answer = json.loads(phone_api.handle(method, path, json.dumps(query or {}), json.dumps(body) if body is not None else "",
                                              str(self.root), str(self.pcm_root), self.folder))
+        self.assertNotIn("ops", answer["body"] if isinstance(answer["body"], dict) else {})
+        self.ops = answer.get("ops")
+        if self.ops:
+            self.replay(self.ops)
         return answer["status"], answer["body"]
+
+    def replay(self, ops):
+        """What PhoneThemeApi does with "ops" in the user's folder (ThemeStore.applyOps)."""
+        for op in ops:
+            kind, src, dst = op["op"], op["src"], op["dst"]
+            if kind == "mkdir":
+                (self.user / dst).mkdir(parents=True, exist_ok=True)
+            elif kind == "move":
+                (self.user / dst).parent.mkdir(parents=True, exist_ok=True)
+                (self.user / src).rename(self.user / dst)
+            elif kind in ("write", "copy"):
+                (self.user / dst).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(self.theme / dst, self.user / dst)
+            elif kind == "delete":
+                target = self.user / src
+                shutil.rmtree(target) if target.is_dir() else target.unlink()
+            else:
+                self.fail(f"unknown op {op}")
+
+    def same_user_folder(self):
+        """The user's folder after the replayed ops: the reference's files, and its JSON byte for byte."""
+        def listing(folder):
+            return sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*"))
+        self.assertEqual(listing(self.reference), listing(self.user))
+        for name in FILES:
+            self.assertEqual((self.reference / name).read_bytes(), (self.user / name).read_bytes(), name)
 
     def same_files(self):
         for name in FILES:
@@ -129,7 +163,61 @@ class PhoneApiTest(unittest.TestCase):
         te.set_group(self.reference, "Birds", volume=0.5, gap_min=10, gap_max=5)
         self.same_files()
         self.assertEqual((404, "Group not found"), self.err("PUT", ["groups", "Nope"], {"volume": 1}))
-        self.assertEqual(501, self.call("POST", ["groups"], {"name": "Fire"})[0])
+
+        # Group create, rename, delete: Core's folder functions; their ops repeated in the user's folder
+        self.assertEqual((201, {"name": "Fire"}), self.call("POST", ["groups"], {"name": "Fire"}))
+        self.assertEqual([{"op": "mkdir", "src": None, "dst": "Fire"}], self.ops)
+        te.create_group(self.reference, "Fire")
+        self.same_files()
+        status, body = self.call("POST", ["groups", "Birds", "rename"], {"name": "Flock"})
+        self.assertEqual((200, "Flock"), (status, body["name"]))
+        self.assertEqual("Flock/Bird 1", body["tracks"]["Birds/Bird 1"])
+        self.assertEqual({"op": "move", "src": "Birds", "dst": "Flock"}, self.ops[0])
+        te.rename_group(self.reference, "Birds", "Flock")
+        self.same_files()
+        status, body = self.call("DELETE", ["groups", "Flock"])
+        self.assertEqual(200, status)
+        self.assertTrue(body["folder_removed"])
+        te.delete_group(self.reference, "Flock")
+        self.same_files()
+        self.assertEqual((409, 400), (self.call("POST", ["groups"], {"name": "Fire"})[0], self.call("POST", ["groups"], {"name": ""})[0]))
+        shutil.rmtree(self.reference / "Fire")
+        (self.theme / "Fire").rmdir()
+        (self.user / "Fire").rmdir()
+        self.same_user_folder()
+
+    def test_upload_and_links(self):
+        # Upload: the app saved the file it was sent; Core copies it in (a "copy" op) and makes it Unassigned
+        sent = self.tmp / "sent.wav"
+        shutil.copyfile(self.reference / "Chirp.wav", sent)
+        status, body = self.call("POST", ["upload"], {"filename": "Hum.wav", "path": str(sent)}, query={"group": "Hums"})
+        self.assertEqual((200, "Hums/Hum", "Hums"), (status, body["track"], body["group"]))
+        self.assertEqual(["mkdir", "copy", "write"], [o["op"] for o in self.ops][:3])
+        te.upload(self.reference, "Hum.wav", sent, "Hums")
+        self.same_files()
+        self.same_user_folder()
+        self.assertEqual(400, self.call("POST", ["upload"], {"filename": "notes.txt", "path": str(sent)})[0])
+
+        # Links: another theme on the phone as the source
+        other = self.root / "Other"
+        shutil.copytree(self.theme, other, ignore=shutil.ignore_patterns("Hums"))
+        meta = json.loads((other / "metadata.json").read_text(encoding="utf-8"))
+        meta["id"] = "other-theme"
+        (other / "metadata.json").write_text(json.dumps(meta), encoding="utf-8")
+        shutil.copytree(other, self.tmp / "reference" / "Other")
+        status, body = self.call("GET", ["links", "source", "other-theme"])
+        self.assertEqual(200, status, body)
+        self.assertIn("Drone", [t["id"] for t in body["tracks"]])
+        status, body = self.call("POST", ["links"], {"theme": "other-theme", "tracks": ["Drone"]})
+        self.assertEqual(201, status, body)
+        key = body["links"][0]["key"]
+        te.add_links(self.reference, self.tmp / "reference" / "Other", ["Drone"])
+        self.same_files()
+        self.assertEqual((404, "Source theme not found"), self.err("POST", ["links"], {"theme": "nope", "tracks": ["Drone"]}))
+        self.assertEqual(200, self.call("DELETE", ["links", key])[0])
+        te.remove_link(self.reference, key)
+        self.same_files()
+        self.same_user_folder()
 
     def test_presets(self):
         status, body = self.call("GET", ["presets"])
@@ -203,25 +291,25 @@ class PhoneApiTest(unittest.TestCase):
         self.assertIn("group_crossfade_max", answer["body"]["values"])
 
     def test_not_here(self):
-        for method, segments in (("POST", ["upload"]), ("POST", ["links"]), ("DELETE", ["links", "Drone"]),
-                                 ("POST", ["groups", "Birds", "rename"]), ("DELETE", ["groups", "Birds"])):
+        for method, segments in (("POST", ["tracks", "Drone", "move"]), ("POST", ["links", "Drone", "copy-in"])):
             status, body = self.call(method, segments, {})
             self.assertEqual(501, status, segments)
             self.assertEqual(phone_api.NOT_HERE, body["error"])
         self.assertEqual(404, self.call("GET", ["tracks"], theme_id="nope")[0])
 
-    def test_needs_decoded_audio_for_auto_modes(self):
-        # Core's one-time "auto" conversion reads file lengths: never from the empty stand-ins
+    def test_opening_writes_nothing(self):
+        # Themes open without converting: "auto" stays "auto" (the server converts it with the real files),
+        # nothing is written, and no decoded audio is needed
         meta_path = self.theme / "metadata.json"
         meta = json.loads(meta_path.read_text(encoding="utf-8"))
         meta["auto_retired"] = False
         meta["tracks"]["Drone"]["playback_mode"] = "auto"
         meta_path.write_text(json.dumps(meta), encoding="utf-8")
-        self.assertFalse(phone_api.needs_audio(self.theme, self.pcm_root / self.folder))
         (self.pcm_root / self.folder / "Drone.wav").unlink()
         before = meta_path.read_bytes()
-        self.assertTrue(phone_api.needs_audio(self.theme, self.pcm_root / self.folder))
-        self.assertEqual((409, phone_api.NOT_READY), self.err("GET", ["tracks"]))
+        status, body = self.call("GET", ["tracks"])
+        self.assertEqual(200, status)
+        self.assertEqual("auto", next(t for t in body["tracks"] if t["name"] == "Drone")["playback_mode"])
         self.assertEqual(before, meta_path.read_bytes())
 
 

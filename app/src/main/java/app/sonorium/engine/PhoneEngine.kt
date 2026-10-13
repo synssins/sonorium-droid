@@ -110,6 +110,12 @@ object PhoneEngine {
         }.toList()
     }.getOrDefault(emptyList())
 
+    /** The presets kept in a theme's metadata.json (its "presets" object); none when it has no such object. */
+    fun presetsFromMetadata(text: String): List<Preset> = runCatching {
+        val presets = org.json.JSONObject(text).optJSONObject("presets") ?: return emptyList()
+        presetsFromJson(org.json.JSONObject().put("presets", presets).toString())
+    }.getOrDefault(emptyList())
+
     private fun presetsOf(p: PyObject): List<Preset> {
         val arr = JSONArray(p.callAttr("presets").toString())
         return (0 until arr.length()).map { i -> arr.getJSONObject(i).let { Preset(it.getString("id"), it.optString("name", it.getString("id")), it.optBoolean("is_default")) } }
