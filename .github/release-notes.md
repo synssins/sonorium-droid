@@ -1,13 +1,17 @@
 ## What's new in this build
 
-- **A sample theme for everyone:** right after installing, with no internet, no server and nothing unlocked, your device shows up with one theme (Tavern) ready to play in My channel, with its presets and sequences, Next, volume and the lock screen.
-- Your device is in the Servers list for everyone; a first start with nothing else chosen opens it.
-- Beyond the sample (more themes on your device, editing, playlists, Cast from your device), the app shows the unlock first.
+- **Sleep timer:** a playing channel's ⋯ › Sleep timer… (15 min to 4 h, or Custom…): the channel fades out and stops when it runs out. The state shows a moon and the time left. On your Sonorium's channels and on your device.
+- **The sample's daily time:** the sample theme plays up to 30 minutes a day; then it fades out and the card says so.
 
 ## Please test
 
-- Fresh install, no internet: open the app: My channel shows Tavern; Play.
-- Without unlocking: Mix, Add playlist, Create theme and Cast… show the unlock.
+- A playing channel › ⋯ › Sleep timer… › 15 min: the moon and the countdown show; Cancel timer stops it.
+- Your device › My channel: a custom sleep timer of 1 minute: the mix fades out and stops.
+
+### Earlier (alpha26)
+- **A sample theme for everyone:** right after installing, with no internet, no server and nothing unlocked, your device shows up with one theme (Tavern) ready to play in My channel, with its presets and sequences, Next, volume and the lock screen.
+- Your device is in the Servers list for everyone; a first start with nothing else chosen opens it.
+- Beyond the sample (more themes on your device, editing, playlists, Cast from your device), the app shows the unlock first.
 
 ### Earlier (alpha25)
 - **Tablets:** Add playlist and Create theme stay open when the keyboard comes up (they closed themselves on a tablet).
