@@ -167,7 +167,14 @@ class ScreenTourTest {
             device.findObject(By.res("menu:Settings"))?.click()
             settle(800)
         }
-        val item = device.findObject(By.res("menu:$title"))
+        var item = device.findObject(By.res("menu:$title"))
+        if (item == null) {
+            // Below the fold (Status under an open Settings group): scroll the menu
+            val w = device.displayWidth / 4
+            device.swipe(w, device.displayHeight * 3 / 4, w, device.displayHeight / 4, 20)
+            settle(800)
+            item = device.findObject(By.res("menu:$title"))
+        }
         if (item == null) {
             shot("missing-$title")
             back()
