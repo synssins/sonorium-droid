@@ -113,6 +113,13 @@ fun ChannelCard(
     /** What plays where this channel's sound comes out (this device: getting ready, Cast), above Play. */
     extra: (@Composable () -> Unit)? = null,
 ) {
+    // The first channel card opened: its guide (item 13), after the first-run guide
+    val coach = app.sonorium.ui.coach.LocalCoach.current
+    val guide = app.sonorium.ui.coach.Guides.channel()
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1_500)
+        if (coach?.seen(app.sonorium.ui.coach.Guides.FIRST_RUN) == true) coach.showOnce(guide)
+    }
     val playing = session.isPlaying
     val playlistMode = session.playlistId != null || session.id in state.playlistMode
     val zones = state.zones
@@ -230,7 +237,9 @@ fun ChannelCard(
             // Source fields + mode buttons
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (playlistMode) PlaylistFields(session, state, actions, openMenu = openPlaylistMenu) { openPlaylistMenu = false } else ThemeFields(session, state, actions)
+                    Column(Modifier.coachTarget(app.sonorium.ui.coach.Targets.CARD_SOURCE), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (playlistMode) PlaylistFields(session, state, actions, openMenu = openPlaylistMenu) { openPlaylistMenu = false } else ThemeFields(session, state, actions)
+                    }
                     // Mix: the Theme Editor on the theme playing now
                     actions.mix?.let { mix ->
                         if (session.themeId != null && state.theme(session.themeId) != null) {
@@ -238,7 +247,7 @@ fun ChannelCard(
                                 onClick = { mix(session) },
                                 shape = RoundedCornerShape(8.dp),
                                 border = BorderStroke(1.dp, Palette.border),
-                                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)
+                                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).coachTarget(app.sonorium.ui.coach.Targets.CARD_MIX)
                                     .semantics { contentDescription = "Mix: edit ${state.theme(session.themeId)?.name.orEmpty()}" },
                             ) {
                                 Icon(SIcons.Edit, null, tint = Palette.accent, modifier = Modifier.size(app.sonorium.ui.UiSize.GLYPH_SMALL.dp))
@@ -248,7 +257,7 @@ fun ChannelCard(
                         }
                     }
                 }
-                Column(Modifier.padding(start = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(start = 8.dp).coachTarget(app.sonorium.ui.coach.Targets.CARD_MODE), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ModeButton(SIcons.Palette, "Play a theme", on = !playlistMode) { actions.themeMode(session) }
                     // Switch to playlist mode and open the Playlist menu at once (1.2 Mode buttons, R9)
                     ModeButton(SIcons.Playlist, "Play a playlist", on = playlistMode) {
@@ -261,7 +270,7 @@ fun ChannelCard(
             NowLine(session, actions, onCountdownZero)
 
             // Volume row (speakers)
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.coachTarget(app.sonorium.ui.coach.Targets.CARD_VOLUME), verticalAlignment = Alignment.CenterVertically) {
                 val muted = session.speakersMuted
                 IconBox(
                     if (muted) SIcons.Muted else SIcons.Volume,

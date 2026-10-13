@@ -86,6 +86,7 @@ import app.sonorium.server.ServerViewModel
 import app.sonorium.server.ThemeEditor
 import app.sonorium.server.ThemeEditorRules
 import app.sonorium.ui.Palette
+import app.sonorium.ui.coach.coachTarget
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -157,7 +158,19 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
         pickFiles.launch(arrayOf("audio/mpeg", "audio/wav", "audio/x-wav", "audio/flac", "audio/ogg", "audio/*"))
     }
 
+    // The editor is its own window: its own guide (item 13), shown once on the first visit
+    val editorContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val editorCoach = remember { app.sonorium.ui.coach.CoachState(editorContext) }
+    val editorGuide = app.sonorium.ui.coach.Guides.editor()
+    LaunchedEffect(ui.loading) {
+        if (!ui.loading) {
+            kotlinx.coroutines.delay(1_000)
+            editorCoach.showOnce(editorGuide)
+        }
+    }
     Dialog(onDismissRequest = { cancel() }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+        androidx.compose.runtime.CompositionLocalProvider(app.sonorium.ui.coach.LocalCoach provides editorCoach) {
+        androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
         EditorSurface {
             // Older Android focuses the first field of a new window (and opens the keyboard): not here
             val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -219,9 +232,15 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
                 )
             }
         }
+        app.sonorium.ui.coach.CoachOverlay(editorCoach)
+        }
+        }
     }
 
-    if (help) HelpPanel("How a theme plays", if (state.onDevice) HelpTexts.forDevice(HelpTexts.THEME_EDITOR) else HelpTexts.THEME_EDITOR) { help = false }
+    if (help) HelpPanel(
+        "How a theme plays", if (state.onDevice) HelpTexts.forDevice(HelpTexts.THEME_EDITOR) else HelpTexts.THEME_EDITOR,
+        onGuide = { help = false; editorCoach.show(editorGuide) },
+    ) { help = false }
     ask?.let { a -> ConfirmDialog(a.title, a.sub, a.action, a.danger, onConfirm = a.onOk, onDismiss = { ask = null }) }
     prompt?.let { p -> NamePromptDialog(p) { prompt = null } }
     if (importing) ImportPresetDialog(editor) { importing = false }
@@ -377,7 +396,7 @@ private fun CategoriesField(ui: EditorUi, editor: ThemeEditor, onPending: (Strin
 @Composable
 private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload: (String?) -> Unit, onPicker: () -> Unit, onReset: () -> Unit, onSequence: (String?) -> Unit) {
     Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.coachTarget(app.sonorium.ui.coach.Targets.EDITOR_TRACKS), verticalAlignment = Alignment.CenterVertically) {
             Text("Tracks", color = Palette.text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.width(8.dp))
             CountBadge(ui.tracks.size)
@@ -385,12 +404,14 @@ private fun Toolbar(ui: EditorUi, editor: ThemeEditor, links: Boolean, onUpload:
         FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SequencesMenu(ui, editor, onSequence)
             // On this phone: no Preview mix (the theme plays live in My channel) or links (they need the server)
-            if (!editor.onPhone || editor.linksHere) ToolButton(
-                if (ui.previewMix) "Stop preview" else "Preview mix", if (ui.previewMix) SIcons.Stop else SIcons.Play,
-                // On this device there are no speakers to leave alone
-                if (editor.onPhone) "Play the whole theme on this device, with your changes" else "Play the whole theme on this device, with your changes, without changing the speakers",
-                pressed = ui.previewMix,
-            ) { editor.togglePreviewMix() }
+            if (!editor.onPhone || editor.linksHere) Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.EDITOR_PREVIEW)) {
+                ToolButton(
+                    if (ui.previewMix) "Stop preview" else "Preview mix", if (ui.previewMix) SIcons.Stop else SIcons.Play,
+                    // On this device there are no speakers to leave alone
+                    if (editor.onPhone) "Play the whole theme on this device, with your changes" else "Play the whole theme on this device, with your changes, without changing the speakers",
+                    pressed = ui.previewMix,
+                ) { editor.togglePreviewMix() }
+            }
             var uploadMenu by remember { mutableStateOf(false) }
             Box {
                 ToolButton("Upload", SIcons.Upload, "Upload") { uploadMenu = true }
@@ -517,7 +538,7 @@ private fun Footer(
             itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             Text("Preset", color = Palette.textSecondary, fontSize = 13.sp)
-            PresetButton(ui, editor)
+            Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.EDITOR_PRESETS)) { PresetButton(ui, editor) }
             MoreMenu(
                 "More preset actions",
                 listOf(
@@ -561,7 +582,7 @@ private fun Footer(
                 onClick = onSave,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).coachTarget(app.sonorium.ui.coach.Targets.EDITOR_SAVE),
             ) {
                 Text("Save theme", fontWeight = FontWeight.SemiBold)
                 if (ui.unsaved) {

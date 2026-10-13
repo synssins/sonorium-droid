@@ -63,11 +63,21 @@ import app.sonorium.server.PlaylistRules
 import app.sonorium.server.ServerState
 import app.sonorium.server.ServerViewModel
 import app.sonorium.ui.Palette
+import app.sonorium.ui.coach.coachTarget
 import kotlinx.coroutines.delay
 
 /** Playback › Playlists (native-api.md Phase 2, Playlists). */
 @Composable
 fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
+    // First visit: the guide over the page (item 13)
+    val coach = app.sonorium.ui.coach.LocalCoach.current
+    val guide = app.sonorium.ui.coach.Guides.playlists()
+    LaunchedEffect(state.record?.id) {
+        if (state.record != null) {
+            kotlinx.coroutines.delay(1_000)
+            coach?.showOnce(guide)
+        }
+    }
     // Expanded rows live in memory only (plOpenRows)
     val open = remember { mutableStateListOf<String>() }
     var editing by remember { mutableStateOf<Playlist?>(null) }
@@ -87,7 +97,7 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
             item {
                 PageHeader("Playlists", state.playlists.size, help = "playlists") {
                     // Playlists live on the server: nothing to add to without one (R15)
-                    if (state.record != null) AddButton("Add playlist", narrow) { if (model.reachableOrSay() && model.proOrAsk()) adding = true }
+                    if (state.record != null) Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.PLAYLIST_ADD)) { AddButton("Add playlist", narrow) { if (model.reachableOrSay() && model.proOrAsk()) adding = true } }
                 }
             }
             if (state.record == null) {
@@ -182,11 +192,13 @@ private fun PlaylistRow(
     val shuffle = playlist.order == "shuffle"
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconBox(
-                if (expanded) SIcons.ChevronDown else SIcons.ChevronRight,
-                if (expanded) "Hide entries of ${playlist.name}" else "Show entries of ${playlist.name}",
-                onToggle, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background,
-            )
+            Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.PLAYLIST_ENTRIES)) {
+                IconBox(
+                    if (expanded) SIcons.ChevronDown else SIcons.ChevronRight,
+                    if (expanded) "Hide entries of ${playlist.name}" else "Show entries of ${playlist.name}",
+                    onToggle, size = app.sonorium.ui.UiSize.SMALL, background = Palette.background, border = Palette.background,
+                )
+            }
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -221,7 +233,7 @@ private fun PlaylistRow(
                     else Text("–", color = Palette.textMuted, fontSize = 14.sp, modifier = Modifier.semantics { contentDescription = "Stops after the last entry" })
                 }
             }
-            OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
+            OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).coachTarget(app.sonorium.ui.coach.Targets.PLAYLIST_EDIT)) {
                 Text("Edit", color = Palette.text)
             }
             Spacer(Modifier.width(6.dp))

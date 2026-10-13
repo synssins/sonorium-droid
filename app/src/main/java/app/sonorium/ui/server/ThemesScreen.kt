@@ -70,6 +70,7 @@ import app.sonorium.server.ServerState
 import app.sonorium.server.ServerViewModel
 import app.sonorium.server.ThemeRules
 import app.sonorium.ui.Palette
+import app.sonorium.ui.coach.coachTarget
 import kotlinx.coroutines.delay
 
 /** Configuration › Themes (native-api.md Phase 2); Edit opens the web Theme Editor until Phase 3. */
@@ -77,6 +78,15 @@ import kotlinx.coroutines.delay
 @Composable
 fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary) -> Unit) {
     val context = LocalContext.current
+    // First visit: the guide over the page, once its themes show (item 13)
+    val coach = app.sonorium.ui.coach.LocalCoach.current
+    val guide = app.sonorium.ui.coach.Guides.themes()
+    LaunchedEffect(state.themes.isNotEmpty()) {
+        if (state.themes.isNotEmpty()) {
+            kotlinx.coroutines.delay(1_000)
+            coach?.showOnce(guide)
+        }
+    }
     val preview by model.preview.collectAsState()
     var query by remember { mutableStateOf("") }
     var chip by remember { mutableStateOf(ThemeRules.ALL) }
@@ -147,7 +157,7 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                     Column {
                         PageHeader("Themes", themes.size, help = "themes") {
                             Button(
-                                onClick = { if (model.reachableOrSay() && model.proOrAsk()) creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+                                onClick = { if (model.reachableOrSay() && model.proOrAsk()) creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).coachTarget(app.sonorium.ui.coach.Targets.THEME_CREATE),
                                 colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                             ) {
                                 Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
@@ -388,7 +398,7 @@ private fun ThemeCard(
                     color = if (previewing) Palette.accentSecondary else Palette.backgroundSecondary,
                     shape = CircleShape,
                     border = BorderStroke(1.dp, Palette.border),
-                    modifier = Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).alpha(if (can) 1f else app.sonorium.ui.UiSize.DISABLED_ALPHA)
+                    modifier = Modifier.size(app.sonorium.ui.UiSize.STANDARD.dp).coachTarget(app.sonorium.ui.coach.Targets.THEME_PREVIEW).alpha(if (can) 1f else app.sonorium.ui.UiSize.DISABLED_ALPHA)
                         .semantics { contentDescription = if (!can) "No tracks" else if (previewing) "Stop preview" else "Preview here" }
                         .clickable(enabled = can, onClick = onPreview),
                 ) {
@@ -397,17 +407,17 @@ private fun ThemeCard(
                     }
                 }
                 Spacer(Modifier.weight(1f))
-                OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
+                OutlinedButton(onClick = onEdit, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp).coachTarget(app.sonorium.ui.coach.Targets.THEME_EDIT)) {
                     Text("Edit", color = Palette.text)
                 }
                 Spacer(Modifier.width(6.dp))
-                MoreMenu("More for ${t.name}", listOfNotNull(
+                Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.THEME_MORE)) { MoreMenu("More for ${t.name}", listOfNotNull(
                     phoneAction?.takeIf { downloading == null }?.let { MenuAction(it, SIcons.Headphones, onClick = onSaveToPhone) },
                     phoneBlocked?.let { MenuAction(it, SIcons.Headphones, enabled = false) {} },
                     MenuAction("Export", SIcons.Download, onClick = onExport),
                     t.cacheBytes?.takeIf { it > 0 }?.let { MenuAction("Free up space (${bytesText(it)})", SIcons.Refresh, onClick = onClearCache) },
                     MenuAction("Delete…", SIcons.Trash, danger = true, separatorBefore = true, onClick = onDelete),
-                ))
+                )) }
             }
             if (downloading != null) {
                 Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {

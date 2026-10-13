@@ -71,4 +71,35 @@
     <string name="coach_connections_text">Connect to a Sonorium server, switch between servers on your network, or switch to this device.</string>
     <string name="coach_add_title">Add a server</string>
     <string name="coach_add_text">Scan a Link App QR code from your Sonorium Server\'s website, or enter its address</string>
+    <!-- First visits (proposed wording) -->
+    <string name="coach_themes_preview_title">Preview</string>
+    <string name="coach_themes_preview_text">Hear a theme on this phone before you choose it.</string>
+    <string name="coach_themes_edit_title">Edit</string>
+    <string name="coach_themes_edit_text">Opens the Theme Editor: the theme\'s tracks, presets and sequences.</string>
+    <string name="coach_themes_more_title">More</string>
+    <string name="coach_themes_more_text">Export the theme as a .zip, delete it, and more.</string>
+    <string name="coach_themes_create_title">Create theme</string>
+    <string name="coach_themes_create_text">Start a theme of your own. ⋯ next to it imports one from a .zip.</string>
+    <string name="coach_playlists_add_title">Add a playlist</string>
+    <string name="coach_playlists_add_text">A playlist plays themes one after another, each for a while, in order or shuffled.</string>
+    <string name="coach_playlists_entries_title">Entries</string>
+    <string name="coach_playlists_entries_text">Shows the themes in the playlist.</string>
+    <string name="coach_playlists_edit_title">Edit</string>
+    <string name="coach_playlists_edit_text">Change its entries, how long each plays, and whether it repeats.</string>
+    <string name="coach_channel_source_title">Theme and preset</string>
+    <string name="coach_channel_source_text">Choose what this channel plays: a theme, and one of its presets or sequences.</string>
+    <string name="coach_channel_mode_title">Theme or playlist</string>
+    <string name="coach_channel_mode_text">Switch between playing one theme and playing a playlist.</string>
+    <string name="coach_channel_mix_title">Mix</string>
+    <string name="coach_channel_mix_text">Opens the Theme Editor on what\'s playing, to change the mix as you listen.</string>
+    <string name="coach_channel_volume_title">Volume</string>
+    <string name="coach_channel_volume_text">The channel\'s volume. The button next to it mutes it.</string>
+    <string name="coach_editor_tracks_title">Tracks</string>
+    <string name="coach_editor_tracks_text">Every sound in the theme. Set how each one plays, its volume and how often it comes in.</string>
+    <string name="coach_editor_preview_title">Preview mix</string>
+    <string name="coach_editor_preview_text">Hear the whole theme with your changes on this phone.</string>
+    <string name="coach_editor_presets_title">Presets</string>
+    <string name="coach_editor_presets_text">Save the mix as a preset, or load another one. A sequence plays presets one after another.</string>
+    <string name="coach_editor_save_title">Save theme</string>
+    <string name="coach_editor_save_text">Keeps every change. Cancel puts the theme back as it was.</string>
 </resources>

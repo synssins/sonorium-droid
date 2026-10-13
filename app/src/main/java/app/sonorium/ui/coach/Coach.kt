@@ -84,11 +84,12 @@ class CoachState(private val context: Context) {
 
     fun seen(id: String): Boolean = prefs.getBoolean("seen:$id", false)
 
-    /** Shows [guide] now (from help: whether seen or not). */
+    /** Shows [guide] now (from help: whether seen or not); steps whose control isn't on screen are left out. */
     fun show(guide: CoachGuide) {
-        if (guide.steps.isEmpty()) return
+        val steps = guide.steps.filter { it.target == null || rectOf(it.target) != null }
+        if (steps.isEmpty()) return
         index = 0
-        this.guide = guide
+        this.guide = guide.copy(steps = steps)
     }
 
     /** Shows [guide] unless it was seen before or another guide is showing. */
