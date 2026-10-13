@@ -147,7 +147,10 @@ fun ServerScreen(
     Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding()) {
             // Tablets in landscape keep the menu open as a sidebar; everything else slides it in
-            val permanent = maxWidth >= 1000.dp && maxHeight >= 600.dp
+            // From the window's size, not the space left by the keyboard: the layout (and the dialogs a page has
+            // open) must not change when a text field brings the keyboard up (tablet: forms closed themselves)
+            val config = androidx.compose.ui.platform.LocalConfiguration.current
+            val permanent = config.screenWidthDp >= 1000 && config.screenHeightDp >= 600
             val panelWidth = minOf(320.dp, maxWidth * 0.85f)
             val menu: @Composable () -> Unit = { Menu(state, page, permanent, ::open, onServers, onPluginPage = { v -> scope.launch { drawer.close() }; onWebPage(v) }) }
             val content: @Composable () -> Unit = {

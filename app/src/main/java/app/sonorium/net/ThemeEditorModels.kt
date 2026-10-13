@@ -110,7 +110,8 @@ data class SourceTrack(
     val name: String = "",
     @SerialName("display_name") val displayName: String = "",
     val group: String? = null,
-    @SerialName("duration_seconds") val durationSeconds: Double = 0.0,
+    /** Null when the length isn't known (the server couldn't read it; on the device, audio not ready yet). */
+    @SerialName("duration_seconds") val durationSeconds: Double? = null,
     @SerialName("preview_url") val previewUrl: String = "",
 )
 

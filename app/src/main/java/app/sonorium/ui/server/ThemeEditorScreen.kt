@@ -731,7 +731,12 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
     LaunchedEffect(source) {
         loaded = null
         chosen = emptySet()
-        source?.let { loaded = editor.sourceTracks(it.id) }
+        source?.let { s ->
+            loaded = editor.sourceTracks(s.id).onFailure { e ->
+                // In release builds too: what failed and for which theme
+                android.util.Log.println(android.util.Log.WARN, "ThemeEditor", "Add from another theme: tracks of ${s.id} for ${editor.themeId} failed: ${e.javaClass.simpleName}: ${e.message}")
+            }
+        }
     }
     fun close() {
         if (ui.filePreview?.startsWith("pk:") == true) editor.stopPreviews()
@@ -797,7 +802,10 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                     }
                     when {
                         result == null -> Text("Loading tracks…", color = Palette.textSecondary, modifier = Modifier.padding(16.dp))
-                        result.isFailure -> Text((result.exceptionOrNull() as? app.sonorium.net.ApiException)?.detail ?: "Can't reach the server.", color = Palette.danger, modifier = Modifier.padding(16.dp))
+                        result.isFailure -> Text(
+                            (result.exceptionOrNull() as? app.sonorium.net.ApiException)?.detail ?: if (editor.onPhone) "Something went wrong on this phone." else "Can't reach the server.",
+                            color = Palette.danger, modifier = Modifier.padding(16.dp),
+                        )
                         tracks.isEmpty() -> Text("No tracks in this theme", color = Palette.textSecondary, modifier = Modifier.padding(16.dp))
                     }
                     LazyColumn(Modifier.weight(1f)) {
@@ -810,7 +818,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                                 Column(Modifier.weight(1f)) {
                                     Text(t.displayName.ifEmpty { t.name }, color = Palette.text, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(
-                                        listOfNotNull(t.group, ThemeEditorRules.formatLength(t.durationSeconds), if (added) "Added" else null).joinToString(" · "),
+                                        listOfNotNull(t.group, t.durationSeconds?.let(ThemeEditorRules::formatLength), if (added) "Added" else null).joinToString(" · "),
                                         color = Palette.textSecondary, fontSize = 12.sp,
                                     )
                                 }
