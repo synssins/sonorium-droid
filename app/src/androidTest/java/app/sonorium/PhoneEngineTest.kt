@@ -47,7 +47,7 @@ class PhoneEngineTest {
         }
         val presets = PhoneEngine.open(context, ThemePrep.Prepared(theme, pcm), null, 1f)
         // 2 s of the mix is not silent
-        val buf = ByteArray(44_100 * 2 * 2)
+        val buf = ByteArray(PhoneEngine.BYTES_PER_SECOND * 2)
         PhoneEngine.render(buf, 0, buf.size)
         val samples = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
         var peak = 0
@@ -58,11 +58,11 @@ class PhoneEngineTest {
         // The sequence runs: its step shows, Next moves on
         assertTrue("No sequences from the engine", PhoneEngine.sequences().any { it.id == "walk" })
         PhoneEngine.startSequence("walk")
-        PhoneEngine.render(ByteArray(44_100 * 2), 0, 44_100 * 2)
+        PhoneEngine.render(ByteArray(PhoneEngine.BYTES_PER_SECOND), 0, PhoneEngine.BYTES_PER_SECOND)
         val first = PhoneEngine.step()
         assertTrue("No sequence step: $first", first != null && first.step == 1 && first.steps == 2)
         assertEquals("sequence", PhoneEngine.next())
-        PhoneEngine.render(ByteArray(8_820), 0, 8_820)
+        PhoneEngine.render(ByteArray(PhoneEngine.BYTES_PER_SECOND / 10), 0, PhoneEngine.BYTES_PER_SECOND / 10)
         assertEquals(2, PhoneEngine.step()?.step)
 
         // Another theme while it plays: the engine crossfades to it (Chris's bug: the theme didn't switch)
@@ -73,9 +73,9 @@ class PhoneEngineTest {
             PcmDecoder.decodeToWav(f, File(otherPcm, f.relativeTo(other).path.substringBeforeLast('.') + ".wav"))
         }
         PhoneEngine.setTheme(ThemePrep.Prepared(other, otherPcm), null)
-        val after = ByteArray(44_100 * 2 * 6)
+        val after = ByteArray(PhoneEngine.BYTES_PER_SECOND * 6)
         PhoneEngine.render(after, 0, after.size)
-        val tail = ByteBuffer.wrap(after, after.size - 44_100 * 2, 44_100 * 2).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
+        val tail = ByteBuffer.wrap(after, after.size - PhoneEngine.BYTES_PER_SECOND, PhoneEngine.BYTES_PER_SECOND).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
         var peakAfter = 0
         while (tail.hasRemaining()) peakAfter = maxOf(peakAfter, kotlin.math.abs(tail.get().toInt()))
         assertTrue("Silence after switching themes (peak $peakAfter)", peakAfter > 500)
@@ -89,7 +89,8 @@ class PhoneEngineTest {
         Thread.sleep(3_000)
         context.startService(Intent(context, PhonePlayerService::class.java).setAction(PhonePlayerService.ACTION_PLAY).putExtra(PhonePlayerService.EXTRA_TITLE, "Test Theme"))
         val end = System.currentTimeMillis() + 20_000
-        val second = 44_100L * 2
+        // One second of the engine's stream (44.1 kHz 16-bit stereo)
+        val second = PhoneEngine.BYTES_PER_SECOND.toLong()
         while (!(PhonePlayer.state.value.playing && EngineDataSource.served > second) && System.currentTimeMillis() < end) Thread.sleep(200)
         val playing = PhonePlayer.state.value.playing
         val served = EngineDataSource.served

@@ -106,7 +106,7 @@ class PhoneThemeEditorTest {
 
             // While the engine plays the theme, a change reloads it (no error) and the mix goes on
             PhoneEngine.open(context, ThemePrep.Prepared(themeDir, pcmDir), "evening", 1f)
-            val buf = ByteArray(44_100 * 2)
+            val buf = ByteArray(PhoneEngine.BYTES_PER_SECOND)
             PhoneEngine.render(buf, 0, buf.size)
             api.setTrack(folder, "Drone", "volume", buildJsonObject { put("volume", 0.2) })
             api.updateTrackGroup(folder, "Birds", buildJsonObject { put("muted", JsonPrimitive(true)) })

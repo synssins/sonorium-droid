@@ -24,6 +24,15 @@ class FlacCacheBenchmark {
 
     @Test
     fun flacVersusWav() {
+        // A measurement only: whatever happens on a device is reported, never a failed run
+        try {
+            measure()
+        } catch (e: Throwable) {
+            report("benchmark failed: ${e.javaClass.simpleName}: ${e.message}")
+        }
+    }
+
+    private fun measure() {
         val hasEncoder = MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.any { it.isEncoder && it.supportedTypes.any { t -> t.equals(MediaFormat.MIMETYPE_AUDIO_FLAC, true) } }
         if (!hasEncoder) {
             report("no FLAC encoder on this device")

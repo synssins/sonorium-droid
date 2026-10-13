@@ -70,7 +70,7 @@ class PackageDownloadTest {
             PcmDecoder.decodeToWav(File(dir, f.path), File(pcm, f.path.substringBeforeLast('.') + ".wav"))
         }
         PhoneEngine.open(context, ThemePrep.Prepared(dir, pcm), null, 1f)
-        val buf = ByteArray(44_100 * 2 * 4)
+        val buf = ByteArray(PhoneEngine.BYTES_PER_SECOND * 2)
         PhoneEngine.render(buf, 0, buf.size)
         PhoneEngine.close()
         val samples = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer()
