@@ -47,7 +47,8 @@ class NativeServerActivity : ComponentActivity() {
             android.view.KeyEvent.KEYCODE_VOLUME_DOWN -> -VOLUME_STEP
             else -> return super.onKeyDown(keyCode, event)
         }
-        if (model.nudgeVolume(delta)) {
+        // Casting: the keys go to the system, which sends them to the cast's volume (CastVolumeSession)
+        if (!app.sonorium.cast.CastController.casting && model.nudgeVolume(delta)) {
             handledVolumeKey = keyCode
             return true
         }

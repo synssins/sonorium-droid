@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import app.sonorium.engine.PhonePlayer
+import com.google.android.gms.cast.Cast
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
@@ -34,6 +35,9 @@ object CastController {
         val streaming: Boolean = false,
         /** Why casting stopped or couldn't start, in plain words (cleared when a cast starts). */
         val error: String? = null,
+        /** The speaker's volume (0..1) while casting, as the volume keys and the system panel show it. */
+        val volume: Double? = null,
+        val muted: Boolean = false,
     )
 
     private const val TAG = "CastController"
@@ -154,7 +158,8 @@ object CastController {
 
     private fun ended(message: String?) {
         val was = _state.value.speaker != null
-        _state.update { it.copy(speaker = null, streaming = false, error = message) }
+        releaseVolume()
+        _state.update { it.copy(speaker = null, streaming = false, error = message, volume = null, muted = false) }
         if (was) PhonePlayer.onCastEnded()
     }
 
@@ -245,7 +250,58 @@ object CastController {
             _state.update { it.copy(speaker = Speaker(device.deviceId, device.friendlyName)) }
         }
         _state.update { it.copy(streaming = false, error = null) }
+        followVolume(session)
         // The phone stops playing itself; its engine now feeds the speaker
         PhonePlayer.castStarted(a)
+    }
+
+    // ---------- The speaker's volume on the device's volume keys (only while casting) ----------
+
+    private var volumeSession: CastVolumeSession? = null
+    private var volumeOf: CastSession? = null
+
+    private val volumeListener = object : Cast.Listener() {
+        // Changed here, in the Google Home app or on the speaker: the panel and the app follow
+        override fun onVolumeChanged() {
+            volumeOf?.let { showVolume(it) }
+        }
+    }
+
+    /** From now on the volume keys and the system volume panel act on [session]'s speaker. */
+    private fun followVolume(session: CastSession) {
+        val a = app ?: return
+        if (volumeOf === session && volumeSession != null) return
+        releaseVolume()
+        volumeOf = session
+        runCatching { session.addCastListener(volumeListener) }.onFailure { Log.w(TAG, "Can't follow the speaker's volume", it) }
+        volumeSession = runCatching {
+            CastVolumeSession(a, session.castDevice?.friendlyName ?: "Sonorium", object : CastVolumeSession.Target {
+                override fun setLevel(level: Double) {
+                    _state.update { it.copy(volume = level) }
+                    runCatching { session.volume = level }.onFailure { Log.w(TAG, "Couldn't set the speaker's volume", it) }
+                }
+
+                override fun setMuted(muted: Boolean) {
+                    _state.update { it.copy(muted = muted) }
+                    runCatching { session.isMute = muted }.onFailure { Log.w(TAG, "Couldn't mute the speaker", it) }
+                }
+            })
+        }.onFailure { Log.w(TAG, "No volume control for the speaker", it) }.getOrNull()
+        showVolume(session)
+    }
+
+    private fun showVolume(session: CastSession) {
+        val level = runCatching { session.volume }.getOrNull()?.takeIf { !it.isNaN() } ?: return
+        val muted = runCatching { session.isMute }.getOrDefault(false)
+        volumeSession?.update(level, muted)
+        _state.update { it.copy(volume = level, muted = muted) }
+    }
+
+    /** Casting ended (or moved): the volume keys go back to the device's media volume. */
+    private fun releaseVolume() {
+        volumeOf?.let { s -> runCatching { s.removeCastListener(volumeListener) } }
+        volumeOf = null
+        volumeSession?.release()
+        volumeSession = null
     }
 }
