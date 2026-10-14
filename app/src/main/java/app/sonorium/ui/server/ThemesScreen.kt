@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -390,7 +392,7 @@ private fun ThemeCard(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(SIcons.Headphones, null, tint = Palette.textSecondary, modifier = Modifier.size(14.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text(if (phoneAction != null) "On this phone · update ready" else "On this phone", color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1)
+                            Text(if (phoneAction != null) Txt.get(R.string.themes_on_phone_update) else Txt.get(R.string.themes_on_phone), color = Palette.textSecondary, fontSize = 12.sp, maxLines = 1)
                         }
                     }
                     t.categories.forEach { Badge(it) }
@@ -426,7 +428,7 @@ private fun ThemeCard(
             }
             if (downloading != null) {
                 Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Saving to this phone… ${(downloading * 100).toInt()}%", color = Palette.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                    Text(Txt.get(R.string.themes_saving, (downloading * 100).toInt()), color = Palette.textSecondary, fontSize = 12.sp, modifier = Modifier.weight(1f))
                     // Stops the download; what's downloaded is kept for next time
                     TextButton(onClick = onCancelSave, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) { Text("Cancel", color = Palette.textSecondary) }
                 }
@@ -446,7 +448,7 @@ private fun PreviewBar(p: ServerViewModel.Preview, model: ServerViewModel) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
             HorizontalDivider(color = Palette.border)
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
-                Text("Previewing on this phone:", color = Palette.textSecondary, fontSize = 13.sp)
+                Text(Txt.get(R.string.themes_previewing), color = Palette.textSecondary, fontSize = 13.sp)
                 Spacer(Modifier.width(6.dp))
                 Text(p.name, color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                 IconBox(if (p.paused) SIcons.Play else SIcons.Pause, if (p.paused) "Resume preview" else "Pause preview", { model.pausePreview() }, size = app.sonorium.ui.UiSize.SMALL)

@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -101,7 +103,7 @@ fun PlaylistsPage(state: ServerState, model: ServerViewModel) {
                 }
             }
             if (state.record == null) {
-                item { EmptyState("No server connected", "Playlists are kept on your Sonorium server. Connect to see and add them.") }
+                item { EmptyState("No server connected", Txt.get(R.string.playlists_no_server_text)) }
             } else if (state.playlists.isEmpty()) {
                 item { EmptyState("No playlists", "Play themes one after another, in order or shuffled") }
             } else if (!narrow) {

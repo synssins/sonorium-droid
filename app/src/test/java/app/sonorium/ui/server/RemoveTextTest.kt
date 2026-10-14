@@ -10,12 +10,12 @@ class RemoveTextTest {
     private val imported = LocalTheme("e", "Rain", "Rain")
 
     @Test fun serverCopyOnlyForDownloadedThemes() {
-        assertEquals("The theme stays on your server.", removeText(downloaded, playing = false, hasServer = true))
-        assertEquals("Its files are deleted from this phone.", removeText(imported, playing = false, hasServer = true))
-        assertEquals("Its files are deleted from this phone.", removeText(downloaded, playing = false, hasServer = false))
+        assertEquals("The theme stays on the server.", removeText(downloaded, playing = false, hasServer = true))
+        assertEquals("Its files are deleted from this device.", removeText(imported, playing = false, hasServer = true))
+        assertEquals("Its files are deleted from this device.", removeText(downloaded, playing = false, hasServer = false))
     }
 
     @Test fun warnsWhenItsPlaying() {
-        assertEquals("This theme is playing; removing it stops it. The theme stays on your server.", removeText(downloaded, playing = true, hasServer = true))
+        assertEquals("This theme is playing; removing it stops it. The theme stays on the server.", removeText(downloaded, playing = true, hasServer = true))
     }
 }

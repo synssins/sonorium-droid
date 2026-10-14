@@ -42,7 +42,7 @@ class ThemeDownloader(private val context: Context, private val store: ThemeStor
         if (pkg.files.isEmpty()) throw Problem("“${pkg.name}” has no files")
         pkg.files.firstOrNull { !PackageRules.safePath(it.path) }?.let {
             Log.w(TAG, "Unsafe path from the server: ${it.path}")
-            throw Problem("The server sent a file name this phone can't use, so “${pkg.name}” can't be saved")
+            throw Problem("The server sent a file name this device can't use, so “${pkg.name}” can't be saved")
         }
         if (PackageRules.contentHash(pkg.files) != pkg.contentHash) throw Problem("The server's file list doesn't match its hash; try again")
         val total = pkg.files.sumOf { it.size }

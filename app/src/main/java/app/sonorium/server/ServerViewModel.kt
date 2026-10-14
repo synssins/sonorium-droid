@@ -279,7 +279,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             }
             val token = app.servers.token(id)
             if (token == null) {
-                _state.update { it.copy(connecting = false, unlinked = true, failure = "This phone isn't linked to ${record.displayName}. Open Servers to link it again.") }
+                _state.update { it.copy(connecting = false, unlinked = true, failure = "This device isn't linked to ${record.displayName}. Open Servers to link it again.") }
                 return@launch
             }
             val pinned = PinnedTls.pinnedClient(app.baseClient, record.fingerprint)
@@ -1343,7 +1343,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 toast(e.message ?: "Couldn't import that file", error = true)
             } catch (e: Exception) {
                 android.util.Log.w("LocalThemes", "Import of $fileName failed", e)
-                toast("Couldn't import that file. Check that it's a theme zip and that this phone has free space.", error = true)
+                toast("Couldn't import that file. Check that it's a theme zip and that this device has free space.", error = true)
             } finally {
                 _importing.value = null
             }
@@ -1356,7 +1356,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         PhoneThemeActions.removing(app, theme)
         if (app.themeStore.remove(theme)) {
             PhoneThemeActions.removed(app, theme)
-            toast("Removed “${theme.name}” from this phone", error = false)
+            toast("Removed “${theme.name}” from this device", error = false)
         } else {
             toast("Couldn't remove “${theme.name}”. Check that your themes folder is still there.", error = true)
         }
@@ -1409,7 +1409,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                     ThemeStore.FolderState.MISSING -> {
                         saveLog("$themeId stopped, the themes folder is missing")
                         _localFolder.value = ThemeStore.FolderState.MISSING
-                        toast("Your themes folder can't be found. Choose it again in Themes › On this phone.", error = true)
+                        toast("The themes folder can't be found. Choose it again in Themes › On this device.", error = true)
                         return@launch
                     }
                     ThemeStore.FolderState.NONE -> {
@@ -1440,7 +1440,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 } else {
                     val saved = downloader.download(api, themeId, replacing, serverId, onProgress)
                     saveLog("$themeId done, in ${saved.folder}" + if (replacing != null) " (replaced ${replacing.folder})" else "")
-                    toast(if (replacing != null) "Updated “${saved.name}” on this phone" else "Saved “${saved.name}” to this phone", error = false)
+                    toast(if (replacing != null) "Updated “${saved.name}” on this device" else "Saved “${saved.name}” to this device", error = false)
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -1448,9 +1448,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 saveLog("$themeId failed: ${e.javaClass.simpleName}: ${e.message}")
                 toast(
                     when (e) {
-                        is ThemeDownloader.Problem, is ThemeStore.ImportProblem -> e.message ?: "Couldn't save “$name” to this phone"
-                        is ApiException -> messageOf(e, "Couldn't save “$name” to this phone")
-                        else -> "Couldn't save “$name” to this phone. Check the connection and try again."
+                        is ThemeDownloader.Problem, is ThemeStore.ImportProblem -> e.message ?: "Couldn't save “$name” to this device"
+                        is ApiException -> messageOf(e, "Couldn't save “$name” to this device")
+                        else -> "Couldn't save “$name” to this device. Check the connection and try again."
                     },
                     error = true,
                 )
@@ -1868,7 +1868,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val s = _state.value
         val record = s.record
         if (record == null) {
-            toast("Connect to your Sonorium server first", error = true)
+            toast("Connect to a Sonorium server first", error = true)
             return false
         }
         if (s.failure != null || api == null) {
@@ -1878,7 +1878,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         return true
     }
 
-    private fun unreachableText(record: ServerRecord) = "Can't reach ${record.displayName}. Check that this phone is on the same network."
+    private fun unreachableText(record: ServerRecord) = "Can't reach ${record.displayName}. Check that this device is on the same network."
 
     /**
      * The server answered (or not) while the app is open: show the unreachable line when the connection
@@ -1923,7 +1923,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         teardown()
         serverId = null
         // Show nothing from that server any more, only why (QA 5)
-        _state.value = ServerState(connecting = false, unlinked = true, failure = "This phone was unlinked from ${record.displayName}. Open Servers to link it again.")
+        _state.value = ServerState(connecting = false, unlinked = true, failure = "This device was unlinked from ${record.displayName}. Open Servers to link it again.")
         // Forget it here unless it was linked again meanwhile (a newer token: QA 2)
         val stored = app.servers.token(record.id)
         if (stored == null || stored == used) app.servers.remove(record.id)

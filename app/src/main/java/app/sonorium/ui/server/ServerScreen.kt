@@ -1,5 +1,6 @@
 package app.sonorium.ui.server
 
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -512,14 +513,14 @@ private fun MenuRow(
 @Composable
 private fun NoConnection(state: ServerState, page: Page, onServers: () -> Unit, onRetry: () -> Unit, onPhone: () -> Unit) {
     val what = when (page) {
-        Page.Channels -> "its channels"
-        Page.Playlists -> "its playlists"
-        Page.Themes -> "its themes"
+        Page.Channels -> Txt.get(R.string.noconn_what_channels)
+        Page.Playlists -> Txt.get(R.string.noconn_what_playlists)
+        Page.Themes -> Txt.get(R.string.noconn_what_themes)
         Page.Status -> "what's playing"
-        Page.Speakers, Page.Groups -> "its speakers"
-        Page.Spaces -> "its floors and areas"
-        Page.Logs -> "its log"
-        else -> "its settings"
+        Page.Speakers, Page.Groups -> Txt.get(R.string.noconn_what_speakers)
+        Page.Spaces -> Txt.get(R.string.noconn_what_spaces)
+        Page.Logs -> Txt.get(R.string.noconn_what_log)
+        else -> Txt.get(R.string.noconn_what_settings)
     }
     val record = state.record?.takeIf { !state.unlinked }
     Centered {
@@ -536,9 +537,9 @@ private fun NoConnection(state: ServerState, page: Page, onServers: () -> Unit, 
         Spacer(Modifier.height(8.dp))
         Text(
             when {
-                record == null && state.unlinked -> state.failure ?: "Open Servers to link this phone again."
-                record == null -> "Connect to your Sonorium server to see $what."
-                else -> "Check that this phone is on the same network. It reconnects by itself when the server is back."
+                record == null && state.unlinked -> state.failure ?: Txt.get(R.string.noconn_open_servers)
+                record == null -> Txt.get(R.string.noconn_connect_to_see, what)
+                else -> Txt.get(R.string.noconn_same_network)
             },
             color = Palette.textSecondary, fontSize = 14.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
@@ -559,7 +560,7 @@ private fun NoConnection(state: ServerState, page: Page, onServers: () -> Unit, 
         if (page != Page.Themes) {
             Spacer(Modifier.height(8.dp))
             TextButton(onClick = onPhone, modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp)) {
-                Text("Play on this phone", color = Palette.accent)
+                Text(Txt.get(R.string.noconn_play_on_phone), color = Palette.accent)
             }
         }
     }

@@ -85,7 +85,7 @@ class ServerActivity : ComponentActivity() {
                         is Screen.OldWebView -> Centered {
                             Card {
                                 Text(
-                                    "This phone's web view is too old for Sonorium (version ${s.provider.versionName}). " +
+                                    "This device's web view is too old for Sonorium (version ${s.provider.versionName}). " +
                                         "Update Android System WebView, then open Sonorium again.",
                                     color = Palette.text,
                                 )
@@ -140,13 +140,13 @@ class ServerActivity : ComponentActivity() {
             screen = Screen.Connecting(record.displayName)
             val token = app.servers.token(id)
             if (token == null) {
-                screen = Screen.Failed("This phone isn't linked to ${record.displayName}. Link it again.")
+                screen = Screen.Failed("This device isn't linked to ${record.displayName}. Link it again.")
                 return@launch
             }
             val pinned = PinnedTls.pinnedClient(app.baseClient, record.fingerprint)
             val reached = app.linker.reach(pinned, record.hosts, record.httpsPort)
             if (reached == null) {
-                screen = Screen.Failed("Can't reach ${record.displayName}. Check that this phone is on the same network.")
+                screen = Screen.Failed("Can't reach ${record.displayName}. Check that this device is on the same network.")
                 return@launch
             }
             if (reached.info.id != record.id) {
@@ -354,7 +354,7 @@ class ServerActivity : ComponentActivity() {
         lifecycleScope.launch {
             app.servers.remove(record.id)
             stopProxy()
-            screen = Screen.Failed("This phone was unlinked from ${record.displayName}. Link it again.")
+            screen = Screen.Failed("This device was unlinked from ${record.displayName}. Link it again.")
         }
     }
 

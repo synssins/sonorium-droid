@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Arrangement
@@ -126,8 +128,8 @@ fun PersonalChannelScreen(
             if (!canServer) {
                 Text(
                     when {
-                        state.record == null -> "No server connected. Connect to your Sonorium server to use your account's channel."
-                        state.failure != null -> "Can't reach ${state.record?.displayName.orEmpty()}, so its channel isn't available right now."
+                        state.record == null -> Txt.get(R.string.mychannel_no_server)
+                        state.failure != null -> Txt.get(R.string.mychannel_cant_reach, state.record?.displayName.orEmpty())
                         else -> "${state.record?.displayName.orEmpty()} has no personal channel."
                     },
                     color = Palette.textSecondary, fontSize = 14.sp,
@@ -245,13 +247,13 @@ private fun PhoneOffer(
             // Pro is offered on this device's own page only (DeviceNag), never next to a server
             !isPro -> {}
             folder == ThemeStore.FolderState.MISSING -> {
-                Text("Your themes folder can't be found, so the themes on this phone can't play.", color = Palette.textSecondary, fontSize = 14.sp)
+                Text(Txt.get(R.string.mychannel_folder_missing), color = Palette.textSecondary, fontSize = 14.sp)
                 Button(
                     onClick = { onPhoneThemes?.invoke() ?: folderPicker.ask(changing = false, then = null) },
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                     modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
-                ) { Text(if (onPhoneThemes != null) "Go to themes on this phone" else "Choose folder") }
+                ) { Text(if (onPhoneThemes != null) Txt.get(R.string.mychannel_go_phone_themes) else "Choose folder") }
                 // Never a dead end: the app's own folder works without asking anything
                 OutlinedButton(
                     onClick = { model.useDefaultFolder() },
@@ -263,9 +265,9 @@ private fun PhoneOffer(
             localThemes.isEmpty() -> {
                 Text(
                     when {
-                        compact -> "To play without a server, put a theme on this phone: import a theme zip, or save one from Themes."
-                        hasServer -> "No themes on this phone yet. Import a theme zip, or save one from your server's Themes (⋯ › Save to phone), to play it here without a server."
-                        else -> "No themes on this phone yet. Import a theme zip to play it here, without a server."
+                        compact -> Txt.get(R.string.mychannel_offer_compact)
+                        hasServer -> Txt.get(R.string.mychannel_offer_server)
+                        else -> Txt.get(R.string.mychannel_offer_noserver)
                     },
                     color = Palette.textSecondary, fontSize = if (compact) 13.sp else 14.sp,
                 )
@@ -283,7 +285,7 @@ private fun PhoneOffer(
                     if (onPhoneThemes != null) {
                         Spacer(Modifier.width(8.dp))
                         TextButton(onClick = onPhoneThemes, modifier = Modifier.heightIn(min = UiSize.STANDARD.dp)) {
-                            Text("Go to themes on this phone", color = Palette.accent, maxLines = 2)
+                            Text(Txt.get(R.string.mychannel_go_phone_themes), color = Palette.accent, maxLines = 2)
                         }
                     }
                 }

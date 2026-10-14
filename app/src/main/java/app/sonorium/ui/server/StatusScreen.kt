@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import android.content.Context
 import android.os.SystemClock
 import androidx.compose.foundation.BorderStroke
@@ -180,7 +182,7 @@ fun StatusPage(state: ServerState, model: ServerViewModel) {
                             if (c.id == local) {
                                 Icon(SIcons.Headphones, null, tint = Palette.accent, modifier = Modifier.size(14.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("This phone", color = Palette.text, fontSize = 12.sp)
+                                Text(Txt.get(R.string.status_this_phone), color = Palette.text, fontSize = 12.sp)
                             }
                         }
                         c.sections.forEach { section ->

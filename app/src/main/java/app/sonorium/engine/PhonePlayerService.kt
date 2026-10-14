@@ -178,7 +178,7 @@ class PhonePlayerService : MediaSessionService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private var subtitle = "On this phone"
+    private var subtitle = "On this device"
 
     /** The app's icon on the Sonorium background, square, for the lock screen and notification. */
     private val artwork: ByteArray? get() = MediaControls.appArtwork(resources)

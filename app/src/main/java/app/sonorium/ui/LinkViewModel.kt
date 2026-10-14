@@ -1,5 +1,6 @@
 package app.sonorium.ui
 
+import app.sonorium.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -165,7 +166,7 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
                 LinkState.Idle
             } else {
                 LinkState.Failed(
-                    "Removed from this phone. ${record.displayName} couldn't be reached, so the phone is still listed " +
+                    "Removed from this device. ${record.displayName} couldn't be reached, so the device is still listed " +
                         "there: remove it in Settings › Users & devices.",
                 )
             }
@@ -179,7 +180,7 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
                 LinkState.Done(outcome.record)
             }
             LinkOutcome.HttpsOff -> LinkState.Failed("HTTPS is off on this server.")
-            LinkOutcome.Unreachable -> LinkState.Failed("Can't reach the server. Check that this phone is on the same network.")
+            LinkOutcome.Unreachable -> LinkState.Failed(Txt.get(R.string.link_unreachable))
             LinkOutcome.WrongServer -> LinkState.Failed("A different server answered at that address.")
             is LinkOutcome.TooOld -> LinkState.Failed(outcome.message)
             is LinkOutcome.TooNew -> LinkState.Failed("Update the Sonorium app to use this server.")

@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -143,7 +145,7 @@ fun LinkChannelsDialog(
                         )
                     }
                     Text(
-                        "Each channel's volume is independent. Unlinking puts each channel back to what it was playing.",
+                        Txt.get(R.string.linkdlg_note),
                         color = Palette.textSecondary, fontSize = 13.sp, fontStyle = FontStyle.Italic,
                     )
                     error?.let { Text(it, color = Palette.danger, fontSize = 14.sp) }

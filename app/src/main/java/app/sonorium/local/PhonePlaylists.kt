@@ -120,7 +120,7 @@ object PhonePlaylists {
         val status = (parsed["status"] as? JsonPrimitive)?.intOrNull ?: 500
         val out = parsed["body"] ?: JsonObject(emptyMap())
         if (status !in 200..299) {
-            val text = ((out as? JsonObject)?.get("detail") as? JsonPrimitive)?.content ?: "Something went wrong on this phone"
+            val text = ((out as? JsonObject)?.get("detail") as? JsonPrimitive)?.content ?: "Something went wrong on this device"
             throw Problem(status, text.replaceFirstChar { it.uppercase() })
         }
         return out

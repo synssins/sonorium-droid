@@ -43,6 +43,7 @@ class SonoriumApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        app.sonorium.ui.Txt.init(this)
         CrashLog.install(this)
         // "Stop My Channel when switching between server and device": watched here, not in a screen, because
         // choosing an entry in the Servers list opens a new main screen (the old one never sees the switch)

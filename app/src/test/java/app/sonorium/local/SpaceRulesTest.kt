@@ -27,7 +27,7 @@ class SpaceRulesTest {
         assertEquals("820 MB", SpaceRules.sizeText(820_000_000))
         assertEquals("5 KB", SpaceRules.sizeText(4_500))
         assertEquals(
-            "Not enough free space on this phone to get “Rain” ready (about 820 MB needed). Free up some space and try again.",
+            "Not enough free space on this device to get “Rain” ready (about 820 MB needed). Free up some space and try again.",
             SpaceRules.notEnoughText("to get “Rain” ready", 820_000_000),
         )
     }

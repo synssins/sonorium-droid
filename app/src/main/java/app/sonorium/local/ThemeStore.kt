@@ -546,14 +546,14 @@ class ThemeStore(private val context: Context) {
                     rename(tree, replacing.docId, aside)
                 } catch (e: ImportProblem) {
                     delete(tree, folder)
-                    throw ImportProblem("Couldn't update “${replacing.name}” on this phone; the old version is still there.")
+                    throw ImportProblem("Couldn't update “${replacing.name}” on this device; the old version is still there.")
                 }
                 try {
                     rename(tree, folder, finalName)
                 } catch (e: ImportProblem) {
                     runCatching { rename(tree, old, finalName) }
                     delete(tree, folder)
-                    throw ImportProblem("Couldn't update “${replacing.name}” on this phone; the old version is still there.")
+                    throw ImportProblem("Couldn't update “${replacing.name}” on this device; the old version is still there.")
                 }
                 // A leftover old copy is a hidden work folder: it doesn't show, and the next listing removes it
                 if (!delete(tree, old)) Log.w(TAG, "The old copy of ${replacing.folder} stays until the next listing")

@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -134,7 +136,7 @@ fun ChannelEditor(
                                     FieldLabel("Channel Name")
                                     SField(
                                         value = name, onValueChange = { name = it }, singleLine = true,
-                                        placeholder = { Text("Leave empty to auto-generate from selection", color = Palette.textMuted) },
+                                        placeholder = { Text(Txt.get(R.string.editor_name_placeholder), color = Palette.textMuted) },
                                         modifier = Modifier.fillMaxWidth(),
                                     )
                                     if (zones != null && edit != null) {

@@ -34,8 +34,8 @@ class PlaylistRulesTest {
         val a = Session(id = "1", name = "Kitchen", playlistId = "p")
         val b = Session(id = "2", name = "Den", playlistId = "p")
         assertNull(PlaylistRules.deleteNote("p", emptyList()))
-        assertEquals("Kitchen stops playing it.", PlaylistRules.deleteNote("p", listOf(a)))
-        assertEquals("Kitchen, Den stop playing it.", PlaylistRules.deleteNote("p", listOf(a, b)))
+        assertEquals("Kitchen stops playing.", PlaylistRules.deleteNote("p", listOf(a)))
+        assertEquals("Kitchen, Den stop playing.", PlaylistRules.deleteNote("p", listOf(a, b)))
     }
 
     @Test

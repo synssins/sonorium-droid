@@ -119,9 +119,9 @@ class PhoneThemeApi(
             ).toString()
         } catch (e: Exception) {
             Log.e(TAG, "phone_api failed on $method ${segments.joinToString("/")}", e)
-            return error(500, "Something went wrong on this phone")
+            return error(500, "Something went wrong on this device")
         }
-        val parsed = runCatching { SonoriumApi.json.parseToJsonElement(answer) as JsonObject }.getOrNull() ?: return error(500, "Something went wrong on this phone")
+        val parsed = runCatching { SonoriumApi.json.parseToJsonElement(answer) as JsonObject }.getOrNull() ?: return error(500, "Something went wrong on this device")
         val status = (parsed["status"] as? JsonPrimitive)?.intOrNull ?: 500
         val out = parsed["body"]?.toString() ?: "{}"
         val ops = (parsed["ops"] as? JsonArray).orEmpty().mapNotNull { e ->

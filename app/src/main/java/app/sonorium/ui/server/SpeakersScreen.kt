@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -498,7 +500,7 @@ private fun AddSpeakerDialog(state: ServerState, model: ServerViewModel, onClose
                 FieldLabel("Name")
                 SField(
                     value = name, onValueChange = { if (it.length <= 100) name = it }, singleLine = true,
-                    placeholder = { Text("Speaker's own name", color = Palette.textMuted) },
+                    placeholder = { Text(Txt.get(R.string.addspeaker_name_placeholder), color = Palette.textMuted) },
                     modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Name" },
                 )
                 result?.let { (found, text) ->

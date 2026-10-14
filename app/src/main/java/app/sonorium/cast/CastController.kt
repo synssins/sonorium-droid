@@ -166,7 +166,7 @@ object CastController {
         if (address == null) {
             Log.i(TAG, "No Wi-Fi or Ethernet address to cast from")
             stop()
-            _state.update { it.copy(error = "Connect this phone to Wi-Fi to cast") }
+            _state.update { it.copy(error = "Connect this device to a network to cast") }
             return
         }
         val started = runCatching {
@@ -215,7 +215,7 @@ object CastController {
             switching = false
             val name = _state.value.speaker?.name ?: "the speaker"
             stopService()
-            ended("Couldn't connect to $name. Make sure it's on and on the same Wi-Fi as this phone.")
+            ended("Couldn't connect to $name. Make sure it's powered on and on the same network as this device.")
         }
         override fun onSessionEnded(session: CastSession, error: Int) {
             // Moving to another speaker ends the old session first: the new one carries on

@@ -41,8 +41,8 @@ class PackageRulesTest {
 
     @Test fun actions() {
         val pkg = PackageSummary("t1", "Tavern", "sha256:aa", redistributable = true)
-        assertEquals("Save to phone", PackageRules.action(pkg, emptyList()))
-        assertEquals("Save to phone", PackageRules.action(pkg.copy(redistributable = null), null))
+        assertEquals("Save to device", PackageRules.action(pkg, emptyList()))
+        assertEquals("Save to device", PackageRules.action(pkg.copy(redistributable = null), null))
         assertNull(PackageRules.action(pkg.copy(redistributable = false), emptyList()))
         assertNull(PackageRules.action(null, emptyList()))
         val saved = LocalTheme("d", "Tavern", "Tavern", themeId = "t1", contentHash = "sha256:aa")
@@ -50,7 +50,7 @@ class PackageRulesTest {
         assertEquals(PackageRules.OnPhone.SAVED, PackageRules.onPhone(pkg, listOf(saved)))
         assertEquals(PackageRules.SYNC, PackageRules.action(pkg, listOf(saved.copy(contentHash = "sha256:bb"))))
         // Saved from another Sonorium: not this server's copy
-        assertEquals("Save to phone", PackageRules.action(pkg, listOf(saved.copy(serverId = "other")), serverId = "this"))
+        assertEquals("Save to device", PackageRules.action(pkg, listOf(saved.copy(serverId = "other")), serverId = "this"))
         assertEquals(PackageRules.OnPhone.SAVED, PackageRules.onPhone(pkg, listOf(saved.copy(serverId = "this")), serverId = "this"))
         // Imported copy (no hash): on the phone. A starter copy: the server's version is offered
         val imported = LocalTheme("d", "Tavern", "Tavern", metaId = "t1")

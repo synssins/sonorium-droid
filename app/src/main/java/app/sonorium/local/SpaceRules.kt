@@ -23,7 +23,7 @@ object SpaceRules {
 
     /** The plain message when they don't. */
     fun notEnoughText(what: String, needed: Long): String =
-        "Not enough free space on this phone $what (about ${sizeText(needed)} needed). Free up some space and try again."
+        "Not enough free space on this device $what (about ${sizeText(needed)} needed). Free up some space and try again."
 
     /** "1.2 GB" / "820 MB" / "5 KB". */
     fun sizeText(b: Long): String = when {

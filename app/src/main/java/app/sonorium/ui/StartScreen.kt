@@ -193,7 +193,7 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
             onDismissRequest = { removing = null },
             containerColor = Palette.card,
             title = { Text("Remove ${server.displayName}?", color = Palette.text) },
-            text = { Text("This phone is unlinked from the server. Linking again needs a new code or the password.", color = Palette.textSecondary) },
+            text = { Text(Txt.get(R.string.servers_remove_body), color = Palette.textSecondary) },
             confirmButton = {
                 Button(
                     onClick = { model.remove(server); removing = null },

@@ -827,7 +827,7 @@ class ThemeEditor(
             app.sonorium.local.PhoneThemeApi.FOLDER_PROBLEM
         }
         e is ApiException -> e.firstMessage ?: e.detail.takeIf { it.isNotBlank() && !it.startsWith("{") } ?: fallback
-        else -> fallback.ifEmpty { if (onPhone) "Something went wrong on this phone." else "Can't reach the server." }
+        else -> fallback.ifEmpty { if (onPhone) "Something went wrong on this device." else "Can't reach the server." }
     }
 
     private companion object {

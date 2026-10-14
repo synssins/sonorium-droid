@@ -55,7 +55,7 @@ object PackageRules {
     fun action(pkg: PackageSummary?, local: List<LocalTheme>?, serverId: String? = null): String? = when {
         pkg == null || pkg.redistributable == false -> null
         else -> when (onPhone(pkg, local, serverId)) {
-            OnPhone.NONE -> "Save to phone"
+            OnPhone.NONE -> "Save to device"
             // The phone's copy never changes by itself: syncing brings the server's changes when asked
             OnPhone.UPDATE -> SYNC
             OnPhone.SAVED -> null
@@ -66,7 +66,7 @@ object PackageRules {
     fun blocked(pkg: PackageSummary?, local: List<LocalTheme>?, serverId: String? = null): String? =
         if (pkg?.redistributable == false && onPhone(pkg, local, serverId) == OnPhone.NONE) LICENCE_BLOCKED else null
 
-    const val LICENCE_BLOCKED = "Can't save to phone (licence)"
+    const val LICENCE_BLOCKED = "Can't save to device (licence)"
     const val SYNC = "Sync now"
 
     /** A folder name for the theme that doesn't clash with [taken] (lower-case names already in the folder). */

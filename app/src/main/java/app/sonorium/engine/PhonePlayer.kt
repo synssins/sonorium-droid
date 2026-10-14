@@ -341,7 +341,7 @@ object PhonePlayer {
                 _state.update { it.copy(error = e.message) }
             } catch (e: Throwable) {
                 Log.e(TAG, "Couldn't play ${theme.folder}", e)
-                _state.update { it.copy(error = "Couldn't play “${theme.name}”. Try again; if it keeps happening, remove it from this phone and add it again.") }
+                _state.update { it.copy(error = "Couldn't play “${theme.name}”. Please try again. If the issue persists, remove it from the device and add it again.") }
             } finally {
                 if (job === self) _state.update { if (it.preparing != null) it.copy(preparing = null, preparingName = null) else it }
             }
@@ -461,7 +461,7 @@ object PhonePlayer {
     private fun playPlaylist(context: Context, playlistId: String) {
         val app = context.applicationContext as SonoriumApp
         val playlist = PhonePlaylists.playlists.value.firstOrNull { it.id == playlistId } ?: run {
-            _state.update { it.copy(error = "That playlist isn't on this phone any more. Choose another one.") }
+            _state.update { it.copy(error = "That playlist is no longer available. Please create or choose another one.") }
             return
         }
         job?.cancel()
@@ -474,7 +474,7 @@ object PhonePlayer {
                 val themes = withContext(Dispatchers.IO) { app.themeStore.list() }
                 val inIt = playlist.entries.mapNotNull { e -> themes.firstOrNull { it.metaId == e.themeId } }.distinctBy { it.docId }
                 if (inIt.isEmpty()) {
-                    _state.update { it.copy(error = "None of this playlist's themes are on this phone.") }
+                    _state.update { it.copy(error = "The playlist references themes that are not available.") }
                     return@launch
                 }
                 laterPrep?.cancel()
@@ -773,7 +773,7 @@ object PhonePlayer {
             PhonePlaylists.playlists.value.firstOrNull { it.id == s.playlistId }?.let { "Entry 1 of ${it.entries.size}" } ?: "Default settings"
         s.sequenceId != null && s.step != null -> s.step.let { st -> "Step ${st.step} of ${st.steps} · ${st.name}" }
         s.sequenceId != null -> s.sequences.firstOrNull { it.id == s.sequenceId }?.name ?: "Sequence"
-        s.presetId != null -> s.presets.firstOrNull { it.id == s.presetId }?.name ?: "On this phone"
+        s.presetId != null -> s.presets.firstOrNull { it.id == s.presetId }?.name ?: "On this device"
         else -> "Default settings"
     }
 

@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -635,7 +637,7 @@ private fun GroupMenu(g: TrackGroup, section: Section, hooks: ListHooks) {
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = Palette.card, modifier = Modifier.widthIn(min = 240.dp)) {
             if (section == Section.EbbFlow) {
                 val rise = ThemeEditorRules.num(g.settings, "rise")
-                MenuSwitch("Same Rise for every file", rise != null, "Off: each file's own Rise", enabled = true) {
+                MenuSwitch("Same Rise for every file", rise != null, Txt.get(R.string.tegrp_same_rise_tip), enabled = true) {
                     editor.setGroup(g.name, ThemeEditorRules.obj("rise" to if (rise == null) JsonPrimitive(0.5) else JsonNull))
                 }
                 if (rise != null) {

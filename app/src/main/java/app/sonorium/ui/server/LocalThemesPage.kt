@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -107,7 +109,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
         }
         PhonePlayer.choose(context, t)
         PhonePlayer.play(context)
-        model.toast("Playing “${t.name}” on this phone. Its controls are in My Channel.", error = false)
+        model.toast(Txt.get(R.string.phonethemes_play_toast, t.name), error = false)
     }
 
     fun edit(t: LocalTheme) {
@@ -130,7 +132,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column {
                     header()
-                    PageHeader("On this phone", themes?.size, help = "phone-themes") {
+                    PageHeader(Txt.get(R.string.phonethemes_title), themes?.size, help = "phone-themes") {
                         Button(
                             onClick = startImport, enabled = importing == null,
                             shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = UiSize.STANDARD.dp),
@@ -173,8 +175,8 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
                 }
                 list.isEmpty() -> item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(
-                        "No themes on this phone",
-                        if (server) "Import a theme exported from your server (a .zip), or save one from your server's Themes (⋯ › Save to phone)."
+                        Txt.get(R.string.phonethemes_empty_title),
+                        if (server) Txt.get(R.string.phonethemes_empty_server)
                         else "Import a theme zip, such as one exported from a Sonorium server.",
                     )
                 }
@@ -192,7 +194,7 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
     removing?.let { t ->
         val playingIt = phone.theme?.docId == t.docId && (phone.playing || phone.preparing != null)
         ConfirmDialog(
-            "Remove “${t.name}” from this phone?",
+            Txt.get(R.string.phonethemes_remove_title, t.name),
             removeText(t, playingIt, server),
             "Remove",
             onConfirm = { model.removeLocalTheme(t) },
@@ -204,7 +206,8 @@ fun LocalThemesPage(model: ServerViewModel, header: @Composable () -> Unit = {},
 /** The Remove dialog's text: what happens to a playing theme, and where the theme still is. */
 internal fun removeText(t: LocalTheme, playing: Boolean, hasServer: Boolean): String = listOfNotNull(
     if (playing) "This theme is playing; removing it stops it." else null,
-    if (t.themeId != null && hasServer) "The theme stays on your server." else "Its files are deleted from this phone.",
+    // Kept here (tested on the JVM)
+    if (t.themeId != null && hasServer) "The theme stays on the server." else "Its files are deleted from this device.",
 ).joinToString(" ")
 
 /** The themes folder was picked but can't be found now: say so, and offer to choose it again. */
@@ -273,7 +276,7 @@ fun rememberOwnThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
         }
         if (uri == null) {
             model.folderNotChosen()
-            if (request?.changing != true) model.toast("Sonorium needs a folder to keep themes on this phone. Choose one to continue.", error = true)
+            if (request?.changing != true) model.toast(Txt.get(R.string.phonethemes_folder_needed), error = true)
             return@rememberLauncherForActivityResult
         }
         if (request?.rescue == true) {
@@ -293,7 +296,7 @@ fun rememberOwnThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
                 runCatching { launcher.launch(ThemeStore.suggestedStart()) }.onFailure {
                     Log.w("LocalThemes", "No folder picker", it)
                     pending = null
-                    model.toast("This phone has no folder picker, so a themes folder can't be chosen", error = true)
+                    model.toast(Txt.get(R.string.phonethemes_no_folder_picker), error = true)
                 }
             },
             onDismiss = {
@@ -361,7 +364,7 @@ fun rememberOwnThemeImport(model: ServerViewModel, folderPicker: ThemesFolderPic
     fun zip() {
         runCatching { pickZip.launch(ZIP_TYPES) }.onFailure {
             Log.w("LocalThemes", "No file picker", it)
-            model.toast("This phone has no file picker to choose a theme zip", error = true)
+            model.toast(Txt.get(R.string.phonethemes_no_file_picker), error = true)
         }
     }
     fun go() {
@@ -401,7 +404,7 @@ private fun LocalThemeCard(t: LocalTheme, playing: Boolean, onPlay: () -> Unit, 
                 Spacer(Modifier.width(6.dp))
                 IconBox(SIcons.Edit, "Edit ${t.name}", onEdit, size = UiSize.SMALL)
                 Spacer(Modifier.width(6.dp))
-                MoreMenu("More for ${t.name}", listOf(MenuAction("Remove from phone…", SIcons.Trash, danger = true) { onRemove() }), size = UiSize.SMALL)
+                MoreMenu("More for ${t.name}", listOf(MenuAction(Txt.get(R.string.phonethemes_remove_menu), SIcons.Trash, danger = true) { onRemove() }), size = UiSize.SMALL)
             }
             if (t.description.isNotBlank()) Text(t.description, color = Palette.textSecondary, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (t.categories.isNotEmpty()) Text(t.categories.joinToString(" · "), color = Palette.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -421,9 +424,9 @@ fun UnlockScreen(model: ServerViewModel, onClose: () -> Unit, onUnlocked: () -> 
                     Icon(SIcons.Headphones, null, tint = Palette.accent, modifier = Modifier.size(40.dp))
                     Text("Unlock Pro", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
                     listOf(
-                        "Play themes on this phone, with the same engine as your server.",
+                        Txt.get(R.string.unlock_point1),
                         "No connection needed: away from home, in the car, on a plane.",
-                        "Download themes from your server, or import theme files.",
+                        Txt.get(R.string.unlock_point3),
                     ).forEach { line ->
                         Row(verticalAlignment = Alignment.Top) {
                             Icon(SIcons.Check, null, tint = Palette.accent, modifier = Modifier.padding(top = 2.dp).size(UiSize.GLYPH_SMALL.dp))

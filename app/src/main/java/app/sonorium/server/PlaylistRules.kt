@@ -61,7 +61,7 @@ object PlaylistRules {
     fun deleteNote(id: String, sessions: List<Session>): String? {
         val on = sessions.filter { it.playlistId == id }
         if (on.isEmpty()) return null
-        return "${on.joinToString(", ") { it.name }} ${if (on.size == 1) "stops" else "stop"} playing it."
+        return "${on.joinToString(", ") { it.name }} ${if (on.size == 1) "stops" else "stop"} playing."
     }
 
     /** `plEntryNote`: the note under a sequence entry. */

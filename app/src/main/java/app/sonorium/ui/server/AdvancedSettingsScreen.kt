@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -255,7 +257,7 @@ fun AdvancedSettingsPage(state: ServerState, model: ServerViewModel) {
                             Text("Stream URL", color = if (saved.isNotEmpty()) Palette.accent else Palette.text, fontSize = 16.sp, modifier = Modifier.weight(1f))
                             IconBox(SIcons.Refresh, "Stream URL: back to the default", { apply("") }, size = app.sonorium.ui.UiSize.SMALL, enabled = saved.isNotEmpty())
                         }
-                        Text("The address speakers are given to reach Sonorium.", color = Palette.textSecondary, fontSize = 13.sp)
+                        Text(Txt.get(R.string.adv_stream_url_desc), color = Palette.textSecondary, fontSize = 13.sp)
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
                             NumberBox(saved, "Automatic", true, "Stream URL", width = 240, error = urlBad, keyboard = androidx.compose.ui.text.input.KeyboardType.Uri) { apply(it) }
                             Spacer(Modifier.weight(1f))

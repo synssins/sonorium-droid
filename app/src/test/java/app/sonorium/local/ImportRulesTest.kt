@@ -57,7 +57,7 @@ class ImportRulesTest {
 
     @Test fun aThemeAlreadyOnThePhoneIsRefusedPlainly() {
         val message = problem(ImportRules.plan(listOf("Tavern/fire.mp3"), "t.zip", setOf("tavern")))
-        assertEquals("“Tavern” is already on this phone. Remove it first to import it again.", message)
+        assertEquals("“Tavern” is already on this device. Remove it first to import it again.", message)
     }
 
     @Test fun folderNamesAreMadeSafe() {

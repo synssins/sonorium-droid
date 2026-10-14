@@ -60,7 +60,7 @@ object ImportRules {
         }
         val folder = safeName(name)
         if (folder.lowercase() in existing) {
-            return Result.Problem("“$folder” is already on this phone. Remove it first to import it again.")
+            return Result.Problem("“$folder” is already on this device. Remove it first to import it again.")
         }
         return Result.Ok(Plan(folder, chosen, skipped))
     }

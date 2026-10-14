@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.BackHandler
@@ -859,7 +861,7 @@ private fun LinkPicker(themes: List<ThemeSummary>, ui: EditorUi, editor: ThemeEd
                     when {
                         result == null -> Text("Loading tracks…", color = Palette.textSecondary, modifier = Modifier.padding(16.dp))
                         result.isFailure -> Text(
-                            (result.exceptionOrNull() as? app.sonorium.net.ApiException)?.detail ?: if (editor.onPhone) "Something went wrong on this phone." else "Can't reach the server.",
+                            (result.exceptionOrNull() as? app.sonorium.net.ApiException)?.detail ?: if (editor.onPhone) Txt.get(R.string.picker_err_phone) else "Can't reach the server.",
                             color = Palette.danger, modifier = Modifier.padding(16.dp),
                         )
                         tracks.isEmpty() -> Text("No tracks in this theme", color = Palette.textSecondary, modifier = Modifier.padding(16.dp))

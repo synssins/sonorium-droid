@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -180,7 +182,7 @@ fun ConnectionPage(state: ServerState, model: ServerViewModel) {
                             onClick = { editing = r }, shape = RoundedCornerShape(8.dp), border = BorderStroke(1.dp, Palette.border), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.SMALL.dp),
                         ) { Text("Edit", color = Palette.text) }
                         MoreMenu("More for ${r.title}", listOf(MenuAction("Remove…", SIcons.Trash, danger = true, enabled = r.configured) {
-                            ask = Ask("Remove “${r.title}”?", "Its saved settings are cleared.", "Remove") { remove(r) }
+                            ask = Ask("Remove “${r.title}”?", Txt.get(R.string.conn_remove_body), "Remove") { remove(r) }
                         }))
                     }
                 }

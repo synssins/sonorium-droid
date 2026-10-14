@@ -1,5 +1,7 @@
 package app.sonorium.ui.server
 
+import app.sonorium.R
+import app.sonorium.ui.Txt
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,7 +80,7 @@ fun DeviceOutput(model: ServerViewModel = androidx.lifecycle.viewmodel.compose.v
     val pro by model.entitlement.isPro.collectAsState()
     if (s.sampleEnded && !pro) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Sample ended for today. It plays again tomorrow, or unlock Pro to keep listening.", color = Palette.text, fontSize = 14.sp)
+            Text(Txt.get(R.string.device_sample_ended), color = Palette.text, fontSize = 14.sp)
             Button(
                 onClick = { model.proOrAsk() },
                 shape = RoundedCornerShape(8.dp),
@@ -87,7 +89,7 @@ fun DeviceOutput(model: ServerViewModel = androidx.lifecycle.viewmodel.compose.v
             ) { Text("Unlock Pro", fontWeight = FontWeight.SemiBold) }
         }
     }
-    if (s.sequenceFinished) Text("Sequence finished. It stays on its last preset.", color = Palette.textSecondary, fontSize = 13.sp)
+    if (s.sequenceFinished) Text(Txt.get(R.string.device_sequence_finished), color = Palette.textSecondary, fontSize = 13.sp)
     CastRow(s.theme?.name.orEmpty(), allow = model::proOrAsk)
 }
 
@@ -158,7 +160,7 @@ private fun SpeakerPicker(themeName: String, onClose: () -> Unit) {
         Surface(color = Palette.card, shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Palette.border)) {
             Column(Modifier.padding(16.dp).widthIn(min = 280.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("Cast to", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.semantics { heading() })
-                Text("One speaker at a time, on this phone's Wi-Fi.", color = Palette.textSecondary, fontSize = 13.sp)
+                Text(Txt.get(R.string.cast_picker_sub), color = Palette.textSecondary, fontSize = 13.sp)
                 Spacer(Modifier.height(8.dp))
                 if (cast.speakers.isEmpty()) {
                     if (!timedOut) {
@@ -169,7 +171,7 @@ private fun SpeakerPicker(themeName: String, onClose: () -> Unit) {
                         }
                     } else {
                         Text(
-                            "No speakers found. Make sure this phone and the speaker are on the same Wi-Fi.",
+                            Txt.get(R.string.cast_none_found),
                             color = Palette.text, fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp),
                         )
                         TextButton(onClick = { search++ }, modifier = Modifier.heightIn(min = UiSize.SMALL.dp)) { Text("Look again", color = Palette.accent) }
