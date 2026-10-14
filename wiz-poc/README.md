@@ -19,7 +19,8 @@ Audio effect modes: `frequency_bands` (bass=red, mid=green, treble=blue), `energ
 
 1. Install Python 3.10 or newer from python.org. Tick **Add python.exe to PATH** during setup.
 2. Double-click **`run.bat`**. The first run creates a `.venv` and installs `numpy` and `PyAudioWPatch`.
-   After that, it starts the server and opens http://127.0.0.1:8765.
+   After that, it starts the server and opens http://127.0.0.1:8642 in your browser.
+   If that port is taken by another program, it uses the next free one and prints the address in the console.
 3. On the **Lights** tab, click **Find bulbs**, which is described below. Or open **Add bulbs by IP** and paste IPs, one per line.
 
 ## Names, rooms and identifying bulbs

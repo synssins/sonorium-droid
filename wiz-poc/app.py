@@ -10,7 +10,7 @@ Tiny local web UI for Philips WiZ bulbs:
 WiZ bulbs speak JSON over UDP port 38899 (e.g. {"method":"setPilot","params":{"r":255,...}}).
 No cloud, no pairing - they just need to be on the same LAN.
 
-Run:  python app.py   then open http://127.0.0.1:8765
+Run:  python app.py   (opens http://127.0.0.1:8642, or the next free port)
 """
 
 import colorsys
@@ -44,7 +44,7 @@ DEFAULT_CONFIG = {
     "active_groups": [],          # rooms that effects / the main colour picker drive; empty = all bulbs
     "bulb_macs": {},              # mac -> last known ip; lets discovery spot bulbs whose DHCP address changed
     "http_host": "127.0.0.1",
-    "http_port": 8765,
+    "http_port": 8642,           # if taken, the next free port is used
     "color": "#ff0080",           # colour picker value / base colour for pulse, strobe, split
     "brightness": 100,            # 10-100, used by the static colour picker
     "mode": "frequency_bands",    # one of MODES
@@ -944,18 +944,53 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": f"{type(e).__name__}: {e}"}, 400)
 
 
+class Server(ThreadingHTTPServer):
+    # http.server sets SO_REUSEADDR, which on Windows lets two programs share a port silently.
+    allow_reuse_address = False
+
+    def server_bind(self):
+        if hasattr(socket, "SO_EXCLUSIVEADDRUSE"):   # Windows: fail loudly if the port is taken
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
+def port_answers(host, port):
+    """True if something (another app, a Docker port mapping...) already accepts connections there."""
+    probe = "127.0.0.1" if host in ("0.0.0.0", "") else host
+    try:
+        with socket.create_connection((probe, port), timeout=0.3):
+            return True
+    except OSError:
+        return False
+
+
+def open_server(host, port, tries=20):
+    for p in range(port, port + tries):
+        if port_answers(host, p):
+            print(f"[http] port {p} is already in use by another program - trying {p + 1}")
+            continue
+        try:
+            return Server((host, p), Handler)
+        except OSError as e:
+            print(f"[http] cannot use port {p}: {e} - trying {p + 1}")
+    raise SystemExit(f"No free port between {port} and {port + tries - 1}; set http_port in {CONFIG_PATH}")
+
+
 def main():
     if not CONFIG_PATH.exists():
         update_cfg({})
+    elif get_cfg()["http_port"] == 8765:   # old default, clashes with other apps (e.g. Sonorium)
+        update_cfg({"http_port": DEFAULT_CONFIG["http_port"]})
     ips = [a for a in sys.argv[1:] if not a.startswith("--")]
     if ips:   # optional: python app.py 192.168.1.50 192.168.1.51 ...
         update_cfg({"bulbs": ips})
     cfg = get_cfg()
-    srv = ThreadingHTTPServer((cfg["http_host"], cfg["http_port"]), Handler)
-    print(f"WiZ PoC running on http://{cfg['http_host']}:{cfg['http_port']}  "
+    srv = open_server(cfg["http_host"], cfg["http_port"])
+    port = srv.server_address[1]
+    print(f"WiZ Light Lab running on http://127.0.0.1:{port}  "
           f"({len(cfg['bulbs'])} bulbs configured)  - Ctrl+C to quit")
     if "--no-browser" not in sys.argv:
-        webbrowser.open(f"http://127.0.0.1:{cfg['http_port']}")
+        webbrowser.open(f"http://127.0.0.1:{port}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
