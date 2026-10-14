@@ -1,10 +1,10 @@
 package app.sonorium
 
+import app.sonorium.ui.darkEdgeToEdge
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import app.sonorium.server.NativeServerActivity
@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
-        enableEdgeToEdge()
+        darkEdgeToEdge(this)
         // A fresh start: the splash, then the main screen, always (with the last server, or none)
         val route = savedInstanceState == null && !handleLink(intent) && !intent.getBooleanExtra(EXTRA_SHOW_LIST, false)
         // First run: a guide over the main screen itself (coach marks), no separate wizard

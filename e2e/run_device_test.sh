@@ -40,6 +40,12 @@ if [ "$e2e" -eq 0 ] && [ "$(adb shell getprop ro.build.version.sdk | tr -d '\r')
   cat e2e-out/topbar-tablet.txt >> e2e-out/instrumentation.txt
   grep -q "^OK (" e2e-out/topbar-tablet.txt || e2e=1
   adb shell wm size reset; adb shell wm density reset; sleep 2
+  # A small phone (320 dp wide): the title rows' buttons give way, the help stays in view
+  adb shell wm size 1080x2340; adb shell wm density 540; sleep 3
+  adb shell am instrument -w -r -e class app.sonorium.TopBarTest "$RUNNER" | tee e2e-out/topbar-small.txt | tail -3
+  cat e2e-out/topbar-small.txt >> e2e-out/instrumentation.txt
+  grep -q "^OK (" e2e-out/topbar-small.txt || e2e=1
+  adb shell wm size reset; adb shell wm density reset; sleep 2
 fi
 
 # Screen profiles: name, size (portrait, px), density (dpi), font scale.

@@ -1,5 +1,6 @@
 package app.sonorium.web
 
+import app.sonorium.ui.darkEdgeToEdge
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -11,7 +12,6 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -77,7 +77,7 @@ class ServerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        darkEdgeToEdge(this)
         setContent {
             SonoriumTheme {
                 Surface(color = Palette.background, modifier = Modifier.fillMaxSize()) {

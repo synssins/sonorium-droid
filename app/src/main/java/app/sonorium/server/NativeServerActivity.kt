@@ -1,12 +1,12 @@
 package app.sonorium.server
 
+import app.sonorium.ui.darkEdgeToEdge
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withResumed
@@ -23,7 +23,7 @@ class NativeServerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        darkEdgeToEdge(this)
         // No server: the main screen still opens (Connect button, browse, local themes)
         val id = intent.getStringExtra(EXTRA_SERVER_ID)
         model.open(id)

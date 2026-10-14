@@ -612,6 +612,8 @@ private fun ChannelsPage(
         // Phones: every channel collapsed until opened; wide screens: open until collapsed
         val openByDefault = maxWidth >= 840.dp
         val narrow = maxWidth < 600.dp
+        // Small phones: New Channel icon-only, so the title row keeps its help in view
+        val tight = maxWidth < 380.dp
         LazyVerticalGrid(
             columns = GridCells.Adaptive(minSize = 340.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(start = side, end = side, bottom = 24.dp),
@@ -625,7 +627,8 @@ private fun ChannelsPage(
                     Text("Channels", color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.width(8.dp))
                     CountBadge(state.sessions.size)
-                    Spacer(Modifier.weight(1f))
+                    // The buttons take the room left and end at the help: they give way, never the help
+                    Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     if (state.zones?.admin == true && narrow) {
                         // Phones: icon only, so the header fits next to New Channel
                         IconBox(SIcons.Link, "Link channels", { onLink(null) }, tint = Palette.text, size = app.sonorium.ui.UiSize.STANDARD)
@@ -643,15 +646,7 @@ private fun ChannelsPage(
                         }
                         Spacer(Modifier.width(8.dp))
                     }
-                    if (state.offers(CAP_CHANNELS)) Button(
-                        onClick = onNew,
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                        modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
-                    ) {
-                        Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("New Channel", fontWeight = FontWeight.Medium)
+                    if (state.offers(CAP_CHANNELS)) AddButton("New Channel", tight, onNew)
                     }
                     // Help at the far right, its right edge under the top bar's server button (Chris, item 11)
                     Spacer(Modifier.width(8.dp))

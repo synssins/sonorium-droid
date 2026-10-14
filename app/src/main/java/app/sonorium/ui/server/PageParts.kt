@@ -2,6 +2,7 @@ package app.sonorium.ui.server
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.layout.boundsInRoot
@@ -61,8 +62,8 @@ fun PageHeader(title: String, count: Int?, modifier: Modifier = Modifier, help: 
             Spacer(Modifier.width(8.dp))
             CountBadge(it)
         }
-        Spacer(Modifier.weight(1f))
-        actions()
+        // The actions take the room left and end at the help: on a narrow screen they give way, never the help
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) { actions() }
         // The page's help at the far right of its title row, under the top bar's server button (Chris, item 11)
         help?.let {
             Spacer(Modifier.width(8.dp))
@@ -259,16 +260,22 @@ val LocalServerButtonRight = androidx.compose.runtime.staticCompositionLocalOf<a
  */
 @Composable
 fun PageHelpButton(view: String) {
-    val target = LocalServerButtonRight.current?.value
-    var shift by remember { mutableStateOf(0) }
+    val holder = LocalServerButtonRight.current
+    // Where its right edge sits unshifted; the shift follows both it and the server button whenever either moves
+    var natural by remember { mutableStateOf<Float?>(null) }
+    val applied = remember { intArrayOf(0) }
     Box(
         Modifier
-            .offset { androidx.compose.ui.unit.IntOffset(shift, 0) }
+            .offset {
+                val target = holder?.value
+                val n = natural
+                val shift = if (target == null || n == null) 0 else kotlin.math.round(target - n).toInt()
+                applied[0] = shift
+                androidx.compose.ui.unit.IntOffset(shift, 0)
+            }
             .onGloballyPositioned { c ->
-                if (target == null) return@onGloballyPositioned
-                val right = c.boundsInRoot().right - shift
-                val want = kotlin.math.round(target - right).toInt()
-                if (want != shift) shift = want
+                val right = c.boundsInRoot().right - applied[0]
+                if (natural == null || kotlin.math.abs(right - natural!!) >= 0.5f) natural = right
             },
     ) { HelpButton(view) }
 }

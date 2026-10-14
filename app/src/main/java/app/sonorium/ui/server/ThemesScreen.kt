@@ -160,13 +160,9 @@ fun ThemesPage(state: ServerState, model: ServerViewModel, onEdit: (ThemeSummary
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Column {
                         PageHeader("Themes", themes.size, help = "themes") {
-                            Button(
-                                onClick = { if (model.reachableOrSay() && model.proOrAsk()) creating = true }, shape = RoundedCornerShape(8.dp), modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp).coachTarget(app.sonorium.ui.coach.Targets.THEME_CREATE),
-                                colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
-                            ) {
-                                Icon(SIcons.Plus, null, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text("Create theme", fontWeight = FontWeight.Medium)
+                            // Icon-only on narrow screens, so the title row keeps its help in view
+                            Box(Modifier.coachTarget(app.sonorium.ui.coach.Targets.THEME_CREATE)) {
+                                AddButton("Create theme", narrow) { if (model.reachableOrSay() && model.proOrAsk()) creating = true }
                             }
                             Spacer(Modifier.width(6.dp))
                             MoreMenu("More", listOf(

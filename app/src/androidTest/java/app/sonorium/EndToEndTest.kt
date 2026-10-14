@@ -121,7 +121,7 @@ class EndToEndTest {
             find(By.text("Cancel"), "No Cancel").click()
 
             // 7. A new channel: pick a theme, create → toast and a second card.
-            find(By.text("New Channel"), "No New Channel button").click()
+            find(By.desc("New Channel"), "No New Channel button").click()
             need(By.text("New Channel"), 10_000, "08-new", "The new channel editor didn't open")
             hideKeyboard()
             device.wait(Until.findObject(By.textStartsWith("A Rainy Day")), 10_000)?.click()

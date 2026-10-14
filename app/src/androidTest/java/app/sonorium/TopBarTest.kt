@@ -50,6 +50,33 @@ class TopBarTest {
         }
     }
 
+    /**
+     * The first-visit guides showing (as on a new install), each skipped: the page's help is still there and
+     * aligned (it vanished on some pages after Skip).
+     */
+    @Test
+    fun helpStaysAfterAGuideIsSkipped() {
+        val before = runBlocking { sonorium.servers.currentId.first() }
+        instrumentation.targetContext.getSharedPreferences("coach", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        app.sonorium.ui.coach.CoachState.ENABLED = true
+        try {
+            val server = runBlocking { sonorium.servers.servers.first().firstOrNull { !it.device } }
+            if (server != null) check("server ${server.displayName}", server.id, skipGuides = true)
+            check("this device", SonoriumApp.DEVICE_ID, skipGuides = true)
+        } finally {
+            app.sonorium.ui.coach.CoachState.ENABLED = false
+            before?.let { runBlocking { sonorium.servers.select(it) } }
+        }
+    }
+
+    /** Skips the guide showing now (Skip, or Done on a one-step guide); true when there was one. */
+    private fun skipGuide(): Boolean {
+        val button = device.wait(Until.findObject(By.text("Skip")), 3_000) ?: device.findObject(By.text("Done")) ?: return false
+        button.click()
+        Thread.sleep(1_000)
+        return true
+    }
+
     private fun helpAligned(where: String) {
         val top = device.findObject(By.res("top-bar"))
         val help = device.wait(Until.findObject(By.descStartsWith("Help: ")), 5_000)
@@ -86,13 +113,25 @@ class TopBarTest {
         return false
     }
 
-    private fun check(what: String, id: String) {
+    private fun check(what: String, id: String, skipGuides: Boolean = false) {
         runBlocking { sonorium.servers.select(id) }
         val intent = Intent(instrumentation.targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         ActivityScenario.launch<MainActivity>(intent).use {
             val bar = device.wait(Until.findObject(By.res("top-bar")), 20_000)
             assertNotNull("No top bar ($what)", bar)
+            // Light status bar icons on the dark app, whatever the system's mode
+            // (MainActivity hands over to the server screen's activity: the one showing is checked)
+            var darkIcons: Boolean? = null
+            instrumentation.runOnMainSync {
+                androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry.getInstance()
+                    .getActivitiesInStage(androidx.test.runner.lifecycle.Stage.RESUMED).firstOrNull()?.let {
+                        darkIcons = androidx.core.view.WindowCompat.getInsetsController(it.window, it.window.decorView).isAppearanceLightStatusBars
+                    }
+            }
+            assertNotNull("No activity showing ($what)", darkIcons)
+            assertTrue("Dark status bar icons on the dark app ($what)", darkIcons == false)
             Thread.sleep(2_000)
+            if (skipGuides) while (skipGuide()) Unit
             val top = device.findObject(By.res("top-bar"))
             assertTrue("A My Channel button in the top bar ($what)", top.findObject(By.desc("My Channel")) == null)
             assertTrue("A help button in the top bar ($what)", top.findObject(By.descStartsWith("Help")) == null)
@@ -100,7 +139,12 @@ class TopBarTest {
             helpAligned("$what, Channels")
             for (page in PAGES) {
                 if (!openPage(page)) continue
-                helpAligned("$what, $page")
+                if (skipGuides) {
+                    var skipped = 0
+                    while (skipGuide()) skipped++
+                    android.util.Log.i("TopBarTest", "$what, $page: $skipped guide(s) skipped")
+                    helpAligned("$what, $page, $skipped guide(s) skipped")
+                } else helpAligned("$what, $page")
             }
         }
     }
