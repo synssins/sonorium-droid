@@ -208,9 +208,13 @@ private fun ThemesFolderRow(model: ServerViewModel) {
     val used = bytesText(themes.orEmpty().sumOf { it.bytes })
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp).semantics { testTagsAsResourceId = true }.testTag("themes-folder")) {
         Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_title), color = Palette.text, fontSize = 14.sp)
-        Text(
+        if (folderState == app.sonorium.local.ThemeStore.FolderState.MISSING) {
+            // A folder that's gone isn't shown as the one in use: said so, with where it was
+            Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_gone_title), color = Palette.warning, fontSize = 12.sp)
+            Text(where, color = Palette.textMuted, fontSize = 12.sp)
+        } else Text(
             androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_used, where, used),
-            color = if (folderState == app.sonorium.local.ThemeStore.FolderState.MISSING) Palette.warning else Palette.textSecondary, fontSize = 12.sp,
+            color = Palette.textSecondary, fontSize = 12.sp,
         )
         if (store.isDefault) Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default_note), color = Palette.textMuted, fontSize = 12.sp)
         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -127,13 +127,20 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
     val live = remember { mutableStateMapOf<String, Double>() }
     var closing by remember { mutableStateOf(false) }
 
-    fun cancel() {
+    var leaving by remember { mutableStateOf(false) }
+
+    fun close() {
         if (closing) return
         closing = true
         scope.launch {
             editor.restoreMix()
             model.closeThemeEditor()
         }
+    }
+
+    // Unsaved edits are never dropped without asking
+    fun cancel() {
+        if (editor.ui.value.unsaved) leaving = true else close()
     }
 
     val pickFiles = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
@@ -248,14 +255,13 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
             confirmButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     editor.folderProblemSeen()
-                    folderPicker.ask(changing = false) { model.rescueEditedTheme() }
+                    folderPicker.askForRescue()
                 }) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_choose), color = Palette.accent) }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = {
                     editor.folderProblemSeen()
-                    model.useDefaultFolder(offerMove = false)
-                    model.rescueEditedTheme()
+                    model.rescueEditedTheme(null)
                 }) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default), color = Palette.text) }
             },
         )
@@ -265,6 +271,12 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
         onGuide = { help = false; editorCoach.show(editorGuide) },
     ) { help = false }
     ask?.let { a -> ConfirmDialog(a.title, a.sub, a.action, a.danger, onConfirm = a.onOk, onDismiss = { ask = null }) }
+    if (leaving) ConfirmDialog(
+        androidx.compose.ui.res.stringResource(app.sonorium.R.string.editor_leave_title),
+        androidx.compose.ui.res.stringResource(app.sonorium.R.string.editor_leave_text),
+        androidx.compose.ui.res.stringResource(app.sonorium.R.string.editor_leave_action),
+        onConfirm = { close() }, onDismiss = { leaving = false },
+    )
     prompt?.let { p -> NamePromptDialog(p) { prompt = null } }
     if (importing) ImportPresetDialog(editor) { importing = false }
     exported?.let { text -> ExportPresetDialog(text, model) { exported = null } }

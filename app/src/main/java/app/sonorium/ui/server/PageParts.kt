@@ -141,7 +141,7 @@ fun ConfirmDialog(
         text = sub?.let { { Text(it, color = Palette.textSecondary, fontSize = 14.sp) } },
         confirmButton = {
             Button(
-                onClick = { onDismiss(); onConfirm() },
+                onClick = { onConfirm(); onDismiss() },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (danger) Palette.danger else Palette.accent,
                     contentColor = if (danger) Palette.text else Palette.bar,

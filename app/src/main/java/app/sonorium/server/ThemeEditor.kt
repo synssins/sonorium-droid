@@ -811,10 +811,20 @@ class ThemeEditor(
         _folderProblem.value = false
     }
 
+    /** The edits still can't be saved (no folder chosen, or the rescue failed): offered again. */
+    fun showFolderProblem() {
+        if (onPhone) _folderProblem.value = true
+    }
+
     private fun message(e: Exception, fallback: String): String = when {
         onPhone && e is ApiException && e.detail == app.sonorium.local.PhoneThemeApi.FOLDER_PROBLEM -> {
             _folderProblem.value = true
             e.detail
+        }
+        // The theme isn't in the themes folder any more (the folder changed under it): the edits are kept, a folder offered
+        onPhone && e is ApiException && e.status == 404 -> {
+            _folderProblem.value = true
+            app.sonorium.local.PhoneThemeApi.FOLDER_PROBLEM
         }
         e is ApiException -> e.firstMessage ?: e.detail.takeIf { it.isNotBlank() && !it.startsWith("{") } ?: fallback
         else -> fallback.ifEmpty { if (onPhone) "Something went wrong on this phone." else "Can't reach the server." }

@@ -238,12 +238,15 @@ private fun FolderMissing(onChoose: () -> Unit, onDefault: () -> Unit) {
 
 /** Asks for the themes folder: [ask] explains it first, then opens the system folder picker. */
 @Stable
-class ThemesFolderPicker internal constructor(private val start: (Boolean, (() -> Unit)?) -> Unit) {
+class ThemesFolderPicker internal constructor(private val start: (Boolean, (() -> Unit)?, Boolean) -> Unit) {
     /** [changing]: "Change themes folder…" (never continues to [then]); [then] runs once a folder is set. */
-    fun ask(changing: Boolean, then: (() -> Unit)?) = start(changing, then)
+    fun ask(changing: Boolean, then: (() -> Unit)?) = start(changing, then, false)
+
+    /** A folder for the theme open in the editor, whose folder is gone: the edits are saved there. */
+    fun askForRescue() = start(false, null, true)
 }
 
-private data class FolderRequest(val changing: Boolean, val then: (() -> Unit)?)
+private data class FolderRequest(val changing: Boolean, val then: (() -> Unit)?, val rescue: Boolean = false)
 
 @Composable
 fun rememberThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker =
@@ -264,9 +267,18 @@ fun rememberOwnThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         val request = pending
         pending = null
+        if (uri == null && request?.rescue == true) {
+            model.rescueNotChosen()
+            return@rememberLauncherForActivityResult
+        }
         if (uri == null) {
             model.folderNotChosen()
             if (request?.changing != true) model.toast("Sonorium needs a folder to keep themes on this phone. Choose one to continue.", error = true)
+            return@rememberLauncherForActivityResult
+        }
+        if (request?.rescue == true) {
+            // The folder is set by the rescue itself, after the edits are rebuilt from their prepared copy
+            model.rescueEditedTheme(uri)
             return@rememberLauncherForActivityResult
         }
         val changing = request?.changing == true
@@ -284,10 +296,13 @@ fun rememberOwnThemesFolderPicker(model: ServerViewModel): ThemesFolderPicker {
                     model.toast("This phone has no folder picker, so a themes folder can't be chosen", error = true)
                 }
             },
-            onDismiss = { asking = null },
+            onDismiss = {
+                asking = null
+                if (request.rescue) model.rescueNotChosen()
+            },
         )
     }
-    return remember { ThemesFolderPicker { changing, then -> asking = FolderRequest(changing, then) } }
+    return remember { ThemesFolderPicker { changing, then, rescue -> asking = FolderRequest(changing, then, rescue) } }
 }
 
 /** What the folder picker is for, before it opens (M9). */

@@ -18,7 +18,9 @@ internal object PhoneThemeActions {
     /** The themes folder changed: stop, forget the chosen theme, delete every prepared copy. */
     suspend fun folderChanged(context: Context) {
         PhonePlayer.reset(context)
-        ThemePrep.clearAll(context)
+        // A theme open in the editor keeps its prepared copy: its edits are rescued from it
+        val app = context.applicationContext as? app.sonorium.SonoriumApp
+        ThemePrep.clearAll(context, app?.deviceApi?.editedFolders().orEmpty())
     }
 
     /** Before removing [theme]: stop it if it's the one chosen. */

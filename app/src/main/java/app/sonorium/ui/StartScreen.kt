@@ -148,9 +148,12 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
                     // The server the app opens (not a live connection: that shows on the main screen's button)
                     if (server.id == currentId) Chip("Current")
                 }
+                // Two entries with the same name (e.g. one host, two ports): the port tells them apart
+                val twin = servers.count { !it.device && it.displayName == server.displayName } > 1
                 if (!server.device) Text(
                     listOfNotNull(
-                        server.hosts.firstOrNull()?.takeIf { server.name != null },
+                        if (twin) server.hosts.firstOrNull()?.let { "$it:${server.httpsPort}" }
+                        else server.hosts.firstOrNull()?.takeIf { server.name != null },
                         server.username,
                         server.version.ifEmpty { null },
                     ).joinToString(" · "),
@@ -282,7 +285,7 @@ private fun TypeAddress(onConnect: (String) -> Unit, onCancel: () -> Unit) {
         label = { Text(androidx.compose.ui.res.stringResource(R.string.address_label)) },
         placeholder = { Text(androidx.compose.ui.res.stringResource(R.string.address_placeholder), color = Palette.textMuted) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false, capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.None),
         modifier = Modifier.fillMaxWidth(),
     )
     Spacer(Modifier.height(16.dp))

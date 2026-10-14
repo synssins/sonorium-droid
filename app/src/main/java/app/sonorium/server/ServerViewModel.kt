@@ -1139,12 +1139,14 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         val pending = pendingSave.takeIf { !changing }
         pendingSave = null
         saveLog("themes folder chosen" + (pending?.let { ", then $it" } ?: ""))
+        val oldThere = _localFolder.value == ThemeStore.FolderState.OK
         if (changed) {
             // Nothing prepared from the old folder applies any more
             viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
-            // The themes in the old folder: offered to move along (Chris)
-            if (hadThemes && before != null) _moveOffer.value = before
+            // The themes in the old folder: offered to move along (Chris); not from a folder that's gone
+            if (hadThemes && before != null && oldThere) _moveOffer.value = before
         }
+        if (_moveOffer.value == null) app.themeStore.releaseUnused()
         refreshLocalThemes()
         // The Save to phone that asked for the folder carries on now
         pending?.let { saveThemeToPhone(it) }
@@ -1165,9 +1167,11 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     fun useDefaultFolder(offerMove: Boolean = true) {
         val before = app.themeStore.current()
         val hadThemes = _localThemes.value.orEmpty().isNotEmpty()
+        val oldThere = _localFolder.value == ThemeStore.FolderState.OK
         if (!app.themeStore.useDefault()) return
         viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
-        if (offerMove && hadThemes && before != null && app.themeStore.root != null) _moveOffer.value = before
+        if (offerMove && hadThemes && before != null && oldThere && app.themeStore.root != null) _moveOffer.value = before
+        if (_moveOffer.value == null) app.themeStore.releaseUnused()
         refreshLocalThemes()
     }
 
@@ -1176,19 +1180,28 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
      * (chosen, or the default), the edits go there as a whole theme (audio read from where it was, if it still can
      * be), and the editor opens again on it. Says which files couldn't come along.
      */
-    fun rescueEditedTheme() {
+    fun rescueEditedTheme(into: android.net.Uri?) {
         val editor = _editor.value ?: return
         val id = editor.themeId
         val folder = app.deviceApi.editedFolder(id) ?: run {
             toast(app.getString(R.string.rescue_failed), error = true)
             return
         }
+        // The folder first; the prepared copy the edits are rebuilt from is kept until the rescue is done
+        if (into == null) app.themeStore.useDefault() else runCatching { app.themeStore.setRoot(into) }.getOrElse {
+            android.util.Log.w("ThemeRescue", "Couldn't keep the folder", it)
+            toast("Sonorium can't use that folder. Choose another one, such as Music › Sonorium.", error = true)
+            editor.showFolderProblem()
+            return
+        }
+        app.themeStore.releaseUnused()
         val ui = editor.ui.value
         viewModelScope.launch {
             runCatching {
                 ThemeRescue.rescue(app, app.themeStore, folder, ui.name.trim().ifEmpty { ui.title }, ui.description.trim(), ui.icon, ui.categories)
             }.onSuccess { r ->
                 app.deviceApi.forgetEditors()
+                PhoneThemeActions.folderChanged(app)
                 editor.folderProblemSeen()
                 closeThemeEditor()
                 refreshLocalThemes()
@@ -1203,6 +1216,9 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             }.onFailure { e ->
                 android.util.Log.w("ThemeRescue", "Rescue of $folder failed", e)
                 toast(e.message ?: app.getString(R.string.rescue_failed), error = true)
+                // The edits stay in the editor, and the folder is offered again
+                refreshLocalThemes()
+                editor.showFolderProblem()
             }
         }
     }
@@ -1210,7 +1226,10 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     fun answerMove(move: Boolean) {
         val from = _moveOffer.value ?: return
         _moveOffer.value = null
-        if (!move) return
+        if (!move) {
+            app.themeStore.releaseUnused()
+            return
+        }
         moveJob = viewModelScope.launch {
             _moving.value = 0 to 0
             runCatching { app.themeStore.moveThemes(from) { d, t -> _moving.value = d to t } }
@@ -1220,8 +1239,14 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                     else toast(e.message ?: app.getString(R.string.folder_move_failed), error = true)
                 }
             _moving.value = null
+            app.themeStore.releaseUnused()
             refreshLocalThemes()
         }
+    }
+
+    /** The folder picker for a rescue was closed without a folder: the edits stay, the choice is offered again. */
+    fun rescueNotChosen() {
+        _editor.value?.showFolderProblem()
     }
 
     fun cancelMove() {

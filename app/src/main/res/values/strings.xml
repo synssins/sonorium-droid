@@ -186,4 +186,8 @@
     <string name="vs_not_here">Not playing on this device.</string>
     <string name="vs_play_here">Play here</string>
     <string name="vs_stop_here">Stop here</string>
+    <!-- Theme editor: Cancel with changes not saved -->
+    <string name="editor_leave_title">Leave without saving?</string>
+    <string name="editor_leave_text">The changes to this theme aren\'t saved.</string>
+    <string name="editor_leave_action">Leave</string>
 </resources>

@@ -349,6 +349,9 @@ class DeviceApi(private val context: Context) : Interceptor {
     /** The prepared copy's folder name of the theme [id] opened in the editor, or null. */
     fun editedFolder(id: String): String? = synchronized(editors) { editorFolders[id] }
 
+    /** The prepared copies' folder names of every theme opened in the editor. */
+    fun editedFolders(): Set<String> = synchronized(editors) { editorFolders.values.toSet() }
+
     /** Forgets the editors (the themes folder changed: the next edit opens the theme where it is now). */
     fun forgetEditors() = synchronized(editors) {
         editors.clear()

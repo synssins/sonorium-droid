@@ -99,8 +99,9 @@ class ThemeStore(private val context: Context) {
 
     /**
      * The folder the user picked (ACTION_OPEN_DOCUMENT_TREE): its "Sonorium" folder is the themes folder (made
-     * if needed, or the picked folder itself when it's called Sonorium). Lets go of the folder before. Returns
-     * true when it's a different folder from before. Throws when the folder can't be used.
+     * if needed, or the picked folder itself when it's called Sonorium). The folder before stays readable until
+     * [releaseUnused] (its themes may move along). Returns true when it's a different folder from before. Throws
+     * when the folder can't be used.
      */
     fun setRoot(uri: Uri): Boolean {
         val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
@@ -116,19 +117,23 @@ class ThemeStore(private val context: Context) {
         val old = saved
         val oldDoc = savedDoc
         prefs.edit { putString(KEY_ROOT, uri.toString()); putString(KEY_ROOT_DOC, doc) }
-        if (old != null && old != uri) {
-            runCatching { resolver.releasePersistableUriPermission(old, flags) }.onFailure { Log.w(TAG, "Couldn't release the old folder", it) }
-        }
         return old != uri || oldDoc != doc
     }
 
     /** Back to the app's own folder ("Use default"). Returns true when it was another folder. */
     fun useDefault(): Boolean {
-        val old = saved ?: return false
+        saved ?: return false
         prefs.edit { remove(KEY_ROOT); remove(KEY_ROOT_DOC) }
-        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        runCatching { resolver.releasePersistableUriPermission(old, flags) }
         return true
+    }
+
+    /** Lets go of every folder picked before that isn't the themes folder now (once its themes moved, or not). */
+    fun releaseUnused() {
+        val keep = saved
+        val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+        resolver.persistedUriPermissions.filter { it.uri != keep }.forEach { p ->
+            runCatching { resolver.releasePersistableUriPermission(p.uri, flags) }.onFailure { Log.w(TAG, "Couldn't release ${p.uri}", it) }
+        }
     }
 
     /** The themes folder now, to move its themes from later ([moveThemes]): tree and folder document. */

@@ -87,9 +87,17 @@ object ThemePrep {
         pcmDir(context, folder).deleteRecursively()
     }
 
-    /** Deletes every prepared theme (the themes folder changed). */
-    suspend fun clearAll(context: Context) = withContext(Dispatchers.IO) {
-        base(context).deleteRecursively()
+    /** Deletes every prepared theme (the themes folder changed), but those in [keep] (open in the editor). */
+    suspend fun clearAll(context: Context, keep: Set<String> = emptySet()) = withContext(Dispatchers.IO) {
+        if (keep.isEmpty()) {
+            base(context).deleteRecursively()
+            return@withContext
+        }
+        val kept = keep.map(::safe).toSet()
+        listOf(File(base(context), "themes"), File(base(context), "pcm")).forEach { dir ->
+            dir.listFiles()?.filter { it.name !in kept }?.forEach { it.deleteRecursively() }
+        }
+        base(context).listFiles()?.filter { it.name != "themes" && it.name != "pcm" }?.forEach { it.deleteRecursively() }
     }
 
     private fun safe(name: String) = name.replace(Regex("""[\\/:*?"<>|]"""), "_")
