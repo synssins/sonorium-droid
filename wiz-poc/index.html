@@ -42,6 +42,9 @@
   .ip { font-family: Consolas, monospace; }
   video, audio { width:100%; margin-top:10px; border-radius:8px; background:#000; }
   .chips { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .badge { font-size:12px; padding:2px 8px; border-radius:10px; background:#353948; white-space:nowrap; }
+  .badge.new { background:#1f5f3a; } .badge.moved { background:#6a4a10; }
+  .tablewrap { overflow-x:auto; }
   .chip { width:28px; height:28px; border-radius:6px; border:1px solid var(--line); }
   #statusbar { position:sticky; top:0; z-index:5; background:var(--bg); padding:8px 0 12px; }
 </style>
@@ -104,11 +107,31 @@
       <textarea id="bulbs" placeholder="192.168.1.50&#10;192.168.1.51"></textarea>
       <div class="row" style="margin-top:10px">
         <button class="primary" id="saveBulbs">Save</button>
-        <button id="discover">Discover on LAN</button>
         <button id="ping">Ping bulbs</button>
       </div>
       <pre id="bulbMsg"></pre>
       <table id="bulbTable"></table>
+    </section>
+
+    <section>
+      <h2>Find bulbs</h2>
+      <p class="muted" style="margin-top:0">Broadcasts on every network adapter of this PC. Broadcasts don't cross
+        routers, so to find bulbs on another subnet or VLAN, list it below and it will be probed host by host.</p>
+      <label for="scan_subnets">Other subnets or IPs to scan (CIDR, one per line)</label>
+      <textarea id="scan_subnets" style="min-height:60px" placeholder="192.168.20.0/24&#10;10.0.5.0/24"></textarea>
+      <label class="row" style="color:var(--fg)"><input type="checkbox" id="scan_local" style="width:auto">
+        Also scan this PC's own subnets host by host (try this if broadcast finds nothing)</label>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" id="discover">Find bulbs</button>
+        <span id="discMsg" class="muted"></span>
+      </div>
+      <div id="discResults" style="display:none">
+        <div class="tablewrap"><table id="discTable"></table></div>
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="addFound">Add selected</button>
+          <span class="muted">Moved bulbs are updated in place.</span>
+        </div>
+      </div>
     </section>
   </div>
 
@@ -301,15 +324,46 @@ $('saveBulbs').onclick = async () => {
   msg(`Saved ${CFG.bulbs.length} bulb(s).`);
   renderBulbs();
 };
+let found = [];
+const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 $('discover').onclick = async () => {
-  msg('Broadcasting on LAN...');
-  const r = await api('/api/discover', {});
-  if (r.error) return msg(r.error);
-  const have = new Set(bulbList());
-  const fresh = r.found.filter(ip => !have.has(ip));
-  if (fresh.length) $('bulbs').value = [...have, ...fresh].join('\n');
-  msg(`Found ${r.found.length} bulb(s): ${r.found.join(', ') || 'none'}` +
-      (fresh.length ? `\nAdded ${fresh.length} new - click Save to keep them.` : ''));
+  const btn = $('discover');
+  btn.disabled = true;
+  $('discMsg').className = 'muted';
+  $('discMsg').textContent = 'Searching...';
+  try {
+    const r = await api('/api/discover', {
+      scan_subnets: $('scan_subnets').value.split(/[\s,;]+/).filter(Boolean),
+      scan_local: $('scan_local').checked,
+    });
+    if (r.error) { $('discMsg').className = 'err'; $('discMsg').textContent = r.error; return; }
+    found = r.found;
+    const nNew = found.filter(d => d.status !== 'configured').length;
+    $('discMsg').textContent = `Found ${found.length} device(s), ${nNew} not in your list. ` +
+      `Broadcast on ${r.local.join(', ') || 'no adapters'}` + (r.scanned ? `; probed ${r.scanned} host(s).` : '.');
+    const t = $('discTable');
+    t.innerHTML = '';
+    for (const [i, d] of found.entries()) {
+      const pick = d.status !== 'configured' && (d.kind === 'colour' || d.kind === 'unknown');
+      const tr = t.insertRow();
+      tr.innerHTML = `<td><input type="checkbox" data-i="${i}" ${pick ? 'checked' : ''} ${d.status === 'configured' ? 'disabled' : ''}></td>
+        <td class="ip">${esc(d.ip)}</td>
+        <td><span class="badge ${esc(d.status)}">${esc(d.status)}${d.was ? ' from ' + esc(d.was) : ''}</span></td>
+        <td>${esc(d.kind)}${d.kind !== 'colour' && d.kind !== 'unknown' ? ' <span class="muted">(no colour)</span>' : ''}</td>
+        <td class="muted ip">${esc(d.mac)}</td>
+        <td class="muted">${esc(d.module || '')}${d.fw ? ' v' + esc(d.fw) : ''}</td>
+        <td class="muted">${d.rssi != null ? esc(d.rssi) + ' dBm' : ''}</td>`;
+    }
+    $('discResults').style.display = found.length ? '' : 'none';
+  } finally { btn.disabled = false; }
+};
+$('addFound').onclick = async () => {
+  const devices = [...document.querySelectorAll('#discTable input:checked')].map(c => found[+c.dataset.i]);
+  if (!devices.length) return;
+  CFG = await api('/api/bulbs/add', { devices });
+  $('bulbs').value = CFG.bulbs.join('\n');
+  renderBulbs();
+  $('discover').click();
 };
 $('ping').onclick = async () => {
   msg('Pinging...');
@@ -489,6 +543,8 @@ driveFromMedia($('videoEl'), () => 'video: ' + ($('videoEl')._name || ''), () =>
     if (el.id !== 'audio_device' && CFG[el.id] !== undefined) el.value = CFG[el.id];
     showVal(el);
   });
+  $('scan_subnets').value = (CFG.scan_subnets || []).join('\n');
+  $('scan_local').checked = !!CFG.scan_local;
   fillDevices();
   renderBulbs();
   try { const t = localStorage.getItem('tab'); if (t) document.querySelector(`.tabs [data-tab="${t}"]`)?.click(); } catch (e) {}

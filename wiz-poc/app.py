@@ -37,7 +37,10 @@ MODES = ["frequency_bands", "energy", "rainbow", "multi", "pulse", "strobe", "sp
 
 DEFAULT_CONFIG = {
     "bulbs": [],                  # list of IP strings
-    "broadcast": "255.255.255.255",
+    "broadcast": "255.255.255.255",  # extra broadcast address for discovery (each adapter's /24 is added automatically)
+    "scan_subnets": [],           # extra subnets / IPs to probe host-by-host, e.g. ["192.168.20.0/24", "10.0.5.17"]
+    "scan_local": False,          # also probe this PC's own /24s host-by-host (for networks that block broadcast)
+    "bulb_macs": {},              # mac -> last known ip; lets discovery spot bulbs whose DHCP address changed
     "http_host": "127.0.0.1",
     "http_port": 8765,
     "color": "#ff0080",           # colour picker value / base colour for pulse, strobe, split
@@ -132,6 +135,149 @@ def wiz_query(targets, method="getPilot", params=None, timeout=1.5):
             pass
     s.close()
     return out
+
+
+# --------------------------------------------------------------------------- discovery
+
+MAX_SCAN_HOSTS = 8192   # e.g. a /19, or 32 x /24s
+
+
+def local_ipv4s():
+    """This PC's IPv4 addresses (all adapters), minus loopback and link-local."""
+    ips = set()
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ips.add(info[4][0])
+    except OSError:
+        pass
+    try:   # the address of the default route, in case the hostname lookup missed it
+        t = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        t.connect(("10.255.255.255", 1))
+        ips.add(t.getsockname()[0])
+        t.close()
+    except OSError:
+        pass
+    return sorted((ip for ip in ips if not ip.startswith(("127.", "169.254.", "0."))),
+                  key=ipaddress.ip_address)
+
+
+def parse_targets(entries):
+    """CIDRs or single IPs -> list of IPv4Network. Raises ValueError on junk."""
+    nets = []
+    for e in entries:
+        e = e.strip()
+        if not e:
+            continue
+        net = ipaddress.ip_network(e, strict=False)
+        if net.version != 4:
+            raise ValueError(f"{e}: only IPv4 is supported")
+        nets.append(net)
+    return nets
+
+
+def udp_round(sends, socks, timeout):
+    """Send [(sock, ip, payload)], then collect replies on all sockets for `timeout` seconds."""
+    import select
+    for n, (sk, ip, payload) in enumerate(sends):
+        try:
+            sk.sendto(payload, (ip, WIZ_PORT))
+        except OSError:
+            pass   # unreachable network, broadcast not allowed on this adapter, ...
+        if n % 64 == 63:
+            time.sleep(0.003)   # pace big scans so neither the PC nor the Wi-Fi drops packets
+    out = {}
+    end = time.time() + timeout
+    while (left := end - time.time()) > 0:
+        ready, _, _ = select.select(socks, [], [], min(left, 0.2))
+        for sk in ready:
+            try:
+                data, (ip, _) = sk.recvfrom(4096)
+                out.setdefault(ip, []).append(json.loads(data.decode(errors="replace")))
+            except (OSError, ValueError):
+                pass
+    return out
+
+
+def device_kind(module):
+    m = (module or "").upper()
+    if "SOCKET" in m:
+        return "plug"
+    if "RGB" in m:
+        return "colour"
+    if "TW" in m:
+        return "tunable white"
+    if "DW" in m:
+        return "dimmable white"
+    return "unknown"
+
+
+def discover(subnets, scan_local, extra_broadcast, timeout=2.5):
+    """
+    Find WiZ devices by
+      1. broadcasting getPilot out of every adapter (255.255.255.255 + each adapter's /24 broadcast),
+      2. directed broadcasts to any extra subnets (only works if the router forwards them - most don't),
+      3. unicast getPilot to every host in the extra subnets (and the local /24s if scan_local) -
+         this is what crosses subnets/VLANs, as long as routing and firewalls pass UDP 38899.
+    Then asks each responder for getSystemConfig to get the model and firmware.
+    """
+    probe = json.dumps({"method": "getPilot", "params": {}}).encode()
+    local = local_ipv4s()
+    nets = parse_targets(subnets)
+    local_nets = [ipaddress.ip_network(f"{ip}/24", strict=False) for ip in local]
+
+    hosts = set()
+    for net in nets + (local_nets if scan_local else []):
+        if net.num_addresses > MAX_SCAN_HOSTS:
+            raise ValueError(f"{net} has {net.num_addresses} addresses - the limit is {MAX_SCAN_HOSTS}. "
+                             "Split it into smaller ranges.")
+        hosts.update(str(h) for h in (net.hosts() if net.num_addresses > 2 else net))
+    hosts -= set(local)
+    if len(hosts) > MAX_SCAN_HOSTS:
+        raise ValueError(f"{len(hosts)} hosts to scan - the limit is {MAX_SCAN_HOSTS}.")
+
+    default = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    default.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    socks, sends = [default], []
+    # On Windows 255.255.255.255 only leaves through one adapter, so send it from a socket bound to each one.
+    for ip, net in zip(local, local_nets):
+        try:
+            sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sk.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            sk.bind((ip, 0))
+        except OSError:
+            continue
+        socks.append(sk)
+        sends += [(sk, "255.255.255.255", probe), (sk, str(net.broadcast_address), probe)]
+    bcasts = {extra_broadcast} if extra_broadcast else set()
+    bcasts |= {str(n.broadcast_address) for n in nets if n.num_addresses > 2}
+    sends += [(default, b, probe) for b in sorted(bcasts)]
+    sends += [(default, h, probe) for h in sorted(hosts, key=ipaddress.ip_address)]
+
+    try:
+        replies = udp_round(sends, socks, timeout)
+        found = {}
+        for ip, msgs in replies.items():
+            for m in msgs:
+                res = m.get("result") if isinstance(m, dict) else None
+                if m.get("method") == "getPilot" and isinstance(res, dict) and res.get("mac"):
+                    found[ip] = {"ip": ip, "mac": res["mac"], "rssi": res.get("rssi"),
+                                 "state": res.get("state")}
+        if found:
+            sysq = json.dumps({"method": "getSystemConfig", "params": {}}).encode()
+            info = udp_round([(default, ip, sysq) for ip in found], [default], 1.0)
+            for ip, msgs in info.items():
+                for m in msgs:
+                    res = m.get("result") if isinstance(m, dict) else None
+                    if ip in found and m.get("method") == "getSystemConfig" and isinstance(res, dict):
+                        found[ip]["module"] = res.get("moduleName")
+                        found[ip]["fw"] = res.get("fwVersion")
+        for d in found.values():
+            d["kind"] = device_kind(d.get("module"))
+        return {"found": sorted(found.values(), key=lambda d: ipaddress.ip_address(d["ip"])),
+                "local": [str(n) for n in local_nets], "scanned": len(hosts)}
+    finally:
+        for sk in socks:
+            sk.close()
 
 
 def hex_to_rgb(h):
@@ -656,8 +802,38 @@ class Handler(BaseHTTPRequestHandler):
                 replies = wiz_query(bulbs, "getPilot")
                 self._json({ip: replies.get(ip) for ip in bulbs})
             elif path == "/api/discover":
-                replies = wiz_query([get_cfg()["broadcast"]], "getPilot", timeout=2.5)
-                self._json({"found": sorted(replies, key=lambda s: tuple(int(x) for x in s.split(".")))})
+                patch = {k: data[k] for k in ("scan_subnets", "scan_local") if k in data}
+                if "scan_subnets" in patch:
+                    patch["scan_subnets"] = [str(n) for n in parse_targets(patch["scan_subnets"])]
+                cfg = update_cfg(patch)
+                result = discover(cfg["scan_subnets"], cfg["scan_local"], cfg["broadcast"])
+                # flag each device as configured / new / moved (same MAC, new DHCP address)
+                macs = cfg["bulb_macs"]
+                for d in result["found"]:
+                    old = macs.get(d["mac"])
+                    if d["ip"] in cfg["bulbs"]:
+                        d["status"] = "configured"
+                        macs[d["mac"]] = d["ip"]
+                    elif old and old in cfg["bulbs"]:
+                        d["status"], d["was"] = "moved", old
+                    else:
+                        d["status"] = "new"
+                update_cfg({"bulb_macs": macs})
+                self._json(result)
+            elif path == "/api/bulbs/add":
+                # body: {"devices": [{"ip", "mac", "was"?}]} - adds new ones, swaps moved ones in place
+                cfg = get_cfg()
+                bulbs, macs = list(cfg["bulbs"]), dict(cfg["bulb_macs"])
+                for d in data.get("devices", []):
+                    ip = check_ip(d["ip"])
+                    was = d.get("was")
+                    if was in bulbs:
+                        bulbs[bulbs.index(was)] = ip
+                    elif ip not in bulbs:
+                        bulbs.append(ip)
+                    if d.get("mac"):
+                        macs[str(d["mac"])] = ip
+                self._json(update_cfg({"bulbs": bulbs, "bulb_macs": macs}))
             else:
                 self._json({"error": "not found"}, 404)
         except Exception as e:

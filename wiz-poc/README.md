@@ -5,7 +5,7 @@ A small local web UI for Philips WiZ bulbs. It covers the same features as
 
 | Tab | What it does |
 |---|---|
-| **Lights** | Colour picker and brightness for all bulbs, on/off for all bulbs, LAN discovery, ping (shows on/off state and Wi-Fi RSSI), and a colour and on/off control for each bulb |
+| **Lights** | Colour picker and brightness for all bulbs, on/off for all bulbs, ping (shows on/off state and Wi-Fi RSSI), a colour and on/off control for each bulb, and **bulb discovery that works across subnets and VLANs** |
 | **Live audio** | Drives the bulbs from **what the PC is playing** (WASAPI loopback), a **microphone**, or a built-in **test signal** |
 | **Music file** | Plays an MP3/WAV/FLAC/OGG in the page and syncs the bulbs to it |
 | **Video ambilight** | Plays a video in the page and colours the bulbs from it: dominant colour (k-means), edges (each bulb gets its own zone around the screen), average, or hybrid (colour from the video, brightness from its soundtrack) |
@@ -20,13 +20,34 @@ Audio effect modes: `frequency_bands` (bass=red, mid=green, treble=blue), `energ
 1. Install Python 3.10 or newer from python.org. Tick **Add python.exe to PATH** during setup.
 2. Double-click **`run.bat`**. The first run creates a `.venv` and installs `numpy` and `PyAudioWPatch`.
    After that, it starts the server and opens http://127.0.0.1:8765.
-3. Paste your bulb IPs on the **Lights** tab, one per line, and click **Save**. You can also click **Discover on LAN**.
+3. On the **Lights** tab, paste your bulb IPs, one per line, and click **Save**. Or use **Find bulbs**, which is described below.
 
 To set the bulbs from the command line instead, run `run.bat 192.168.1.50 192.168.1.51` or `python app.py <ips...>`.
 
 Settings are saved to `config.json` next to `app.py`. You can also edit that file by hand. It holds
-`http_host` and `http_port`, which default to localhost only, and `broadcast`, the discovery address.
-If `255.255.255.255` finds nothing, set `broadcast` to your subnet's broadcast address, for example `192.168.1.255`.
+`http_host` and `http_port`, which default to localhost only.
+
+## Finding bulbs, including on other VLANs
+
+WiZ discovery doesn't use mDNS. A bulb answers a `getPilot` UDP packet on port 38899, sent by broadcast or straight to its IP.
+**Find bulbs** does three things:
+
+1. **Broadcasts out of every network adapter on the PC.** It sends to both `255.255.255.255` and the adapter's /24
+   broadcast address. On Windows, `255.255.255.255` otherwise only leaves through one adapter.
+2. **Probes the subnets you list, one host at a time**, for example `192.168.20.0/24`. Broadcasts stop at the router,
+   but unicast gets routed, so this is what finds bulbs on other VLANs. A /24 takes about 3 seconds.
+   You can list up to 8192 hosts in total.
+   The **Also scan this PC's own subnets** box does the same for the PC's own /24s. That helps on Wi-Fi that filters broadcasts.
+3. **Asks each bulb that answers for its model and firmware** (`getSystemConfig`). Colour bulbs are ticked
+   automatically. Plugs and white-only bulbs are listed but left unticked.
+
+The app remembers each bulb's MAC address. If DHCP gives a bulb a new IP, discovery marks it **moved from x.x.x.x**,
+and **Add selected** swaps the new IP in place.
+
+For routed VLANs, the firewall between them has to allow **UDP from the PC to the bulbs on port 38899, and the replies
+coming back**. A stateful firewall rule from the PC's VLAN to the IoT VLAN usually covers both. Even after the bulbs
+are found, you need that rule for controlling them too. The `broadcast` setting in `config.json` adds one more
+broadcast address, which only helps if your router forwards directed broadcasts.
 
 ## How it works
 
