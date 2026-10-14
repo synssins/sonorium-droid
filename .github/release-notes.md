@@ -2,11 +2,14 @@
 
 - **Adding a server by address:** type just a name or an IP, with or without a port. The app finds the server's HTTPS address by itself and uses it; the Servers list shows the address in use. Only when nothing answers does it say so.
 - **Next and Previous on the notification** for a channel heard here go through the server (playlist entry, sequence step, else preset).
+- **While casting, the volume keys set the Cast speaker's volume.**
+- **The menu shows the app's version** at the very bottom, with a PRO badge once Pro is unlocked.
 - **Wording:** no "own" left in the help.
 
 ## Please test
 
 - Servers › Enter address: a bare IP, an IP with the HTTP port (8008), an http:// address. Each links over HTTPS, and the list shows the https:// address.
+- The bottom of the menu: "Sonorium" and this build's version; PRO next to it only with Pro.
 - An address where no Sonorium answers: one message, "Couldn't reach …".
 
 ### Earlier (alpha35)
