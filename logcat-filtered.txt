@@ -1,0 +1,195 @@
+10-14 14:59:29.816  5165  5165 D AndroidRuntime: Shutting down VM
+10-14 14:59:30.279  5303  5303 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 14:59:30.394  5303  5303 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-14 14:59:31.201  5320  5320 I AndroidJUnitRunner: newApplication app.sonorium.SonoriumApp
+10-14 14:59:31.736  5344  5344 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 14:59:31.781  5344  5344 D AndroidRuntime: Calling main entry com.android.commands.pm.Pm
+10-14 14:59:31.785  5344  5344 I AndroidRuntime: VM exiting with result code 0.
+10-14 14:59:34.925  5358  5358 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 14:59:34.971  5358  5358 D AndroidRuntime: Calling main entry com.android.commands.monkey.Monkey
+10-14 14:59:35.089  5358  5358 I AndroidRuntime: VM exiting with result code 0.
+10-14 14:59:38.064  5371  5404 E PhoneThemeApi: 	at okhttp3.internal.http.RealInterceptorChain.proceed(r8-map-id-23a3f70bbf209ecfda158239c6acef11620e44186efb56b51bfc744a4889ec8b:107)
+10-14 14:59:38.064  5371  5404 E PhoneThemeApi: 	at okhttp3.internal.connection.RealCall.getResponseWithInterceptorChain$okhttp(r8-map-id-23a3f70bbf209ecfda158239c6acef11620e44186efb56b51bfc744a4889ec8b:138)
+10-14 14:59:38.064  5371  5404 E PhoneThemeApi: 	at okhttp3.internal.connection.RealCall.execute(r8-map-id-23a3f70bbf209ecfda158239c6acef11620e44186efb56b51bfc744a4889ec8b:46)
+10-14 14:59:38.064  5371  5404 E PhoneThemeApi: 	at app.sonorium.net.SonoriumApi$execute$2.invokeSuspend(r8-map-id-23a3f70bbf209ecfda158239c6acef11620e44186efb56b51bfc744a4889ec8b:1208)
+10-14 15:00:13.925  5320  5338 I TestRunner: started: linksAndControlsTheServerNatively(app.sonorium.EndToEndTest)
+10-14 15:00:26.278  5320  5338 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=Sonoriumid=21, type=TYPE_APPLICATION, layer=21015, bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, hasParent=false, isAnchored=false, hasChildren=false]
+10-14 15:00:36.187  5320  5320 I MediaSessionImpl: Release 141c82b [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:00:36.193  5320  5320 I MediaController: Release 2c33cd2 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:00:36.194  5320  5320 I ExoPlayerImpl: Release 55b9a0f [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:00:37.235  5320  5338 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=Sonoriumid=21, type=TYPE_APPLICATION, layer=21010, bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, hasParent=false, isAnchored=false, hasChildren=false]
+10-14 15:00:49.865  5320  5338 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=Sonoriumid=21, type=TYPE_APPLICATION, layer=21010, bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, hasParent=false, isAnchored=false, hasChildren=false]
+10-14 15:01:41.088  5320  5338 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=Sonoriumid=21, type=TYPE_APPLICATION, layer=21010, bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, hasParent=false, isAnchored=false, hasChildren=false]
+10-14 15:01:48.686  5320  5338 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=Sonoriumid=21, type=TYPE_APPLICATION, layer=21010, bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, hasParent=false, isAnchored=false, hasChildren=false]
+10-14 15:01:56.494  5320  5338 W UiDevice: Skipping null root node for window: AccessibilityWindowInfo[title=Sonoriumid=21, type=TYPE_APPLICATION, layer=21010, bounds=Rect(0, 0 - 1080, 2400), focused=true, active=true, pictureInPicture=false, hasParent=false, isAnchored=false, hasChildren=false]
+10-14 15:02:24.420  5320  5338 I TestRunner: finished: linksAndControlsTheServerNatively(app.sonorium.EndToEndTest)
+10-14 15:07:38.991  5320  5338 D UiObject2: Retrieving node with selector: BySelector [TEXT='\QSonorium 0.1.0-dev-debug\E'].
+10-14 15:07:46.328  5320  5320 I MediaSessionImpl: Release 72bb36 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:46.331  5320  5320 I MediaController: Release c9e62d3 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:46.331  5320  5320 I ExoPlayerImpl: Release 730b7f8 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.189  5320  5320 I MediaSessionImpl: Release 919280e [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.189  5320  5320 I MediaController: Release 6bb124b [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.190  5320  5320 I ExoPlayerImpl: Release 4bcb310 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.376  5320  5320 I MediaSessionImpl: Release 564e0d8 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.377  5320  5320 I MediaController: Release b4736a2 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.377  5320  5320 I ExoPlayerImpl: Release 3c2a3bb [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.574  5320  5320 I MediaSessionImpl: Release 4a10a7c [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.578  5320  5320 I MediaController: Release ef8f681 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:50.578  5320  5320 I ExoPlayerImpl: Release 1da84e [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:59.018  5320  5320 I MediaSessionImpl: Release 67281fe [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:59.020  5320  5320 I MediaController: Release 641007b [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:07:59.021  5320  5320 I ExoPlayerImpl: Release 8129f80 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:08:02.459  5320  5320 I MediaSessionImpl: Release 4ec690a [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:08:02.460  5320  5320 I MediaController: Release 4d46e57 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:08:02.464  5320  5320 I ExoPlayerImpl: Release 9f174ac [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:02.743  5320  5880 W DocumentsProvider: java.io.FileNotFoundException: test:Sonorium
+10-14 15:09:02.753  5320  5338 I TestRunner: started: aChosenFolderGetsASonoriumFolderAndTheThemesMove(app.sonorium.ThemesFolderTest)
+10-14 15:09:02.870  5320  5338 I TestRunner: finished: aChosenFolderGetsASonoriumFolderAndTheThemesMove(app.sonorium.ThemesFolderTest)
+10-14 15:09:04.063  5320  5913 E FileSource: Failed to open file 'content://app.sonorium.debug.folders/tree/test%3AA/document/test%3AA%2FSonorium%2FFlow%20test%20rescue%2FRain.wav'. (No such file or directory)
+10-14 15:09:07.572  5320  5878 W ThemeStore: java.lang.SecurityException: Document test:A/Sonorium is not a descendant of app:
+10-14 15:09:10.044  5320  5879 W DocumentsProvider: java.io.FileNotFoundException: test:A/Sonorium
+10-14 15:09:11.541  5320  5879 W DocumentsProvider: java.io.FileNotFoundException: test:A/Sonorium
+10-14 15:09:16.969  5320  5881 W DocumentsProvider: java.io.FileNotFoundException: test:A/Sonorium
+10-14 15:09:34.960  5320  5338 E TestRunner: org.junit.AssumptionViolatedException: Not a demo Sonorium
+10-14 15:09:47.474  5320  5320 I MediaController: Release 58b660d [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.475  5320  5320 I MediaController: Release 518bf58 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.490  5320  5320 I MediaSessionImpl: Release 889d8a4 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.520  5320  5320 I MediaController: Release 8fca2f [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.520  5320  5320 I ExoPlayerImpl: Release b3cab37 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.522  5320  5320 I MediaSessionImpl: Release 8b8eeed [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.523  5320  5320 I MediaController: Release 6fb2d6e [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.524  5320  5320 I ExoPlayerImpl: Release c001117 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.570  5320  5320 I MediaSessionImpl: Release 6f55394 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.572  5320  5320 I MediaController: Release 554b37e [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:09:47.573  5320  5320 I ExoPlayerImpl: Release cee7be7 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:10:01.424  5320  5320 I MediaController: Release bee80fd [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:10:01.438  5320  5320 I MediaSessionImpl: Release e90b4f4 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:10:01.439  5320  5320 I MediaController: Release 27e5519 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:10:01.439  5320  5320 I ExoPlayerImpl: Release 51d0006 [AndroidXMedia3/1.11.1] [generic_x86_64, Android SDK built for x86_64, unknown, 26] [media3.common, media3.exoplayer, media3.decoder, media3.session, media3.datasource.okhttp, media3.datasource, media3.extractor]
+10-14 15:11:52.872  5303  5303 D AndroidRuntime: Shutting down VM
+10-14 15:11:53.197  6940  6940 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:11:53.327  6940  6940 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-14 15:11:54.176  6949  6949 I AndroidJUnitRunner: newApplication app.sonorium.SonoriumApp
+10-14 15:13:28.731  6940  6940 D AndroidRuntime: Shutting down VM
+10-14 15:13:28.944  7067  7067 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:13:29.010  7067  7067 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-14 15:13:29.785  7082  7082 I AndroidJUnitRunner: newApplication app.sonorium.SonoriumApp
+10-14 15:13:30.322  7120  7120 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:13:30.322  7119  7119 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:13:30.361  7119  7119 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:13:30.361  7120  7120 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:13:30.365  7120  7120 D AndroidRuntime: Shutting down VM
+10-14 15:13:30.368  7119  7119 D AndroidRuntime: Shutting down VM
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: *** FATAL EXCEPTION IN SYSTEM PROCESS: main
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: java.lang.SecurityException: WifiService: Neither user 2000 nor current process has android.permission.CHANGE_WIFI_STATE.
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1943)
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1889)
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at android.net.wifi.IWifiManager$Stub$Proxy.setWifiEnabled(IWifiManager.java:1263)
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at com.android.commands.svc.WifiCommand.run(WifiCommand.java:55)
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at com.android.commands.svc.Svc.main(Svc.java:41)
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+10-14 15:13:30.371  7119  7119 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:284)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: Error reporting crash
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: java.lang.RuntimeException: Bad file descriptor
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.os.BinderProxy.transact(Binder.java:748)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:123)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.os.ServiceManager.getService(ServiceManager.java:56)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4214)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4212)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.util.Singleton.get(Singleton.java:34)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at android.app.ActivityManager.getService(ActivityManager.java:4207)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:115)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1068)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1063)
+10-14 15:13:30.372  7119  7119 E AndroidRuntime: 	at java.lang.Thread.dispatchUncaughtException(Thread.java:1953)
+10-14 15:14:07.833  7228  7228 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:14:07.833  7227  7227 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:14:07.877  7228  7228 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:14:07.877  7227  7227 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:14:07.878  7228  7228 D AndroidRuntime: Shutting down VM
+10-14 15:14:07.878  7227  7227 D AndroidRuntime: Shutting down VM
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: *** FATAL EXCEPTION IN SYSTEM PROCESS: main
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: java.lang.SecurityException: WifiService: Neither user 2000 nor current process has android.permission.CHANGE_WIFI_STATE.
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1943)
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1889)
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at android.net.wifi.IWifiManager$Stub$Proxy.setWifiEnabled(IWifiManager.java:1263)
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at com.android.commands.svc.WifiCommand.run(WifiCommand.java:55)
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at com.android.commands.svc.Svc.main(Svc.java:41)
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+10-14 15:14:07.884  7228  7228 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:284)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: Error reporting crash
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: java.lang.RuntimeException: Bad file descriptor
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.os.BinderProxy.transact(Binder.java:748)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:123)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.os.ServiceManager.getService(ServiceManager.java:56)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4214)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4212)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.util.Singleton.get(Singleton.java:34)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at android.app.ActivityManager.getService(ActivityManager.java:4207)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:115)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1068)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1063)
+10-14 15:14:07.885  7228  7228 E AndroidRuntime: 	at java.lang.Thread.dispatchUncaughtException(Thread.java:1953)
+10-14 15:14:41.026  7265  7265 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:14:41.026  7267  7267 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:14:41.061  7267  7267 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:14:41.063  7267  7267 D AndroidRuntime: Shutting down VM
+10-14 15:14:41.069  7265  7265 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:14:41.070  7267  7281 I AndroidRuntime: NOTE: attach of thread 'Binder:7267_1' failed
+10-14 15:14:41.070  7265  7265 D AndroidRuntime: Shutting down VM
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: *** FATAL EXCEPTION IN SYSTEM PROCESS: main
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: java.lang.SecurityException: WifiService: Neither user 2000 nor current process has android.permission.CHANGE_WIFI_STATE.
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1943)
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1889)
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at android.net.wifi.IWifiManager$Stub$Proxy.setWifiEnabled(IWifiManager.java:1263)
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at com.android.commands.svc.WifiCommand.run(WifiCommand.java:55)
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at com.android.commands.svc.Svc.main(Svc.java:41)
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+10-14 15:14:41.070  7265  7265 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:284)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: Error reporting crash
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: java.lang.RuntimeException: Bad file descriptor
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.os.BinderProxy.transact(Binder.java:748)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:123)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.os.ServiceManager.getService(ServiceManager.java:56)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4214)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4212)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.util.Singleton.get(Singleton.java:34)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at android.app.ActivityManager.getService(ActivityManager.java:4207)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:115)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1068)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1063)
+10-14 15:14:41.071  7265  7265 E AndroidRuntime: 	at java.lang.Thread.dispatchUncaughtException(Thread.java:1953)
+10-14 15:14:44.194  7067  7067 D AndroidRuntime: Shutting down VM
+10-14 15:14:44.574  7300  7300 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:14:44.611  7300  7300 D AndroidRuntime: Calling main entry com.android.commands.am.Am
+10-14 15:14:45.339  7313  7313 I AndroidJUnitRunner: newApplication app.sonorium.SonoriumApp
+10-14 15:15:35.961  7300  7300 D AndroidRuntime: Shutting down VM
+10-14 15:15:36.316  7414  7414 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:15:36.366  7414  7414 D AndroidRuntime: Calling main entry com.android.commands.svc.Svc
+10-14 15:15:36.370  7414  7414 D AndroidRuntime: Shutting down VM
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: *** FATAL EXCEPTION IN SYSTEM PROCESS: main
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: java.lang.SecurityException: WifiService: Neither user 2000 nor current process has android.permission.CHANGE_WIFI_STATE.
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1943)
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at android.os.Parcel.readException(Parcel.java:1889)
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at android.net.wifi.IWifiManager$Stub$Proxy.setWifiEnabled(IWifiManager.java:1263)
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at com.android.commands.svc.WifiCommand.run(WifiCommand.java:55)
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at com.android.commands.svc.Svc.main(Svc.java:41)
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
+10-14 15:15:36.370  7414  7414 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:284)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: Error reporting crash
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: java.lang.RuntimeException: Bad file descriptor
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.os.BinderProxy.transactNative(Native Method)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.os.BinderProxy.transact(Binder.java:748)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.os.ServiceManagerProxy.getService(ServiceManagerNative.java:123)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.os.ServiceManager.getService(ServiceManager.java:56)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4214)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.app.ActivityManager$1.create(ActivityManager.java:4212)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.util.Singleton.get(Singleton.java:34)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at android.app.ActivityManager.getService(ActivityManager.java:4207)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at com.android.internal.os.RuntimeInit$KillApplicationHandler.uncaughtException(RuntimeInit.java:115)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1068)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at java.lang.ThreadGroup.uncaughtException(ThreadGroup.java:1063)
+10-14 15:15:36.372  7414  7414 E AndroidRuntime: 	at java.lang.Thread.dispatchUncaughtException(Thread.java:1953)
