@@ -178,4 +178,12 @@
     <string name="folder_gone_title">The themes folder can\'t be reached</string>
     <string name="folder_gone_text">It may have been moved or removed, or Sonorium lost access to it. Choose a folder, or use the default one.</string>
     <string name="not_now">Not now</string>
+    <!-- A demo Sonorium: the account's virtual speaker on this device (wording proposed) -->
+    <string name="vs_title">Speaker %1$s</string>
+    <string name="vs_playing_here">Playing here: %1$s</string>
+    <string name="vs_waiting_here">Plays here when a channel with this speaker plays.</string>
+    <string name="vs_elsewhere">%1$s is playing on another device.</string>
+    <string name="vs_not_here">Not playing on this device.</string>
+    <string name="vs_play_here">Play here</string>
+    <string name="vs_stop_here">Stop here</string>
 </resources>

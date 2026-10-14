@@ -533,6 +533,20 @@ class SonoriumApi(
     suspend fun downloadBackupFile(deviceId: String, key: String, file: PackageFile, dest: java.io.File, onBytes: (Long) -> Unit) =
         download(backupRequest(deviceId, "themes", key, "files", *file.path.split('/').toTypedArray()), file, dest, onBytes)
 
+    // ---------- The account's virtual speaker (a demo Sonorium; APP_API.md 9.6) ----------
+
+    suspend fun virtualSpeaker(client: String): VirtualSpeaker =
+        decode(execute(Request.Builder().url(baseUrl.newBuilder().addPathSegment("api").addPathSegments("me/speaker").addQueryParameter("client", client).build())
+            .apply { token?.let { header("Authorization", "Bearer $it") } }.get().build()))
+
+    suspend fun claimVirtualSpeaker(client: String): VirtualSpeaker =
+        send("POST", "me/speaker/claim", buildJsonObject { put("client", client); put("kind", "app") })
+
+    suspend fun releaseVirtualSpeaker(client: String) {
+        execute(Request.Builder().url(baseUrl.newBuilder().addPathSegment("api").addPathSegments("me/speaker/claim").addQueryParameter("client", client).build())
+            .apply { token?.let { header("Authorization", "Bearer $it") } }.delete().build())
+    }
+
     // ---------- The personal channel (planned: /api/info.personal_channel) ----------
 
     suspend fun myChannel(): Session = get("me/channel")

@@ -658,6 +658,8 @@ private fun ChannelsPage(
                     PageHelpButton("sessions")
                 }
             }
+            // A demo Sonorium: the account's virtual speaker, played on this device
+            item(span = { GridItemSpan(maxLineSpan) }, key = "virtual-speaker") { VirtualSpeakerStrip(model) }
             // Link bars (Zones): one per link, above the cards (1.6)
             state.zones?.links?.forEach { link ->
                 item(span = { GridItemSpan(maxLineSpan) }, key = "link-${link.id}") {
@@ -705,6 +707,36 @@ private fun ChannelsPage(
 }
 
 private val NEW_LINK = app.sonorium.net.ChannelLink(id = "")
+
+/** The account's virtual speaker (a demo Sonorium): where it plays, and Play here / Stop here. Nothing elsewhere. */
+@Composable
+private fun VirtualSpeakerStrip(model: ServerViewModel) {
+    val st = model.virtual.state.collectAsState().value ?: return
+    val s = st.speaker
+    val line = when {
+        st.here && s.playing -> androidx.compose.ui.res.stringResource(R.string.vs_playing_here, s.channel?.name.orEmpty())
+        st.here -> androidx.compose.ui.res.stringResource(R.string.vs_waiting_here)
+        s.listening && !s.thisClient -> androidx.compose.ui.res.stringResource(R.string.vs_elsewhere, s.name)
+        else -> androidx.compose.ui.res.stringResource(R.string.vs_not_here)
+    }
+    Surface(
+        color = Palette.card, shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, if (st.here && s.playing) Palette.accent else Palette.border),
+        modifier = Modifier.widthIn(max = 460.dp).fillMaxWidth().semantics { testTagsAsResourceId = true }.testTag("virtual-speaker"),
+    ) {
+        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(SIcons.Speakers, null, tint = if (st.here) Palette.accent else Palette.textSecondary, modifier = Modifier.size(20.dp))
+            Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                Text(androidx.compose.ui.res.stringResource(R.string.vs_title, s.name), color = Palette.text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text(line, color = Palette.textSecondary, fontSize = 12.sp)
+            }
+            androidx.compose.material3.OutlinedButton(
+                onClick = { model.virtual.toggle() }, border = BorderStroke(1.dp, Palette.border), shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.heightIn(min = app.sonorium.ui.UiSize.STANDARD.dp),
+            ) { Text(androidx.compose.ui.res.stringResource(if (st.here) R.string.vs_stop_here else R.string.vs_play_here), color = Palette.text) }
+        }
+    }
+}
 
 /** This device unlocked, its themes folder not chosen (or gone): a line with Choose folder above its themes. */
 @Composable

@@ -231,8 +231,12 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         prefs.edit().putBoolean(SonoriumApp.KEY_STOP_ON_SWITCH, on).apply()
     }
 
+    /** The account's virtual speaker on a demo Sonorium (nothing elsewhere). */
+    val virtual = VirtualSpeakerPlayer(application, viewModelScope)
+
     /** Drops everything that talks to the current server (removed, unlinked, switched). */
     private fun teardown() {
+        virtual.stop()
         events?.cancel()
         events = null
         deviceEvents?.cancel()
@@ -302,6 +306,13 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             startEvents()
             startPolling()
             backUpIfDue()
+            // A demo Sonorium: the account's virtual speaker plays on this device
+            if ("virtual_speakers" in reached.info.plugins) {
+                virtual.start(api!!, updated.id, VirtualSpeakerPlayer.clientId(updated.deviceId)) { path ->
+                    val port = _state.value.info?.ports?.http ?: updated.httpPort
+                    host?.let { h -> "http://$h:$port$path" }
+                }
+            }
         }
     }
 

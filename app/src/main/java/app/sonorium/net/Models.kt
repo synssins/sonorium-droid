@@ -77,7 +77,26 @@ data class Me(
     val words: List<String>? = null,
     val plugins: List<String> = emptyList(),
     val starting: Boolean = false,
+    /** The account's virtual speaker (a demo Sonorium, plugin `virtual_speakers`); null elsewhere or without an account. */
+    @SerialName("virtual_speaker") val virtualSpeaker: VirtualSpeaker? = null,
 )
+
+/** `GET /api/me/speaker`: the signed-in account's virtual speaker and who plays it (APP_API.md 9.6, demo). */
+@Serializable
+data class VirtualSpeaker(
+    val id: String = "",
+    val name: String = "",
+    val playing: Boolean = false,
+    val channel: VirtualChannel? = null,
+    val listening: Boolean = false,
+    @SerialName("listener_kind") val listenerKind: String? = null,
+    @SerialName("this_client") val thisClient: Boolean = false,
+    @SerialName("stream_path") val streamPath: String? = null,
+    @SerialName("poll_seconds") val pollSeconds: Int = 3,
+)
+
+@Serializable
+data class VirtualChannel(val id: String = "", val name: String = "")
 
 /** `POST /api/sessions/{id}/listen`. */
 @Serializable
