@@ -105,25 +105,30 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
                     break
                 }
             }
-            plan.httpPort?.takeIf { reached == null }?.let { hp ->
-                // The public /api/info on HTTP says where HTTPS is
+            var httpsOff = false
+            for (hp in plan.httpPorts) {
+                if (reached != null) break
+                // The public /api/info on HTTP says where HTTPS is: used from then on, without a word (Chris)
                 val viaHttp = runCatching {
                     val url = okhttp3.HttpUrl.Builder().scheme("http").host(host).port(hp).build()
                     SonoriumApi(app.baseClient, url).info()
-                }.getOrNull()
-                viaHttp?.ports?.https?.let { p ->
-                    usedPort = p
-                    reached = app.linker.reach(client, listOf(host), p)
+                }.getOrNull() ?: continue
+                val p = viaHttp.ports.https
+                if (p == null) {
+                    httpsOff = true
+                    continue
                 }
-                if (viaHttp != null && viaHttp.ports.https == null) {
-                    _state.value = LinkState.Failed("HTTPS is off on this server.")
-                    return@launch
-                }
+                if (p in plan.httpsPorts) continue // tried already
+                reached = app.linker.reach(app.baseClient, listOf(host), p)
+                if (reached != null) publicTls = true
+                else reached = app.linker.reach(client, listOf(host), p)
+                if (reached != null) usedPort = p
             }
             val found = reached
             val fingerprint = if (publicTls) PinnedTls.PUBLIC else recorder.fingerprint
             if (found == null || fingerprint == null) {
-                _state.value = LinkState.Failed("No Sonorium answered at $host.")
+                // Every way failed: the one error
+                _state.value = LinkState.Failed(if (httpsOff) "HTTPS is off on this server." else Txt.get(R.string.link_address_unreachable, host))
                 return@launch
             }
             _state.value = LinkState.ConfirmWords(
@@ -198,22 +203,16 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
         const val DEFAULT_HTTP_PORT = 8008
 
         /**
-         * Where to try a typed address: the HTTPS ports in order, then an HTTP port whose /api/info names the
-         * HTTPS one. An address with a scheme is used exactly (https://host = 443, https://host:p = p; http://host:p
-         * only to ask for the HTTPS port); a bare host tries its own port if typed, else 443, then Sonorium's 8808,
-         * then 8008 over HTTP.
+         * Where to try a typed address (a DNS name or an IP, with or without :port; a scheme, if typed, changes
+         * nothing): HTTPS on the port typed, else 443 then Sonorium's 8808; then HTTP on the port typed, else 80
+         * then 8008, whose /api/info names the HTTPS port. The first that answers is used, silently (Chris).
          */
-        data class AddressPlan(val host: String, val httpsPorts: List<Int>, val httpPort: Int?)
+        data class AddressPlan(val host: String, val httpsPorts: List<Int>, val httpPorts: List<Int>)
 
         internal fun addressPlan(input: String): AddressPlan? {
-            val (host, port) = splitHostPort(input) ?: return null
-            val scheme = input.substringBefore("://", "").lowercase()
-            return when (scheme) {
-                "https" -> AddressPlan(host, listOf(port ?: 443), null)
-                "http" -> AddressPlan(host, emptyList(), port ?: 80)
-                else -> if (port != null) AddressPlan(host, listOf(port), DEFAULT_HTTP_PORT.takeIf { port != it })
-                else AddressPlan(host, listOf(443, DEFAULT_HTTPS_PORT), DEFAULT_HTTP_PORT)
-            }
+            val (host, port) = splitHostPort(input.trim()) ?: return null
+            return if (port != null) AddressPlan(host, listOf(port), listOf(port))
+            else AddressPlan(host, listOf(443, DEFAULT_HTTPS_PORT), listOf(80, DEFAULT_HTTP_PORT))
         }
 
         /** `host`, `host:port`, `[v6]:port`, or a pasted URL. */

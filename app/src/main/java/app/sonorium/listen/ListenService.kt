@@ -322,19 +322,17 @@ class ListenService : MediaSessionService() {
             runCatching {
                 val api = api(c.serverId) ?: return@runCatching
                 val channel = heard ?: channelNow(api, c) ?: return@runCatching
-                if (!forward) {
-                    // The server steps back itself (entry, step, else preset); an older one has no route for it (403/404/405)
-                    val done = runCatching { api.previous(channel.id) }.fold({ true }, { e ->
-                        if (e is app.sonorium.net.ApiException && (e.status == 403 || e.status == 404 || e.status == 405)) false
-                        else if (e is app.sonorium.net.ApiException && e.status == 409) true // nothing to go back to
-                        else throw e
-                    })
-                    if (done) return@runCatching
-                }
-                if (channel.sequence?.running == true || channel.playlist?.running == true) {
-                    if (forward) api.next(channel.id)
-                    return@runCatching
-                }
+                val running = channel.sequence?.running == true || channel.playlist?.running == true
+                // The server moves itself (entry, step, else preset). An older one has no /previous (403/404/405),
+                // and its /next answers 409 with no playlist or sequence running: then presets are stepped here
+                val moved = runCatching { if (forward) api.next(channel.id) else api.previous(channel.id) }.fold({ true }, { e ->
+                    when ((e as? app.sonorium.net.ApiException)?.status) {
+                        403, 404, 405 -> false
+                        409 -> !(forward && !running) // "nothing to go back to" / not playing: nothing to do
+                        else -> throw e
+                    }
+                })
+                if (moved || running) return@runCatching
                 val themeId = channel.themeId ?: return@runCatching
                 val list = presets[themeId] ?: api.themePresets(themeId).presets.also { presets[themeId] = it }
                 val preset = NowHeard.nextPreset(channel.presetId, list, forward) ?: return@runCatching

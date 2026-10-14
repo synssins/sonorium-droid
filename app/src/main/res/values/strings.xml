@@ -243,4 +243,6 @@
     <string name="unlock_with_price">Unlock Pro · %1$s</string>
     <string name="unlock_pending">The purchase is waiting for its payment. Pro unlocks once it goes through.</string>
     <string name="unlock_store_unavailable">Google Play can\'t be reached. Try again in a moment.</string>
+    <!-- Linking by address: every way tried failed (wording proposed by Chris) -->
+    <string name="link_address_unreachable">Couldn\'t reach %1$s.</string>
 </resources>

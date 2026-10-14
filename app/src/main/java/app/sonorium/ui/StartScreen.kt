@@ -148,12 +148,13 @@ private fun ServerList(servers: List<ServerRecord>, model: LinkViewModel) {
                     // The server the app opens (not a live connection: that shows on the main screen's button)
                     if (server.id == currentId) Chip("Current")
                 }
-                // Two entries with the same name (e.g. one host, two ports): the port tells them apart
-                val twin = servers.count { !it.device && it.displayName == server.displayName } > 1
+                // The address in use, as worked out when linking (also tells one host's two ports apart)
                 if (!server.device) Text(
                     listOfNotNull(
-                        if (twin) server.hosts.firstOrNull()?.let { "$it:${server.httpsPort}" }
-                        else server.hosts.firstOrNull()?.takeIf { server.name != null },
+                        server.hosts.firstOrNull()?.let { h ->
+                            val host = if (':' in h) "[$h]" else h
+                            "https://$host" + (if (server.httpsPort == 443) "" else ":${server.httpsPort}")
+                        },
                         server.username,
                         server.version.ifEmpty { null },
                     ).joinToString(" · "),

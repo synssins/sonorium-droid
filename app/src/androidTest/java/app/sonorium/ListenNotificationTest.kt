@@ -109,6 +109,13 @@ class ListenNotificationTest {
                     "Previous didn't go back to Default settings",
                     waitFor(15_000) { runBlocking { api.sessions().first { it.id == channel.id } }.presetId.isNullOrEmpty() },
                 )
+                // Next from Default settings: the theme's first preset
+                Thread.sleep(5_500)
+                onMain { listen.seekToNext() }
+                assertTrue(
+                    "Next didn't go to the first preset",
+                    waitFor(15_000) { runBlocking { api.sessions().first { it.id == channel.id } }.presetId == first.id },
+                )
             }
             // Stop: listening here ends
             onMain { listen.sendCustomCommand(SessionCommand(MediaControls.COMMAND_STOP, android.os.Bundle.EMPTY), android.os.Bundle.EMPTY) }
