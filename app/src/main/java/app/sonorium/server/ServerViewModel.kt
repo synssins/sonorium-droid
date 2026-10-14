@@ -231,6 +231,12 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         prefs.edit().putBoolean(SonoriumApp.KEY_STOP_ON_SWITCH, on).apply()
     }
 
+    /**
+     * A stream on the server at the address in use (the one typed or in the link code, e.g. https://host behind a
+     * proxy), never rebuilt from the ports the server advertises (Chris). The players use the pinned client.
+     */
+    private fun streamUrl(path: String): String? = api?.absolute(path)?.toString()
+
     /** The account's virtual speaker on a demo Sonorium (nothing elsewhere). */
     val virtual = VirtualSpeakerPlayer(application, viewModelScope)
 
@@ -308,10 +314,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             backUpIfDue()
             // A demo Sonorium: the account's virtual speaker plays on this device
             if ("virtual_speakers" in reached.info.plugins) {
-                virtual.start(api!!, updated.id, VirtualSpeakerPlayer.clientId(updated.deviceId)) { path ->
-                    val port = _state.value.info?.ports?.http ?: updated.httpPort
-                    host?.let { h -> "http://$h:$port$path" }
-                }
+                virtual.start(api!!, updated.id, VirtualSpeakerPlayer.clientId(updated.deviceId)) { path -> streamUrl(path) }
             }
         }
     }
@@ -808,8 +811,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
                 if (personal) fail(e)
                 return@launch
             }
-            val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort ?: return@launch
-            val url = "http://${host ?: return@launch}:$port${slot.playPath}"
+            val url = streamUrl(slot.playPath) ?: return@launch
             ListenController.listen(
                 context, serverId ?: return@launch, session.id, url,
                 name = if (personal) "My Channel" else session.name,
@@ -1045,15 +1047,12 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
         if (_preview.value?.themeId == theme.id) return closePreview()
         val onDevice = _state.value.onDevice
         val url = if (onDevice) "${PhoneThemeApi.BASE_URL}stream/${android.net.Uri.encode(theme.id)}"
-        else {
-            val host = host ?: return
-            val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort ?: return
-            "http://$host:$port/stream/${android.net.Uri.encode(theme.id)}"
-        }
+        else streamUrl("/stream/${android.net.Uri.encode(theme.id)}") ?: return
         // This device's previews come from its own engine, through the app's client
         if (onDevice != previewOnDevice) { previewPlayer?.release(); previewPlayer = null; previewOnDevice = onDevice }
         val builder = androidx.media3.exoplayer.ExoPlayer.Builder(getApplication())
-        if (onDevice) client?.let { c -> builder.setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(c))) }
+        // Through the app's client: this device's engine, or the server pinned to its certificate (HTTPS, the address in use)
+        client?.let { c -> builder.setMediaSourceFactory(androidx.media3.exoplayer.source.DefaultMediaSourceFactory(androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(c))) }
         val player = previewPlayer ?: builder.build().also { p ->
             previewPlayer = p
             p.addListener(object : androidx.media3.common.Player.Listener {
@@ -1592,8 +1591,7 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
             linksHere = true,
             mixUrl = { id ->
                 if (_state.value.onDevice) return@ThemeEditor "${PhoneThemeApi.BASE_URL}stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}"
-                val port = _state.value.info?.ports?.http ?: _state.value.record?.httpPort
-                host?.let { h -> port?.let { "http://$h:$it/stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}" } }
+                streamUrl("/stream/${android.net.Uri.encode(id)}?preview=${System.currentTimeMillis()}")
             },
             toast = { text, error -> toast(text, error) },
             onThemeSaved = { viewModelScope.launch { refreshThemeList() } },

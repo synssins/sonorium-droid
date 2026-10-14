@@ -77,20 +77,28 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
 
     /** First contact with a typed address (APP_API.md 1.3, 2.3). */
     fun connectToAddress(input: String) {
-        val (host, port) = splitHostPort(input.trim()) ?: run {
+        val plan = addressPlan(input.trim()) ?: run {
             _state.value = LinkState.Failed("Enter an address such as 192.168.1.20 or sonorium.local.")
             return
         }
+        val host = plan.host
         viewModelScope.launch {
             _state.value = LinkState.Working("Connecting to $host")
             val (client, recorder) = PinnedTls.recordingClient(app.baseClient)
-            val httpsPort = port ?: DEFAULT_HTTPS_PORT
-            var reached = app.linker.reach(client, listOf(host), httpsPort)
-            var usedPort = httpsPort
-            if (reached == null && port == null) {
-                // The HTTPS port may have been moved; the public /api/info on HTTP says where.
+            // Exactly what was typed first (https://host = 443); the server's own ports only for a bare address
+            var reached: app.sonorium.link.Reached? = null
+            var usedPort = 0
+            for (p in plan.httpsPorts) {
+                reached = app.linker.reach(client, listOf(host), p)
+                if (reached != null) {
+                    usedPort = p
+                    break
+                }
+            }
+            plan.httpPort?.takeIf { reached == null }?.let { hp ->
+                // The public /api/info on HTTP says where HTTPS is
                 val viaHttp = runCatching {
-                    val url = okhttp3.HttpUrl.Builder().scheme("http").host(host).port(DEFAULT_HTTP_PORT).build()
+                    val url = okhttp3.HttpUrl.Builder().scheme("http").host(host).port(hp).build()
                     SonoriumApi(app.baseClient, url).info()
                 }.getOrNull()
                 viaHttp?.ports?.https?.let { p ->
@@ -178,6 +186,25 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val DEFAULT_HTTPS_PORT = 8808
         const val DEFAULT_HTTP_PORT = 8008
+
+        /**
+         * Where to try a typed address: the HTTPS ports in order, then an HTTP port whose /api/info names the
+         * HTTPS one. An address with a scheme is used exactly (https://host = 443, https://host:p = p; http://host:p
+         * only to ask for the HTTPS port); a bare host tries its own port if typed, else 443, then Sonorium's 8808,
+         * then 8008 over HTTP.
+         */
+        data class AddressPlan(val host: String, val httpsPorts: List<Int>, val httpPort: Int?)
+
+        internal fun addressPlan(input: String): AddressPlan? {
+            val (host, port) = splitHostPort(input) ?: return null
+            val scheme = input.substringBefore("://", "").lowercase()
+            return when (scheme) {
+                "https" -> AddressPlan(host, listOf(port ?: 443), null)
+                "http" -> AddressPlan(host, emptyList(), port ?: 80)
+                else -> if (port != null) AddressPlan(host, listOf(port), DEFAULT_HTTP_PORT.takeIf { port != it })
+                else AddressPlan(host, listOf(443, DEFAULT_HTTPS_PORT), DEFAULT_HTTP_PORT)
+            }
+        }
 
         /** `host`, `host:port`, `[v6]:port`, or a pasted URL. */
         internal fun splitHostPort(input: String): Pair<String, Int?>? {

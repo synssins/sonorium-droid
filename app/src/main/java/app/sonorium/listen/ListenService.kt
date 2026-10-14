@@ -143,6 +143,13 @@ class ListenService : MediaSessionService() {
         return super.onStartCommand(intent, flags, startId)
     }
 
+    /** The HTTP client pinned to [serverId]'s certificate (the server's own, as when linking), or null. */
+    private fun pinnedClient(serverId: String): okhttp3.OkHttpClient? {
+        val sonorium = application as app.sonorium.SonoriumApp
+        val record = kotlinx.coroutines.runBlocking { sonorium.servers.find(serverId) } ?: return null
+        return runCatching { app.sonorium.net.PinnedTls.pinnedClient(sonorium.baseClient, record.fingerprint) }.getOrNull()
+    }
+
     private fun start(next: Current) {
         reconnect?.cancel()
         pausedByUser = false
@@ -158,7 +165,16 @@ class ListenService : MediaSessionService() {
             .setArtist(c.themeName.ifEmpty { "Sonorium" })
             .setIsPlayable(true)
             .build()
-        exo.setMediaItem(MediaItem.Builder().setUri(url).setMediaMetadata(metadata).build())
+        val item = MediaItem.Builder().setUri(url).setMediaMetadata(metadata).build()
+        // A stream at the server's HTTPS address: through a client pinned to that server's certificate
+        val pinned = if (url.startsWith("https:")) pinnedClient(c.serverId) else null
+        if (pinned != null) {
+            exo.setMediaSource(
+                androidx.media3.exoplayer.source.DefaultMediaSourceFactory(androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(pinned)).createMediaSource(item),
+            )
+        } else {
+            exo.setMediaItem(item)
+        }
         exo.volume = c.volume / 100f
         exo.prepare()
         exo.play()

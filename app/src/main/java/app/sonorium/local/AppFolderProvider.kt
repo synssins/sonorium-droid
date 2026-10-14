@@ -133,9 +133,20 @@ class AppFolderProvider : DocumentsProvider() {
 
         fun authority(context: android.content.Context) = context.packageName + ".folders"
 
-        /** Where the default folder's parent is: the app's external files, else its internal files. */
-        fun appStorage(context: android.content.Context): File =
-            (context.getExternalFilesDir(null) ?: context.filesDir).apply { mkdirs() }
+        /**
+         * Where the default folder's parent is: the app's external files when its Sonorium folder can be written
+         * there, else its internal files (seen: a folder left by an earlier install of the app that this one may
+         * not write to).
+         */
+        fun appStorage(context: android.content.Context): File {
+            val ext = context.getExternalFilesDir(null)
+            if (ext != null) {
+                val folder = File(ext, FOLDER)
+                folder.mkdirs()
+                if (folder.isDirectory && folder.canWrite()) return ext
+            }
+            return context.filesDir.apply { mkdirs() }
+        }
 
         /** The default themes folder as a tree (its parent) and the folder's document id, made if needed. */
         fun defaultFolder(context: android.content.Context): Pair<android.net.Uri, String> {
