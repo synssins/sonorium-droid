@@ -102,6 +102,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.sse)
     implementation(libs.androidx.core)
+    // The launch splash: the system splash (Android 12+, and the same look before it), then SplashAnimation
+    implementation(libs.androidx.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

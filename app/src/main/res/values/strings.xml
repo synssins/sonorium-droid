@@ -248,4 +248,5 @@
     <!-- The menu's last line: the app build, and PRO once unlocked -->
     <string name="menu_app_build">Sonorium %1$s</string>
     <string name="menu_pro_badge">PRO</string>
+    <string name="splash_description">Sonorium</string>
 </resources>

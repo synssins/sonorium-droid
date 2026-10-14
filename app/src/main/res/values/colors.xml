@@ -8,4 +8,6 @@
     <color name="text_secondary">#94A3B8</color>
     <color name="accent">#06D6A0</color>
     <color name="danger">#EF4444</color>
+    <!-- The launch splash (Chris's spec, the logo's background) -->
+    <color name="splash_background">#191C33</color>
 </resources>
