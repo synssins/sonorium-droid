@@ -239,7 +239,8 @@ fun ServerScreen(
             val config = androidx.compose.ui.platform.LocalConfiguration.current
             val permanent = config.screenWidthDp >= 1000 && config.screenHeightDp >= 600
             val panelWidth = minOf(320.dp, maxWidth * 0.85f)
-            val menu: @Composable () -> Unit = { Menu(state, page, permanent, ::open, onServers, onPluginPage = { v -> scope.launch { drawer.close() }; onWebPage(v) }) }
+            val pro by model.entitlement.isPro.collectAsState()
+            val menu: @Composable () -> Unit = { Menu(state, page, permanent, ::open, onServers, onPluginPage = { v -> scope.launch { drawer.close() }; onWebPage(v) }, pro = pro) }
             val content: @Composable () -> Unit = {
                 Column(Modifier.fillMaxSize()) {
                     TopBar(
@@ -419,7 +420,7 @@ private fun TopBar(
 
 
 @Composable
-private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: (Page) -> Unit, onServers: () -> Unit, onPluginPage: (String) -> Unit) {
+private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: (Page) -> Unit, onServers: () -> Unit, onPluginPage: (String) -> Unit, pro: Boolean = false) {
     val perms = state.me?.perms.orEmpty().toSet()
     var settingsOpen by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxHeight().semantics { testTagsAsResourceId = true }.verticalScroll(rememberScrollState()).padding(vertical = 12.dp)) {
@@ -462,8 +463,41 @@ private fun Menu(state: ServerState, current: Page, permanent: Boolean, onOpen: 
                 }
             }
         }
+        // The app's build at the very bottom, and PRO once unlocked (Chris)
+        AppBuildLine(pro)
     }
 }
+
+/** "Sonorium <version>" in the Meta style, with the gold PRO pill when Pro is unlocked. */
+@Composable
+internal fun AppBuildLine(pro: Boolean) {
+    Row(
+        Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp).semantics { testTagsAsResourceId = true }.testTag("app-build"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            androidx.compose.ui.res.stringResource(R.string.menu_app_build, app.sonorium.BuildConfig.VERSION_NAME),
+            color = Palette.textMuted, fontSize = 13.sp, lineHeight = 17.sp,
+        )
+        if (pro) {
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier.semantics { testTagsAsResourceId = true }.testTag("pro-badge")
+                    .background(PRO_GOLD, RoundedCornerShape(999.dp)).padding(horizontal = 6.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    androidx.compose.ui.res.stringResource(R.string.menu_pro_badge),
+                    color = PRO_TEXT, fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
+}
+
+/** The Pro product icon's gold, and the dark text on it. */
+private val PRO_GOLD = androidx.compose.ui.graphics.Color(0xFFFFB830)
+private val PRO_TEXT = androidx.compose.ui.graphics.Color(0xFF191C33)
 
 @Composable
 private fun Section(title: String) {

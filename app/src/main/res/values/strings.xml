@@ -245,4 +245,7 @@
     <string name="unlock_store_unavailable">Google Play can\'t be reached. Try again in a moment.</string>
     <!-- Linking by address: every way tried failed (wording proposed by Chris) -->
     <string name="link_address_unreachable">Couldn\'t reach %1$s.</string>
+    <!-- The menu's last line: the app build, and PRO once unlocked -->
+    <string name="menu_app_build">Sonorium %1$s</string>
+    <string name="menu_pro_badge">PRO</string>
 </resources>
