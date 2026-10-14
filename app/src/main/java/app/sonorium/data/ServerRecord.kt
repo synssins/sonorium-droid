@@ -26,6 +26,9 @@ data class ServerRecord(
      */
     val device: Boolean = false,
 ) {
+    /** Its certificate is from a public authority (normal web trust, nothing pinned, no security words). */
+    val publicTls: Boolean get() = fingerprint.isEmpty() && !device
+
     /** The user's name for it, else the server's own name, else null. */
     val name: String?
         get() = customName?.takeIf { it.isNotBlank() } ?: label.takeIf { it.isNotBlank() && it != DEFAULT_NAME }

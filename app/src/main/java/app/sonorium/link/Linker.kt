@@ -31,8 +31,16 @@ class Linker(private val base: OkHttpClient, private val device: DeviceInfo) {
 
     suspend fun link(code: LinkUri): LinkOutcome {
         val httpsPort = code.httpsPort ?: return LinkOutcome.HttpsOff
-        val client = PinnedTls.pinnedClient(base, code.fingerprint)
-        val reached = reach(client, code.hosts, httpsPort) ?: return LinkOutcome.Unreachable
+        // Sonorium's own certificate, pinned; else (a reverse proxy with a public authority's certificate in front)
+        // the system's normal checks for the address in the code
+        var fingerprint = code.fingerprint
+        var client = PinnedTls.pinnedClient(base, fingerprint)
+        var reached = reach(client, code.hosts, httpsPort)
+        if (reached == null) {
+            reached = reach(base, code.hosts, httpsPort) ?: return LinkOutcome.Unreachable
+            fingerprint = PinnedTls.PUBLIC
+            client = base
+        }
         if (reached.info.id != code.serverId) return LinkOutcome.WrongServer
         checkApi(reached.info)?.let { return it }
 
@@ -47,7 +55,7 @@ class Linker(private val base: OkHttpClient, private val device: DeviceInfo) {
         if (result.serverId != code.serverId) return LinkOutcome.WrongServer
         val hosts = (code.hosts + listOfNotNull(reached.info.host, reached.info.hostname)).distinct()
         return LinkOutcome.Linked(
-            record(reached, code.fingerprint, hosts, httpsPort, result.deviceId, result.user?.username),
+            record(reached, fingerprint, hosts, httpsPort, result.deviceId, result.user?.username),
             result.token,
         )
     }

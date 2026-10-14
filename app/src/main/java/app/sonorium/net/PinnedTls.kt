@@ -18,9 +18,16 @@ object PinnedTls {
     fun fingerprintOf(cert: X509Certificate): String =
         MessageDigest.getInstance("SHA-256").digest(cert.encoded).toHex()
 
-    /** A client that talks only to the server whose certificate has [fingerprint]. */
+    /**
+     * A client that talks only to the server whose certificate has [fingerprint]. An empty [fingerprint] is a
+     * server with a certificate from a public authority (e.g. behind a reverse proxy, renewed every few months):
+     * then the system's normal checks apply (authority and host name), nothing pinned.
+     */
     fun pinnedClient(base: OkHttpClient, fingerprint: String): OkHttpClient =
-        base.withTrust(PinnedTrustManager(fingerprint))
+        if (fingerprint.isEmpty()) base else base.withTrust(PinnedTrustManager(fingerprint))
+
+    /** The fingerprint value that means "trusted the normal way" ([pinnedClient]). */
+    const val PUBLIC = ""
 
     /**
      * A client for the first contact with a typed address: it accepts any

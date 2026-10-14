@@ -88,7 +88,16 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
             // Exactly what was typed first (https://host = 443); the server's own ports only for a bare address
             var reached: app.sonorium.link.Reached? = null
             var usedPort = 0
+            // A certificate the system trusts for this name (a public authority, e.g. behind a reverse proxy): used
+            // the normal way, nothing pinned, no words to compare; else Sonorium's own certificate, pinned (Chris)
+            var publicTls = false
             for (p in plan.httpsPorts) {
+                reached = app.linker.reach(app.baseClient, listOf(host), p)
+                if (reached != null) {
+                    publicTls = true
+                    usedPort = p
+                    break
+                }
                 reached = app.linker.reach(client, listOf(host), p)
                 if (reached != null) {
                     usedPort = p
@@ -111,7 +120,7 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             val found = reached
-            val fingerprint = recorder.fingerprint
+            val fingerprint = if (publicTls) PinnedTls.PUBLIC else recorder.fingerprint
             if (found == null || fingerprint == null) {
                 _state.value = LinkState.Failed("No Sonorium answered at $host.")
                 return@launch
@@ -120,7 +129,7 @@ class LinkViewModel(application: Application) : AndroidViewModel(application) {
                 reached = found,
                 httpsPort = usedPort,
                 fingerprint = fingerprint,
-                words = SecurityWords.forFingerprint(fingerprint),
+                words = if (publicTls) emptyList() else SecurityWords.forFingerprint(fingerprint),
                 hasUsers = found.info.hasUsers,
             )
         }
