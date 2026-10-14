@@ -1,0 +1,667 @@
+INSTRUMENTATION_STATUS: class=app.sonorium.QaSmokeTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.QaSmokeTest:
+INSTRUMENTATION_STATUS: test=theReleaseBuildPlaysOnTheDevice
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.QaSmokeTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=theReleaseBuildPlaysOnTheDevice
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.EndToEndTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.EndToEndTest:
+INSTRUMENTATION_STATUS: test=linksAndControlsTheServerNatively
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.EndToEndTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError: Linking didn't finish; see 01-linked.png
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at app.sonorium.EndToEndTest.linksAndControlsTheServerNatively(EndToEndTest.kt:73)
+
+INSTRUMENTATION_STATUS: stream=
+Error in linksAndControlsTheServerNatively(app.sonorium.EndToEndTest):
+java.lang.AssertionError: Linking didn't finish; see 01-linked.png
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at app.sonorium.EndToEndTest.linksAndControlsTheServerNatively(EndToEndTest.kt:73)
+
+INSTRUMENTATION_STATUS: test=linksAndControlsTheServerNatively
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_STATUS: class=app.sonorium.TopBarTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.TopBarTest:
+INSTRUMENTATION_STATUS: test=noHeadphonesOrHelpInTheTopBar
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.TopBarTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=noHeadphonesOrHelpInTheTopBar
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.TopBarTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=helpStaysAfterAGuideIsSkipped
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.TopBarTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=helpStaysAfterAGuideIsSkipped
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.MenuBuildTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.MenuBuildTest:
+INSTRUMENTATION_STATUS: test=theVersionAndPROOnlyWithPro
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.MenuBuildTest
+INSTRUMENTATION_STATUS: current=5
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=theVersionAndPROOnlyWithPro
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.MyChannelTest:
+INSTRUMENTATION_STATUS: test=switchingStopsTheOneLeftWhenOn
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=6
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.MyChannelTest.switchingStopsTheOneLeftWhenOn(MyChannelTest.kt:93)
+
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.MyChannelTest:
+INSTRUMENTATION_STATUS: test=switchingStopsTheOneLeftWhenOn
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=oneAtATime
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=7
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.MyChannelTest.oneAtATime(MyChannelTest.kt:145)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=oneAtATime
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=switchingLeavesItPlayingWhenOff
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=8
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.MyChannelTest.switchingLeavesItPlayingWhenOff(MyChannelTest.kt:109)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=switchingLeavesItPlayingWhenOff
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=serverToDeviceStopsTheStream
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=9
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.MyChannelTest.serverToDeviceStopsTheStream(MyChannelTest.kt:128)
+
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=serverToDeviceStopsTheStream
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=proLineOnlyForFreeOnThisDevice
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.MyChannelTest
+INSTRUMENTATION_STATUS: current=10
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=proLineOnlyForFreeOnThisDevice
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.ServerNameTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.ServerNameTest:
+INSTRUMENTATION_STATUS: test=theEntryFollowsTheServersName
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.ServerNameTest
+INSTRUMENTATION_STATUS: current=11
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.ServerNameTest.theEntryFollowsTheServersName(ServerNameTest.kt:37)
+
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.ServerNameTest:
+INSTRUMENTATION_STATUS: test=theEntryFollowsTheServersName
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemesFolderTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.ThemesFolderTest:
+INSTRUMENTATION_STATUS: test=aFolderThatIsGoneFallsBackToTheDefault
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemesFolderTest
+INSTRUMENTATION_STATUS: current=12
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=aFolderThatIsGoneFallsBackToTheDefault
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemesFolderTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=aChosenFolderGetsASonoriumFolderAndTheThemesMove
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemesFolderTest
+INSTRUMENTATION_STATUS: current=13
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=aChosenFolderGetsASonoriumFolderAndTheThemesMove
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemesFolderTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=theDefaultNeedsNoQuestion
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemesFolderTest
+INSTRUMENTATION_STATUS: current=14
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=theDefaultNeedsNoQuestion
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemeRescueTest
+INSTRUMENTATION_STATUS: current=15
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.ThemeRescueTest:
+INSTRUMENTATION_STATUS: test=aSaveToAGoneFolderIsRescuedIntoTheDefault
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.ThemeRescueTest
+INSTRUMENTATION_STATUS: current=15
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=aSaveToAGoneFolderIsRescuedIntoTheDefault
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.FolderFlowsTest
+INSTRUMENTATION_STATUS: current=16
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.FolderFlowsTest:
+INSTRUMENTATION_STATUS: test=anEditedThemeWhoseFolderWentIsSavedIntoAChosenFolder
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.FolderFlowsTest
+INSTRUMENTATION_STATUS: current=16
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=anEditedThemeWhoseFolderWentIsSavedIntoAChosenFolder
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.FolderFlowsTest
+INSTRUMENTATION_STATUS: current=17
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=moveAfterAFolderChangeMovesTheThemes
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.FolderFlowsTest
+INSTRUMENTATION_STATUS: current=17
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=moveAfterAFolderChangeMovesTheThemes
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.FolderFlowsTest
+INSTRUMENTATION_STATUS: current=18
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=aFolderThatWentIsShownAsGoneInTheSetting
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.FolderFlowsTest
+INSTRUMENTATION_STATUS: current=18
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=aFolderThatWentIsShownAsGoneInTheSetting
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.AddressLinkTest
+INSTRUMENTATION_STATUS: current=19
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.AddressLinkTest:
+INSTRUMENTATION_STATUS: test=nothingAnsweringGivesTheOneError
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.AddressLinkTest
+INSTRUMENTATION_STATUS: current=19
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=nothingAnsweringGivesTheOneError
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.AddressLinkTest
+INSTRUMENTATION_STATUS: current=20
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=theHttpPortEndsOnTheHttpsAddress
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.AddressLinkTest
+INSTRUMENTATION_STATUS: current=20
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=theHttpPortEndsOnTheHttpsAddress
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.VirtualSpeakerTest
+INSTRUMENTATION_STATUS: current=21
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.VirtualSpeakerTest:
+INSTRUMENTATION_STATUS: test=theVirtualSpeakerPlaysHereUntilAnotherClientTakesIt
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.VirtualSpeakerTest
+INSTRUMENTATION_STATUS: current=21
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.VirtualSpeakerTest.theVirtualSpeakerPlaysHereUntilAnotherClientTakesIt(VirtualSpeakerTest.kt:49)
+
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.VirtualSpeakerTest:
+INSTRUMENTATION_STATUS: test=theVirtualSpeakerPlaysHereUntilAnotherClientTakesIt
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.ListenNotificationTest
+INSTRUMENTATION_STATUS: current=22
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.ListenNotificationTest:
+INSTRUMENTATION_STATUS: test=aChannelHeardHereShowsItsThemeArtworkAndTheDeviceButtons
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.ListenNotificationTest
+INSTRUMENTATION_STATUS: current=22
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server, null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.ListenNotificationTest.aChannelHeardHereShowsItsThemeArtworkAndTheDeviceButtons(ListenNotificationTest.kt:64)
+
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.ListenNotificationTest:
+INSTRUMENTATION_STATUS: test=aChannelHeardHereShowsItsThemeArtworkAndTheDeviceButtons
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.PcmDecoderTest
+INSTRUMENTATION_STATUS: current=23
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.PcmDecoderTest:
+INSTRUMENTATION_STATUS: test=resamplesAndDownmixes
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.PcmDecoderTest
+INSTRUMENTATION_STATUS: current=23
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=resamplesAndDownmixes
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.LiveDecoderTest
+INSTRUMENTATION_STATUS: current=24
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.LiveDecoderTest:
+INSTRUMENTATION_STATUS: test=mp3ThroughAStandIn
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.LiveDecoderTest
+INSTRUMENTATION_STATUS: current=24
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mp3ThroughAStandIn
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.LiveDecoderTest
+INSTRUMENTATION_STATUS: current=25
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=mono48kResampledAndCentred
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.LiveDecoderTest
+INSTRUMENTATION_STATUS: current=25
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=mono48kResampledAndCentred
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.PhoneEngineTest
+INSTRUMENTATION_STATUS: current=26
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.PhoneEngineTest:
+INSTRUMENTATION_STATUS: test=engineMixesAndThePlayerPlays
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.PhoneEngineTest
+INSTRUMENTATION_STATUS: current=26
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=engineMixesAndThePlayerPlays
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.PhoneThemeEditorTest
+INSTRUMENTATION_STATUS: current=27
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.PhoneThemeEditorTest:
+INSTRUMENTATION_STATUS: test=aVolumeChangeRoundTripsAndThePlayingMixFollows
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.PhoneThemeEditorTest
+INSTRUMENTATION_STATUS: current=27
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=aVolumeChangeRoundTripsAndThePlayingMixFollows
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.PackageDownloadTest
+INSTRUMENTATION_STATUS: current=28
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.PackageDownloadTest:
+INSTRUMENTATION_STATUS: test=downloadsAThemeAndPlaysItOnThePhone
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.PackageDownloadTest
+INSTRUMENTATION_STATUS: current=28
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server (EndToEndTest links one), null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.PackageDownloadTest$downloadsAThemeAndPlaysItOnThePhone$1.invokeSuspend(PackageDownloadTest.kt:38)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK$default(Builders.concurrent.kt:157)
+	at kotlinx.coroutines.BuildersKt.runBlockingK$default(Unknown Source:1)
+	at app.sonorium.PackageDownloadTest.downloadsAThemeAndPlaysItOnThePhone(PackageDownloadTest.kt:36)
+
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.PackageDownloadTest:
+INSTRUMENTATION_STATUS: test=downloadsAThemeAndPlaysItOnThePhone
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.BackupApiTest
+INSTRUMENTATION_STATUS: current=29
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.BackupApiTest:
+INSTRUMENTATION_STATUS: test=backsUpAndReadsBack
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.BackupApiTest
+INSTRUMENTATION_STATUS: current=29
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stack=org.junit.AssumptionViolatedException: got: <[No linked server (EndToEndTest links one), null]>, expected: every item is not null
+	at org.junit.Assume.assumeThat(Assume.java:106)
+	at org.junit.Assume.assumeNotNull(Assume.java:84)
+	at app.sonorium.BackupApiTest$backsUpAndReadsBack$1.invokeSuspend(BackupApiTest.kt:41)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:256)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:54)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlockingImpl(Builders.kt:30)
+	at kotlinx.coroutines.BuildersKt.runBlockingImpl(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK(Builders.concurrent.kt:172)
+	at kotlinx.coroutines.BuildersKt.runBlockingK(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__Builders_concurrentKt.runBlockingK$default(Builders.concurrent.kt:157)
+	at kotlinx.coroutines.BuildersKt.runBlockingK$default(Unknown Source:1)
+	at app.sonorium.BackupApiTest.backsUpAndReadsBack(BackupApiTest.kt:39)
+
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.BackupApiTest:
+INSTRUMENTATION_STATUS: test=backsUpAndReadsBack
+INSTRUMENTATION_STATUS_CODE: -4
+INSTRUMENTATION_STATUS: class=app.sonorium.CastStreamTest
+INSTRUMENTATION_STATUS: current=30
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.CastStreamTest:
+INSTRUMENTATION_STATUS: test=servesAacFramesAtRealTime
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.CastStreamTest
+INSTRUMENTATION_STATUS: current=30
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=servesAacFramesAtRealTime
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.CastVolumeTest
+INSTRUMENTATION_STATUS: current=31
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.CastVolumeTest:
+INSTRUMENTATION_STATUS: test=volumeKeysGoToTheSpeakerWhileCastingOnly
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.CastVolumeTest
+INSTRUMENTATION_STATUS: current=31
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=volumeKeysGoToTheSpeakerWhileCastingOnly
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.CastVolumeTest
+INSTRUMENTATION_STATUS: current=32
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=stepsAndSetsTheSpeaker
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.CastVolumeTest
+INSTRUMENTATION_STATUS: current=32
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=stepsAndSetsTheSpeaker
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.CastVolumeTest
+INSTRUMENTATION_STATUS: current=33
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=theSystemSeesTheSpeakersVolume
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.CastVolumeTest
+INSTRUMENTATION_STATUS: current=33
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=theSystemSeesTheSpeakersVolume
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.DeviceApiTest
+INSTRUMENTATION_STATUS: current=34
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.DeviceApiTest:
+INSTRUMENTATION_STATUS: test=answersAsAServerWithoutTheServerParts
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=app.sonorium.DeviceApiTest
+INSTRUMENTATION_STATUS: current=34
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=answersAsAServerWithoutTheServerParts
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.FlacCacheBenchmark
+INSTRUMENTATION_STATUS: current=35
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.FlacCacheBenchmark:
+INSTRUMENTATION_STATUS: test=flacVersusWav
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: stream=FlacBenchmark: 60 s stereo: WAV 10335 KiB, FLAC 7159 KiB (69%); encode 6451 ms (cpu 167 ms); decode 301 ms (cpu 70 ms), 10335 KiB out; decode cost per hour of playback ≈ 4 s cpu
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.FlacCacheBenchmark
+INSTRUMENTATION_STATUS: current=35
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=flacVersusWav
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.Mp3Benchmark
+INSTRUMENTATION_STATUS: current=36
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+app.sonorium.Mp3Benchmark:
+INSTRUMENTATION_STATUS: test=decodeCost
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: 1 stream(s) × 60 s 320 kbps stereo: wall 1065 ms, process cpu 811 ms; cpu per playback hour ≈ 48.7 s (48.7 s per stream); 10335 KiB PCM out
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: 5 stream(s) × 60 s 320 kbps stereo: wall 4729 ms, process cpu 5271 ms; cpu per playback hour ≈ 316.3 s (63.3 s per stream); 51679 KiB PCM out
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: 10 stream(s) × 60 s 320 kbps stereo: wall 8200 ms, process cpu 9822 ms; cpu per playback hour ≈ 589.3 s (58.9 s per stream); 103359 KiB PCM out
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: 20 stream(s) × 60 s 320 kbps stereo: wall 14934 ms, process cpu 17954 ms; cpu per playback hour ≈ 1077.2 s (53.9 s per stream); 206718 KiB PCM out
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.Mp3Benchmark
+INSTRUMENTATION_STATUS: current=36
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=decodeCost
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.Mp3Benchmark
+INSTRUMENTATION_STATUS: current=37
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=liveMixCost
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: live mix, 5 tracks (stereo, 320 kbps MP3 read live): 20 s mixed in 3880 ms, process cpu 2919 ms; cpu per playback hour ≈ 525 s (14.6 % of one core); files open at once: 8
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: live mix, 10 tracks (stereo, 320 kbps MP3 read live): 20 s mixed in 7334 ms, process cpu 5539 ms; cpu per playback hour ≈ 997 s (27.7 % of one core); files open at once: 13
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: stream=Mp3Benchmark: live mix, 20 tracks (stereo, 320 kbps MP3 read live): 20 s mixed in 14844 ms, process cpu 10954 ms; cpu per playback hour ≈ 1972 s (54.8 % of one core); files open at once: 23
+
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=app.sonorium.Mp3Benchmark
+INSTRUMENTATION_STATUS: current=37
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=37
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=liveMixCost
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 448.381
+There was 1 failure:
+1) linksAndControlsTheServerNatively(app.sonorium.EndToEndTest)
+java.lang.AssertionError: Linking didn't finish; see 01-linked.png
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertNotNull(Assert.java:713)
+	at app.sonorium.EndToEndTest.linksAndControlsTheServerNatively(EndToEndTest.kt:73)
+
+FAILURES!!!
+Tests run: 37,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

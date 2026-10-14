@@ -1,0 +1,44 @@
+14:47:24.479 WARNING: Couldn't find this computer's network address. Set the Stream URL under Settings -> Advanced (e.g. http://<this computer's address>:<port>) so speakers can reach Sonorium.
+14:47:24.479 Starting Sonorium 1.7.3-dev.64
+14:47:24.523 Installing 3 bundled theme(s) on first run...
+14:47:24.526 Installed bundled theme: Tavern
+14:47:24.529 Installed bundled theme: A Rainy Day
+14:47:24.533 Installed bundled theme: Sleigh Ride
+14:47:24.541 Home Assistant not connected (optional: Settings -> Connection)
+14:47:24.541   MQTT not configured (Settings -> Connection); Home Assistant entities disabled
+14:47:24.712 Made the HTTPS certificate the Sonorium app pins (valid 20 years)
+14:47:24.712 HTTPS for the Sonorium app on port 8808
+14:47:24.749 Users: new install, an admin account is made on the first visit
+14:47:24.757 Users: sign-in is on
+14:47:24.809   No existing state file, using defaults
+14:47:24.855 Theme 'Tavern' converted to the 2.0 format
+14:47:24.855 Theme 'Tavern': Auto playback modes replaced by the mode each track plays as (originals kept as *.pre-auto.bak)
+14:47:24.858 Theme 'A Rainy Day... Or is it?' converted to the 2.0 format
+14:47:24.858 Theme 'A Rainy Day... Or is it?': Ebb & Flow Interval values converted to Duration (originals kept as *.pre-duration.bak)
+14:47:24.861 Theme 'Sleigh Ride' converted to the 2.0 format
+14:47:24.861 Theme 'Sleigh Ride': Auto playback modes replaced by the mode each track plays as (originals kept as *.pre-auto.bak)
+14:47:24.993 Copied built-in plugin: ambient_mixer -> /config/sonorium/plugins/ambient_mixer
+14:47:24.994 Copied built-in plugin: theme_merge -> /config/sonorium/plugins/theme_merge
+14:47:25.166 Sonorium 1.7.3-dev.64 (Docker) ready: 3 themes, 0 speakers detected, 0 channels, MQTT not available
+14:47:26.079 Users: admin account ci-admin made from 172.17.0.1
+14:47:26.173   Created session 'CI channel' (e0baa011)
+14:47:26.182 Link App: a code for ci-admin (works once, for 5 minutes)
+14:47:37.512 Network speakers: 0 found on the network (0 known)
+14:47:55.166 Checking 3 theme(s) for audio to convert to MP3, in the background
+14:47:55.169 Theme 'A Rainy Day': converting 1 audio file(s) to MP3 (320 kb/s, 44.1 kHz, stereo)
+14:47:56.288 Theme 'A Rainy Day': 'thunder-sound-375727.mp3' converted to 'thunder-sound-375727.mp3' (1 of 1)
+14:47:56.288 Theme 'A Rainy Day': 1 of 1 file(s) converted to MP3; the originals are kept in _originals
+14:47:56.297 MP3 conversion: 1 theme(s) converted
+14:47:58.291 Rescanning themes in "/media/sonorium"...
+14:47:58.300 Theme "Tavern": 0 track(s) added to metadata.json, 8 removed, 0 group(s) removed, 0 preset entr(y/ies) removed
+14:47:58.304 Theme "A Rainy Day": 0 track(s) added to metadata.json, 8 removed, 0 group(s) removed, 3 preset entr(y/ies) removed
+14:47:58.305 Theme refresh complete: 3 themes loaded
+14:47:58.305   SessionManager: Updated themes reference (3 themes)
+14:58:33.659 Users: ci-admin signed in from 172.17.0.1
+14:58:33.694 Link App: a code for ci-admin (works once, for 5 minutes)
+15:05:11.606 WARNING: Link App: a device at 172.17.0.1 tried a wrong or expired code
+Invalid HTTP request received.
+Invalid HTTP request received.
+Invalid HTTP request received.
+Invalid HTTP request received.
+15:11:57.919 Users: ci-admin signed in from 172.17.0.1

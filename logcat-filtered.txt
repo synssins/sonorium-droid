@@ -1,0 +1,41 @@
+10-14 15:04:27.334  4799  4799 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+10-14 15:04:27.339  4799  4799 I AndroidRuntime: Using default boot image
+10-14 15:04:27.339  4799  4799 I AndroidRuntime: Leaving lock profiling enabled
+10-14 15:04:27.415  4799  4799 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+10-14 15:04:27.448  4799  4799 D AndroidRuntime: Calling main entry com.android.commands.monkey.Monkey
+10-14 15:04:27.519  4799  4799 I AndroidRuntime: VM exiting with result code 0.
+10-14 15:04:38.817   565   677 D ActivityManager: freezing 3583 com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0
+10-14 15:04:57.794   565  1981 D ActivityManager: sync unfroze 3583 com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 for 5
+10-14 15:04:57.804  3583  3583 I AndroidRuntime: VM exiting with result code 0, cleanup skipped.
+10-14 15:04:57.827   565  2478 I ActivityManager: Killing 3583:com.google.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a144i0 (adj 0): isolated not needed
+10-14 15:05:07.660  4760  4780 I TestRunner: started: linksAndControlsTheServerNatively(app.sonorium.EndToEndTest)
+10-14 15:05:10.807  4951  5017 W chromium: [1014/150510.807494:WARNING:url_request_context_config.cc(716)] Unrecognized Cronet experimental option "enable_telemetry" with params "true
+10-14 15:05:10.807  4951  5017 W chromium: 
+10-14 15:05:41.980  4760  4780 E TestRunner: failed: linksAndControlsTheServerNatively(app.sonorium.EndToEndTest)
+10-14 15:05:41.982  4760  4780 E TestRunner: 	at app.sonorium.EndToEndTest.linksAndControlsTheServerNatively(EndToEndTest.kt:73)
+10-14 15:05:41.998  4760  4780 I TestRunner: finished: linksAndControlsTheServerNatively(app.sonorium.EndToEndTest)
+10-14 15:08:55.211  4760  4780 D UiObject2: Retrieving node with selector: BySelector [TEXT='\QSonorium 0.1.0-dev-debug\E'].
+10-14 15:09:32.992  4760  5275 W DocumentsProvider: java.io.FileNotFoundException: test:Sonorium
+10-14 15:09:33.063  4760  4780 I TestRunner: started: aChosenFolderGetsASonoriumFolderAndTheThemesMove(app.sonorium.ThemesFolderTest)
+10-14 15:09:33.288  4760  4780 I TestRunner: finished: aChosenFolderGetsASonoriumFolderAndTheThemesMove(app.sonorium.ThemesFolderTest)
+10-14 15:09:36.357  4760  5261 E FileSource: Failed to open file 'content://app.sonorium.debug.folders/tree/test%3AA/document/test%3AA%2FSonorium%2FFlow%20test%20rescue%2FRain.wav'. (No such file or directory)
+10-14 15:09:41.582  4760  5261 W PhoneThemeApi: java.lang.SecurityException: Document app:Sonorium/Flow test move is not a descendant of test:A
+10-14 15:09:55.204  4760  5275 W DocumentsProvider: java.io.FileNotFoundException: test:A/Sonorium
+10-14 15:09:56.871  4760  5157 W DocumentsProvider: java.io.FileNotFoundException: test:A/Sonorium
+10-14 15:10:02.582  4760  5157 W DocumentsProvider: java.io.FileNotFoundException: test:A/Sonorium
+10-14 15:10:43.019  4760  4780 E TestRunner: org.junit.AssumptionViolatedException: got: <[No linked server (EndToEndTest links one), null]>, expected: every item is not null
+10-14 15:10:43.033  4760  4780 E TestRunner: org.junit.AssumptionViolatedException: got: <[No linked server (EndToEndTest links one), null]>, expected: every item is not null
+10-14 15:10:45.164   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 0 of 20
+10-14 15:10:45.165   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 11 of 20
+10-14 15:10:46.283   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 0 of 20
+10-14 15:10:46.294   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 11 of 20
+10-14 15:10:46.294   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 0 of 20
+10-14 15:10:46.294   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 11 of 20
+10-14 15:10:46.346   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 10 of 20
+10-14 15:10:46.347   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 9 of 20
+10-14 15:10:46.393   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 16 of 20
+10-14 15:10:46.409   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 0 of 20
+10-14 15:10:46.463   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 1 of 20
+10-14 15:10:47.462   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 16 of 20
+10-14 15:10:47.478   924  1218 D vol.VolumeDialogControl: onRemoteUpdate: Sonorium: 6 of 20
+10-14 15:11:55.425  4739  4739 I AndroidRuntime: VM exiting with result code 0.
