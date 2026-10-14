@@ -10,6 +10,7 @@ import app.sonorium.net.SonoriumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -54,12 +55,15 @@ class VirtualSpeakerTest {
             SonoriumApi(pinned, SonoriumApi.baseUrl(reached.host, record.httpsPort), sonorium.servers.token(record.id))
         }
         val speaker = runBlocking { api.virtualSpeaker("test-other-client") }
-        // A channel with the speaker, playing
-        val channel = runBlocking { api.sessions().first() }
-        runBlocking {
-            api.updateSession(channel.id, buildJsonObject { put("speakers", buildJsonArray { add(JsonPrimitive(speaker.id)) }) })
-            if (channel.themeId == null) api.updateSession(channel.id, buildJsonObject { put("theme_id", api.themes().first().id) })
-            api.play(channel.id)
+        // A channel of its own with the speaker, playing (the server's other channels stay as they are)
+        val channel = runBlocking {
+            val made = api.createSession(buildJsonObject {
+                put("theme_id", api.themes().first().id)
+                put("custom_name", "Virtual speaker test")
+                putJsonObject("adhoc_selection") { put("include_speakers", buildJsonArray { add(JsonPrimitive(speaker.id)) }) }
+            })
+            api.play(made.id)
+            made
         }
         try {
             runBlocking { sonorium.servers.select(record.id) }
@@ -74,6 +78,7 @@ class VirtualSpeakerTest {
             runBlocking {
                 runCatching { api.releaseVirtualSpeaker("test-other-client") }
                 runCatching { api.stop(channel.id) }
+                runCatching { api.deleteSession(channel.id) }
             }
         }
     }
