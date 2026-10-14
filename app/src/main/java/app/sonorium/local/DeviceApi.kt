@@ -331,10 +331,29 @@ class DeviceApi(private val context: Context) : Interceptor {
     private fun theme(id: String): LocalTheme = themesNow().firstOrNull { idOf(it) == id } ?: throw Answer(404, "Theme not found")
 
     private fun editorFor(id: String): PhoneThemeApi {
-        val t = theme(id)
+        // A theme being edited whose folder can't be reached any more: its editor still answers (its changes are in
+        // the prepared copy), so a save says the folder is the problem and the edits can be rescued (Chris)
+        val t = runCatching { theme(id) }.getOrElse { e ->
+            synchronized(editors) { editorFolders[id]?.let { f -> editors[f] } }?.let { return it }
+            throw e
+        }
         return synchronized(editors) {
+            editorFolders[id] = t.folder
             editors[t.folder] ?: runBlocking { PhoneThemeApi.openApi(context, store, t) }.also { editors[t.folder] = it }
         }
+    }
+
+    /** Theme id → its folder, for themes opened in the editor (kept when the folder goes). */
+    private val editorFolders = mutableMapOf<String, String>()
+
+    /** The prepared copy's folder name of the theme [id] opened in the editor, or null. */
+    fun editedFolder(id: String): String? = synchronized(editors) { editorFolders[id] }
+
+    /** Forgets the editors (the themes folder changed: the next edit opens the theme where it is now). */
+    fun forgetEditors() = synchronized(editors) {
+        editors.clear()
+        editorFolders.clear()
+        listed = null
     }
 
     /** GET /themes/{id}/export: the server's export zip ("<folder>/<path>"), linked files copied in. */

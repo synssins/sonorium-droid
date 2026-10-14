@@ -169,4 +169,13 @@
     <string name="folder_explain">Sonorium keeps the themes on this device in a folder named Sonorium inside the folder you choose, so you can also see them in the Files app.</string>
     <string name="folder_explain_how">On the next screen, open Music (or another folder) and tap Use this folder. Sonorium makes a Sonorium folder there, or uses the one already there.</string>
     <string name="folder_explain_move">Then you can move your themes to the new folder.</string>
+    <!-- The editor couldn't save: the themes folder is gone (wording proposed) -->
+    <string name="rescue_title">The themes folder can\'t be reached</string>
+    <string name="rescue_text">Your changes are kept. Choose a folder, or use the default one, and the theme is saved there.</string>
+    <string name="rescue_done">Theme saved to the new folder</string>
+    <string name="rescue_done_missing">Theme saved to the new folder. These files couldn\'t be read and are missing: %1$s</string>
+    <string name="rescue_failed">Couldn\'t save the theme to the new folder</string>
+    <string name="folder_gone_title">The themes folder can\'t be reached</string>
+    <string name="folder_gone_text">It may have been moved or removed, or Sonorium lost access to it. Choose a folder, or use the default one.</string>
+    <string name="not_now">Not now</string>
 </resources>

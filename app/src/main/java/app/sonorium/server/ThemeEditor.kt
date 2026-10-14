@@ -803,7 +803,19 @@ class ThemeEditor(
         player = null
     }
 
+    private val _folderProblem = MutableStateFlow(false)
+    /** On this device: a change couldn't reach the themes folder; the screen offers a folder and keeps the edits. */
+    val folderProblem: StateFlow<Boolean> = _folderProblem.asStateFlow()
+
+    fun folderProblemSeen() {
+        _folderProblem.value = false
+    }
+
     private fun message(e: Exception, fallback: String): String = when {
+        onPhone && e is ApiException && e.detail == app.sonorium.local.PhoneThemeApi.FOLDER_PROBLEM -> {
+            _folderProblem.value = true
+            e.detail
+        }
         e is ApiException -> e.firstMessage ?: e.detail.takeIf { it.isNotBlank() && !it.startsWith("{") } ?: fallback
         else -> fallback.ifEmpty { if (onPhone) "Something went wrong on this phone." else "Can't reach the server." }
     }

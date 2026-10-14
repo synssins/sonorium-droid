@@ -187,6 +187,29 @@ fun ServerScreen(
             confirmButton = { androidx.compose.material3.TextButton(onClick = { model.cancelMove() }) { Text(androidx.compose.ui.res.stringResource(R.string.cancel), color = Palette.accent) } },
         )
     }
+    // A picked themes folder that's gone (e.g. after an update): said once, with a way out, before anything is edited
+    var folderGoneSeen by rememberSaveable { mutableStateOf(false) }
+    if (!folderGoneSeen && localFolder == app.sonorium.local.ThemeStore.FolderState.MISSING) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { folderGoneSeen = true },
+            containerColor = Palette.card,
+            title = { Text(androidx.compose.ui.res.stringResource(R.string.folder_gone_title), color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            text = { Text(androidx.compose.ui.res.stringResource(R.string.folder_gone_text), color = Palette.textSecondary, fontSize = 14.sp) },
+            confirmButton = {
+                Row {
+                    androidx.compose.material3.TextButton(onClick = { folderGoneSeen = true; model.useDefaultFolder() }) {
+                        Text(androidx.compose.ui.res.stringResource(R.string.folder_default), color = Palette.text)
+                    }
+                    androidx.compose.material3.TextButton(onClick = { folderGoneSeen = true; folderPicker.ask(changing = false, then = null) }) {
+                        Text(androidx.compose.ui.res.stringResource(R.string.folder_choose), color = Palette.accent)
+                    }
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { folderGoneSeen = true }) { Text(androidx.compose.ui.res.stringResource(R.string.not_now), color = Palette.textSecondary) }
+            },
+        )
+    }
     model.importProblem.collectAsState().value?.let { text ->
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { model.importProblemSeen() },

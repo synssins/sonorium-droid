@@ -141,7 +141,7 @@ class PhoneThemeApi(
                 changed.forEach { (name, bytes) -> source.write(name, bytes) }
             } catch (e: Exception) {
                 Log.e(TAG, "Couldn't write the theme's files back", e)
-                return error(500, "Couldn't save to your themes folder. Check that it's still there.")
+                return error(500, FOLDER_PROBLEM)
             }
             if (PhoneEngine.isOpen) runCatching { PhoneEngine.reloadTheme() }.onFailure { Log.w(TAG, "The engine couldn't reload the theme", it) }
         }
@@ -168,6 +168,8 @@ class PhoneThemeApi(
     companion object {
         private const val TAG = "PhoneThemeApi"
         const val HOST = "phone.sonorium.local"
+        /** A change couldn't be written to the themes folder (gone, or access lost): the editor offers a folder. */
+        const val FOLDER_PROBLEM = "Couldn't save to your themes folder. Check that it's still there."
         /** The editor's server address for a theme on this phone; never leaves the app. */
         val BASE_URL: HttpUrl = "https://$HOST".toHttpUrl()
         private val JSON = "application/json".toMediaType()

@@ -17,6 +17,7 @@ import app.sonorium.local.ThemeDownloader
 import app.sonorium.local.ThemeStore
 import app.sonorium.local.ThemeSync
 import app.sonorium.local.ThemeBackup
+import app.sonorium.local.ThemeRescue
 import app.sonorium.local.PhonePlaylists
 import app.sonorium.R
 import app.sonorium.widget.WidgetUpdater
@@ -1150,14 +1151,50 @@ class ServerViewModel(application: Application) : AndroidViewModel(application) 
     val moving: StateFlow<Pair<Int, Int>?> = _moving.asStateFlow()
     private var moveJob: Job? = null
 
-    /** Back to the app's own folder; the themes in the folder before are offered to move along. */
-    fun useDefaultFolder() {
+    /** Back to the app's own folder; the themes in the folder before are offered to move along ([offerMove]). */
+    fun useDefaultFolder(offerMove: Boolean = true) {
         val before = app.themeStore.current()
         val hadThemes = _localThemes.value.orEmpty().isNotEmpty()
         if (!app.themeStore.useDefault()) return
         viewModelScope.launch { PhoneThemeActions.folderChanged(app) }
-        if (hadThemes && before != null && app.themeStore.root != null) _moveOffer.value = before
+        if (offerMove && hadThemes && before != null && app.themeStore.root != null) _moveOffer.value = before
         refreshLocalThemes()
+    }
+
+    /**
+     * The theme open in the editor couldn't be saved because the themes folder is gone: once a folder works again
+     * (chosen, or the default), the edits go there as a whole theme (audio read from where it was, if it still can
+     * be), and the editor opens again on it. Says which files couldn't come along.
+     */
+    fun rescueEditedTheme() {
+        val editor = _editor.value ?: return
+        val id = editor.themeId
+        val folder = app.deviceApi.editedFolder(id) ?: run {
+            toast(app.getString(R.string.rescue_failed), error = true)
+            return
+        }
+        val ui = editor.ui.value
+        viewModelScope.launch {
+            runCatching {
+                ThemeRescue.rescue(app, app.themeStore, folder, ui.name.trim().ifEmpty { ui.title }, ui.description.trim(), ui.icon, ui.categories)
+            }.onSuccess { r ->
+                app.deviceApi.forgetEditors()
+                editor.folderProblemSeen()
+                closeThemeEditor()
+                refreshLocalThemes()
+                refreshThemeList()
+                val theme = _state.value.theme(id)
+                if (theme != null) openThemeEditor(theme)
+                toast(
+                    if (r.missing.isEmpty()) app.getString(R.string.rescue_done)
+                    else app.getString(R.string.rescue_done_missing, r.missing.joinToString(", ")),
+                    error = r.missing.isNotEmpty(),
+                )
+            }.onFailure { e ->
+                android.util.Log.w("ThemeRescue", "Rescue of $folder failed", e)
+                toast(e.message ?: app.getString(R.string.rescue_failed), error = true)
+            }
+        }
     }
 
     fun answerMove(move: Boolean) {

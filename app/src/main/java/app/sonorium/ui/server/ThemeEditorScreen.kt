@@ -237,6 +237,29 @@ fun ThemeEditorScreen(editor: ThemeEditor, model: ServerViewModel, state: Server
         }
     }
 
+    // The themes folder went away while editing: the edits are kept; a folder that works, then the theme is saved there
+    val folderPicker = rememberThemesFolderPicker(model)
+    if (editor.folderProblem.collectAsState().value) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { editor.folderProblemSeen() },
+            containerColor = Palette.card,
+            title = { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.rescue_title), color = Palette.text, fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+            text = { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.rescue_text), color = Palette.textSecondary, fontSize = 14.sp) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    editor.folderProblemSeen()
+                    folderPicker.ask(changing = false) { model.rescueEditedTheme() }
+                }) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_choose), color = Palette.accent) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    editor.folderProblemSeen()
+                    model.useDefaultFolder(offerMove = false)
+                    model.rescueEditedTheme()
+                }) { Text(androidx.compose.ui.res.stringResource(app.sonorium.R.string.folder_default), color = Palette.text) }
+            },
+        )
+    }
     if (help) HelpPanel(
         "How a theme plays", if (state.onDevice) HelpTexts.forDevice(HelpTexts.THEME_EDITOR) else HelpTexts.THEME_EDITOR,
         onGuide = { help = false; editorCoach.show(editorGuide) },
