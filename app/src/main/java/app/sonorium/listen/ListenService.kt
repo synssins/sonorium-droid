@@ -108,18 +108,11 @@ class ListenService : MediaSessionService() {
         ListenController.bufferProbe = { exo.totalBufferedDuration / 1000.0 }
         // The same controls as a theme played on this device: previous/next through presets or sequence steps,
         // Next theme and Stop (MediaControls), acting on the channel through the server
-        val player = object : ForwardingPlayer(exo) {
+        val player = object : app.sonorium.engine.SkippablePlayer(exo) {
             override fun play() = resume()
             override fun pause() = stopByUser()
             override fun stop() = stopByUser()
             override fun setPlayWhenReady(playWhenReady: Boolean) = if (playWhenReady) resume() else stopByUser()
-            override fun getAvailableCommands(): Player.Commands = exo.availableCommands.buildUpon()
-                .removeAll(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD, Player.COMMAND_SEEK_TO_DEFAULT_POSITION)
-                .addAll(Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                .build()
-            override fun isCommandAvailable(command: Int): Boolean = availableCommands.contains(command)
-            override fun hasNextMediaItem(): Boolean = true
-            override fun hasPreviousMediaItem(): Boolean = true
             override fun seekToNext() = skip(forward = true)
             override fun seekToNextMediaItem() = skip(forward = true)
             override fun seekToPrevious() = skip(forward = false)
@@ -322,13 +315,22 @@ class ListenService : MediaSessionService() {
         session?.let { s -> runCatching { onUpdateNotification(s, false) } }
     }
 
-    /** Previous/next: the sequence's or playlist's next step (the server has no step back), else the previous or next preset. */
+    /** Previous/next: a playlist entry or sequence step, else a preset (as the device's ⏮ ⏭). */
     private fun skip(forward: Boolean) {
         val c = current ?: return
         scope.launch {
             runCatching {
                 val api = api(c.serverId) ?: return@runCatching
                 val channel = heard ?: channelNow(api, c) ?: return@runCatching
+                if (!forward) {
+                    // The server steps back itself (entry, step, else preset); an older one has no route for it (403/404/405)
+                    val done = runCatching { api.previous(channel.id) }.fold({ true }, { e ->
+                        if (e is app.sonorium.net.ApiException && (e.status == 403 || e.status == 404 || e.status == 405)) false
+                        else if (e is app.sonorium.net.ApiException && e.status == 409) true // nothing to go back to
+                        else throw e
+                    })
+                    if (done) return@runCatching
+                }
                 if (channel.sequence?.running == true || channel.playlist?.running == true) {
                     if (forward) api.next(channel.id)
                     return@runCatching

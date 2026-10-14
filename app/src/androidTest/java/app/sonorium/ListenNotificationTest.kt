@@ -97,6 +97,19 @@ class ListenNotificationTest {
             val now = runBlocking { api.sessions().first { it.id == channel.id } }.themeId
             assertTrue("The title didn't follow the theme", waitFor(20_000) { onMain { listen.mediaMetadata.title?.toString() } == themeName(now) })
             assertTrue("It stopped playing after the title changed", waitFor(10_000) { ListenController.state.value?.playing == true })
+            // Previous from the theme's first preset: back to Default settings (on the server, as on the device)
+            val first = runBlocking { api.themePresets(now!!).presets.firstOrNull() }
+            if (first != null) {
+                runBlocking { api.updateSession(channel.id, buildJsonObject { put("preset_id", JsonPrimitive(first.id)) }) }
+                assertTrue("The preset wasn't set", waitFor(10_000) { runBlocking { api.sessions().first { it.id == channel.id } }.presetId == first.id })
+                Thread.sleep(5_500) // the notification has read the channel since
+                assertTrue("No ⏮ on the notification", onMain { listen.isCommandAvailable(androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS) })
+                onMain { listen.seekToPrevious() }
+                assertTrue(
+                    "Previous didn't go back to Default settings",
+                    waitFor(15_000) { runBlocking { api.sessions().first { it.id == channel.id } }.presetId.isNullOrEmpty() },
+                )
+            }
             // Stop: listening here ends
             onMain { listen.sendCustomCommand(SessionCommand(MediaControls.COMMAND_STOP, android.os.Bundle.EMPTY), android.os.Bundle.EMPTY) }
             assertTrue("Stop didn't end listening", waitFor(10_000) { ListenController.state.value == null })

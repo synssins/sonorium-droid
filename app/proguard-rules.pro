@@ -22,3 +22,6 @@
 #   and the Stream it returns: read(), close(), getHeaderFrames()
 -keep class app.sonorium.audio.LiveDecoder { *; }
 -keep class app.sonorium.audio.LiveDecoder$Stream { *; }
+
+# SkippablePlayer passes Player.Listener callbacks on by method name (a proxy)
+-keep interface androidx.media3.common.Player$Listener { *; }

@@ -110,6 +110,7 @@ class PhoneEngineTest {
                     "live=${controller.isCurrentMediaItemLive}",
                     "seekable=${controller.isCurrentMediaItemSeekable}",
                     "next=${controller.isCommandAvailable(androidx.media3.common.Player.COMMAND_SEEK_TO_NEXT)}",
+                    "previous=${controller.isCommandAvailable(androidx.media3.common.Player.COMMAND_SEEK_TO_PREVIOUS)}",
                     "title=${controller.mediaMetadata.title}",
                     "artwork=${controller.mediaMetadata.artworkData != null}",
                     "buttons=${controller.mediaButtonPreferences.mapNotNull { it.displayName?.toString() }}",
@@ -128,7 +129,7 @@ class PhoneEngineTest {
         val seen = live.get()
         // The title is the theme chosen on this device (the sample, opened with the main screen), else the one given
         val title = PhonePlayer.title() ?: "Test Theme"
-        listOf("duration=true", "live=true", "seekable=false", "next=true", "title=$title", "artwork=true", "Next theme", "Stop").forEach {
+        listOf("duration=true", "live=true", "seekable=false", "next=true", "previous=true", "title=$title", "artwork=true", "Next theme", "Stop").forEach {
             assertTrue("Lock-screen control: expected $it in [$seen]", seen.contains(it))
         }
     }

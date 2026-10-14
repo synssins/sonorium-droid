@@ -82,6 +82,11 @@ class SonoriumApi(
         execute(request("sessions/$id/next").post(EMPTY).build())
     }
 
+    /** Back a playlist entry, a sequence step, else a preset (servers from 8101544 on; 404/405 before). */
+    suspend fun previous(id: String) {
+        execute(request("sessions/$id/previous").post(EMPTY).build())
+    }
+
     // ---------- Zones (Users plugin; 404 without it) ----------
 
     suspend fun zones(): ZonesView = get("zones")

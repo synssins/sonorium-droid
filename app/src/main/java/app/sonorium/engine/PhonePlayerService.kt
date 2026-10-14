@@ -90,7 +90,7 @@ class PhonePlayerService : MediaSessionService() {
         })
         // What the lock screen, the notification, headsets, cars and watches see: a live stream (no
         // seek bar, no length: a theme plays on and on), ⏮ ⏭ through presets or sequence steps
-        val player = object : ForwardingPlayer(exo) {
+        val player = object : SkippablePlayer(exo) {
             override fun play() = if (wanted) exo.play() else PhonePlayer.resume(this@PhonePlayerService)
             // Pause keeps the stream (Play resumes it); Stop ends it
             override fun pause() = if (wanted) exo.pause() else end()
@@ -103,13 +103,6 @@ class PhonePlayerService : MediaSessionService() {
             override fun isCurrentMediaItemDynamic(): Boolean = true
             // Controllers (the lock screen, Bluetooth, cars) read live/seekable from the timeline's window
             override fun getCurrentTimeline(): Timeline = exo.currentTimeline.let { t -> if (t.isEmpty) t else LiveTimeline(t) }
-            override fun getAvailableCommands(): Player.Commands = exo.availableCommands.buildUpon()
-                .removeAll(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD, Player.COMMAND_SEEK_TO_DEFAULT_POSITION)
-                .addAll(Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
-                .build()
-            override fun isCommandAvailable(command: Int): Boolean = availableCommands.contains(command)
-            override fun hasNextMediaItem(): Boolean = true
-            override fun hasPreviousMediaItem(): Boolean = true
             override fun seekToNext() = PhonePlayer.skip(forward = true)
             override fun seekToNextMediaItem() = PhonePlayer.skip(forward = true)
             override fun seekToPrevious() = PhonePlayer.skip(forward = false)
