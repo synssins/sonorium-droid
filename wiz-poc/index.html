@@ -45,6 +45,12 @@
   .badge { font-size:12px; padding:2px 8px; border-radius:10px; background:#353948; white-space:nowrap; }
   .badge.new { background:#1f5f3a; } .badge.moved { background:#6a4a10; }
   .tablewrap { overflow-x:auto; }
+  td input.name { width:150px; } td input.grp { width:120px; }
+  tr.ghead td { padding-top:16px; border-top:none; }
+  tr.ghead b { font-size:15px; }
+  .chipbtn { padding:4px 12px; border-radius:16px; font-size:13px; }
+  .chipbtn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.x { padding:4px 9px; color:var(--muted); }
   .chip { width:28px; height:28px; border-radius:6px; border:1px solid var(--line); }
   #statusbar { position:sticky; top:0; z-index:5; background:var(--bg); padding:8px 0 12px; }
 </style>
@@ -58,6 +64,7 @@
       <span id="engineState" class="muted">idle</span>
       <button id="stopAll" style="margin-left:auto">Stop effect</button>
     </div>
+    <div class="row" id="targets" style="margin-bottom:8px"></div>
     <div class="meters">
       <span>Bass</span><div class="bar"><div id="m-bass"></div></div>
       <span>Mid</span><div class="bar"><div id="m-mid"></div></div>
@@ -77,7 +84,7 @@
   <!-- ===================================================== LIGHTS -->
   <div class="tab active" id="tab-lights">
     <section>
-      <h2>Colour - all bulbs</h2>
+      <h2>Colour - target rooms</h2>
       <div class="row">
         <input type="color" id="color" value="#ff0080">
         <div class="swatches row">
@@ -95,22 +102,26 @@
       <label for="brightness">Brightness <span id="brightnessVal"></span></label>
       <input type="range" id="brightness" min="10" max="100">
       <div class="row" style="margin-top:10px">
-        <button id="on">All on</button>
-        <button id="off">All off</button>
+        <button id="on">On</button>
+        <button id="off">Off</button>
       </div>
-      <p class="muted">Sent straight to the bulbs while no effect is running. During Pulse / Strobe / Split it is the base colour.</p>
+      <p class="muted">Applies to the rooms selected under <b>Target</b> at the top. It goes straight to the bulbs while no
+        effect is running, and is the base colour for Pulse / Strobe / Split.</p>
     </section>
 
     <section>
-      <h2>Bulbs</h2>
-      <label for="bulbs">IP addresses (one per line)</label>
-      <textarea id="bulbs" placeholder="192.168.1.50&#10;192.168.1.51"></textarea>
-      <div class="row" style="margin-top:10px">
-        <button class="primary" id="saveBulbs">Save</button>
-        <button id="ping">Ping bulbs</button>
+      <h2>Bulbs &amp; rooms</h2>
+      <div class="row">
+        <button id="ping">Ping all</button>
+        <span id="bulbMsg" class="muted"></span>
       </div>
-      <pre id="bulbMsg"></pre>
-      <table id="bulbTable"></table>
+      <datalist id="groupList"></datalist>
+      <div class="tablewrap"><table id="bulbTable"></table></div>
+      <details style="margin-top:12px">
+        <summary class="muted" style="cursor:pointer">Add bulbs by IP</summary>
+        <textarea id="bulbs" style="margin-top:8px" placeholder="192.168.1.50&#10;192.168.1.51"></textarea>
+        <button class="primary" id="saveBulbs" style="margin-top:8px">Add</button>
+      </details>
     </section>
 
     <section>
@@ -301,31 +312,85 @@ function fillDevices() {
   sel.disabled = src === 'test';
 }
 
-// ---------------------------------------------------------------- bulbs
+// ---------------------------------------------------------------- bulbs & rooms
 const msg = t => $('bulbMsg').textContent = t;
-const bulbList = () => $('bulbs').value.split(/[\s,;]+/).filter(Boolean);
-function renderBulbs(status = {}) {
+const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const meta = ip => (CFG.bulb_meta || {})[ip] || {};
+const groupsOf = () => [...new Set((CFG.bulbs || []).map(ip => meta(ip).group || ''))]
+  .sort((a, b) => (a === '') - (b === '') || a.localeCompare(b));
+const gname = g => g || 'No room';
+let pingStatus = {};
+
+function renderTargets() {
+  const el = $('targets'), act = new Set(CFG.active_groups || []);
+  el.innerHTML = '<span class="muted">Target:</span>';
+  const mk = (label, on, fn) => { const b = document.createElement('button'); b.className = 'chipbtn' + (on ? ' on' : ''); b.textContent = label; b.onclick = fn; el.append(b); };
+  mk(`All (${(CFG.bulbs || []).length})`, act.size === 0, () => setTargets([]));
+  for (const g of groupsOf()) {
+    const n = CFG.bulbs.filter(ip => (meta(ip).group || '') === g).length;
+    mk(`${gname(g)} (${n})`, act.has(g), () => { act.has(g) ? act.delete(g) : act.add(g); setTargets([...act]); });
+  }
+}
+async function setTargets(list) { CFG = await api('/api/config', { active_groups: list }); renderTargets(); }
+
+function renderBulbs() {
   const t = $('bulbTable');
   t.innerHTML = '';
-  for (const ip of CFG.bulbs || []) {
-    const s = status[ip], tr = t.insertRow();
-    const st = s === undefined ? '' : s === null ? '<span class="err">no reply</span>'
-      : s.result ? `<span class="ok">${s.result.state ? 'on' : 'off'}</span> <span class="muted">rssi ${s.result.rssi}</span>` : '';
-    tr.innerHTML = `<td class="ip">${ip}</td><td>${st}</td>
-      <td><input type="color" value="${CFG.color}"></td>
-      <td><button data-on="1">On</button> <button data-on="0">Off</button></td>`;
-    const send = throttle(c => api('/api/light', { ip, color: c, brightness: CFG.brightness }), 80);
-    tr.querySelector('input').addEventListener('input', e => send(e.target.value));
-    tr.querySelectorAll('button').forEach(b => b.onclick = () => api('/api/light', { ip, on: b.dataset.on === '1' }));
+  $('groupList').innerHTML = groupsOf().filter(Boolean).map(g => `<option value="${esc(g)}">`).join('');
+  if (!(CFG.bulbs || []).length) { msg('No bulbs yet - use Find bulbs below or add them by IP.'); }
+  for (const g of groupsOf()) {
+    const ips = CFG.bulbs.filter(ip => (meta(ip).group || '') === g);
+    const h = t.insertRow(); h.className = 'ghead';
+    h.innerHTML = `<td colspan="4"><b>${esc(gname(g))}</b> <span class="muted">${ips.length} bulb(s)</span></td>
+      <td><input type="color" value="${esc(CFG.color)}" title="Colour for this room"></td>
+      <td style="white-space:nowrap"><button data-on="1">On</button> <button data-on="0">Off</button>
+        <button data-id>Identify</button></td><td></td>`;
+    const gsend = throttle(c => api('/api/group', { group: g, color: c, brightness: CFG.brightness }), 80);
+    h.querySelector('input').addEventListener('input', e => gsend(e.target.value));
+    h.querySelectorAll('[data-on]').forEach(b => b.onclick = () => api('/api/group', { group: g, on: b.dataset.on === '1' }));
+    h.querySelector('[data-id]').onclick = () => api('/api/identify', { group: g });
+
+    for (const ip of ips) {
+      const s = pingStatus[ip], tr = t.insertRow();
+      const st = s === undefined ? '' : s === null ? '<span class="err">no reply</span>'
+        : s.result ? `<span class="${s.result.state ? 'ok' : 'muted'}">${s.result.state ? 'on' : 'off'}</span> <span class="muted">${esc(s.result.rssi)} dBm</span>` : '';
+      tr.innerHTML = `<td><input class="name" placeholder="Name" value="${esc(meta(ip).name)}"></td>
+        <td><input class="grp" placeholder="Room" list="groupList" value="${esc(meta(ip).group)}"></td>
+        <td class="ip muted">${esc(ip)}</td><td>${st}</td>
+        <td><input type="color" value="${esc(CFG.color)}"></td>
+        <td style="white-space:nowrap"><button data-on="1">On</button> <button data-on="0">Off</button>
+          <button data-id>Identify</button></td>
+        <td><button class="x" title="Remove">&#x2715;</button></td>`;
+      const [nameEl, grpEl, colEl] = tr.querySelectorAll('input');
+      nameEl.onchange = async () => { CFG = await api('/api/bulbs/meta', { ip, name: nameEl.value }); };
+      grpEl.onchange = async () => { CFG = await api('/api/bulbs/meta', { ip, group: grpEl.value }); renderBulbs(); renderTargets(); };
+      const send = throttle(c => api('/api/light', { ip, color: c, brightness: CFG.brightness }), 80);
+      colEl.addEventListener('input', e => send(e.target.value));
+      tr.querySelectorAll('[data-on]').forEach(b => b.onclick = () => api('/api/light', { ip, on: b.dataset.on === '1' }));
+      tr.querySelector('[data-id]').onclick = () => api('/api/identify', { ips: [ip] });
+      tr.querySelector('.x').onclick = async () => {
+        if (!confirm(`Remove ${meta(ip).name || ip}?`)) return;
+        CFG = await api('/api/bulbs/remove', { ip }); renderBulbs(); renderTargets();
+      };
+    }
   }
 }
 $('saveBulbs').onclick = async () => {
-  CFG = await api('/api/config', { bulbs: bulbList() });
-  msg(`Saved ${CFG.bulbs.length} bulb(s).`);
+  const ips = $('bulbs').value.split(/[\s,;]+/).filter(Boolean);
+  const r = await api('/api/bulbs/add', { devices: ips.map(ip => ({ ip })) });
+  if (r.error) return msg(r.error);
+  CFG = r; $('bulbs').value = '';
+  msg(`${CFG.bulbs.length} bulb(s) configured.`);
+  renderBulbs(); renderTargets();
+};
+$('ping').onclick = async () => {
+  msg('Pinging...');
+  pingStatus = await api('/api/ping', {});
+  const ok = Object.values(pingStatus).filter(Boolean).length;
+  msg(`${ok} of ${Object.keys(pingStatus).length} bulb(s) replied.`);
   renderBulbs();
 };
 let found = [];
-const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 $('discover').onclick = async () => {
   const btn = $('discover');
   btn.disabled = true;
@@ -352,7 +417,15 @@ $('discover').onclick = async () => {
         <td>${esc(d.kind)}${d.kind !== 'colour' && d.kind !== 'unknown' ? ' <span class="muted">(no colour)</span>' : ''}</td>
         <td class="muted ip">${esc(d.mac)}</td>
         <td class="muted">${esc(d.module || '')}${d.fw ? ' v' + esc(d.fw) : ''}</td>
-        <td class="muted">${d.rssi != null ? esc(d.rssi) + ' dBm' : ''}</td>`;
+        <td class="muted">${d.rssi != null ? esc(d.rssi) + ' dBm' : ''}</td>
+        <td><button data-id>Identify</button></td>
+        <td><input class="name" placeholder="Name" value="${esc(d.name)}" data-k="name"></td>
+        <td><input class="grp" placeholder="Room" list="groupList" value="${esc(d.group)}" data-k="group"></td>`;
+      tr.querySelector('[data-id]').onclick = () => api('/api/identify', { ips: [d.ip] });
+      tr.querySelectorAll('[data-k]').forEach(inp => inp.oninput = () => {
+        d[inp.dataset.k] = inp.value;
+        tr.querySelector('input[type=checkbox]').checked = true;
+      });
     }
     $('discResults').style.display = found.length ? '' : 'none';
   } finally { btn.disabled = false; }
@@ -361,16 +434,8 @@ $('addFound').onclick = async () => {
   const devices = [...document.querySelectorAll('#discTable input:checked')].map(c => found[+c.dataset.i]);
   if (!devices.length) return;
   CFG = await api('/api/bulbs/add', { devices });
-  $('bulbs').value = CFG.bulbs.join('\n');
-  renderBulbs();
+  renderBulbs(); renderTargets();
   $('discover').click();
-};
-$('ping').onclick = async () => {
-  msg('Pinging...');
-  const r = await api('/api/ping', {});
-  const ok = Object.values(r).filter(Boolean).length;
-  msg(`${ok} of ${Object.keys(r).length} bulb(s) replied.`);
-  renderBulbs(r);
 };
 
 // ---------------------------------------------------------------- engine status
@@ -534,7 +599,6 @@ driveFromMedia($('videoEl'), () => 'video: ' + ($('videoEl')._name || ''), () =>
 // ---------------------------------------------------------------- init
 (async () => {
   [CFG, DEVICES] = await Promise.all([api('/api/config'), api('/api/devices')]);
-  $('bulbs').value = CFG.bulbs.join('\n');
   $('color').value = CFG.color;
   $('brightness').value = CFG.brightness;
   $('brightnessVal').textContent = CFG.brightness + '%';
@@ -547,6 +611,7 @@ driveFromMedia($('videoEl'), () => 'video: ' + ($('videoEl')._name || ''), () =>
   $('scan_local').checked = !!CFG.scan_local;
   fillDevices();
   renderBulbs();
+  renderTargets();
   try { const t = localStorage.getItem('tab'); if (t) document.querySelector(`.tabs [data-tab="${t}"]`)?.click(); } catch (e) {}
   poll();
 })();

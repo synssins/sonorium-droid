@@ -40,6 +40,8 @@ DEFAULT_CONFIG = {
     "broadcast": "255.255.255.255",  # extra broadcast address for discovery (each adapter's /24 is added automatically)
     "scan_subnets": [],           # extra subnets / IPs to probe host-by-host, e.g. ["192.168.20.0/24", "10.0.5.17"]
     "scan_local": False,          # also probe this PC's own /24s host-by-host (for networks that block broadcast)
+    "bulb_meta": {},              # ip -> {"name": "Desk lamp", "group": "Office"}
+    "active_groups": [],          # rooms that effects / the main colour picker drive; empty = all bulbs
     "bulb_macs": {},              # mac -> last known ip; lets discovery spot bulbs whose DHCP address changed
     "http_host": "127.0.0.1",
     "http_port": 8765,
@@ -135,6 +137,66 @@ def wiz_query(targets, method="getPilot", params=None, timeout=1.5):
             pass
     s.close()
     return out
+
+
+def bulb_group(cfg, ip):
+    return (cfg["bulb_meta"].get(ip) or {}).get("group", "")
+
+
+def target_bulbs(cfg):
+    """Bulbs the effects and main colour picker drive: the selected rooms, or everything."""
+    groups = set(cfg["active_groups"])
+    if not groups:
+        return list(cfg["bulbs"])
+    return [ip for ip in cfg["bulbs"] if bulb_group(cfg, ip) in groups]
+
+
+def group_bulbs(cfg, group):
+    return [ip for ip in cfg["bulbs"] if bulb_group(cfg, ip) == group]
+
+
+IDENTIFYING = set()   # bulbs mid-flash; the effect engine leaves them alone
+
+
+def restore_command(res):
+    """Turn a getPilot result back into the command that recreates that state."""
+    if not res.get("state"):
+        return "setState", {"state": False}
+    p = {"state": True}
+    if res.get("dimming") is not None:
+        p["dimming"] = res["dimming"]
+    if res.get("sceneId"):
+        p["sceneId"] = res["sceneId"]
+        if res.get("speed") is not None:
+            p["speed"] = res["speed"]
+    elif all(k in res for k in ("r", "g", "b")):
+        p.update({k: res[k] for k in ("r", "g", "b", "c", "w") if k in res})
+    elif res.get("temp"):
+        p["temp"] = res["temp"]
+    return "setPilot", p
+
+
+def identify(ip, cycles=4):
+    """Blink a bulb bright-cold / dim-warm a few times, then put it back how it was."""
+    if ip in IDENTIFYING:
+        return
+    IDENTIFYING.add(ip)
+    try:
+        before = (wiz_query([ip], "getPilot", timeout=0.6).get(ip) or {}).get("result")
+        for _ in range(cycles):
+            wiz_send(ip, "setPilot", {"state": True, "temp": 6500, "dimming": 100})
+            time.sleep(0.35)
+            wiz_send(ip, "setPilot", {"state": True, "temp": 2200, "dimming": 10})
+            time.sleep(0.35)
+        if before:
+            method, params = restore_command(before)
+            for _ in range(2):   # UDP: say it twice
+                wiz_send(ip, method, params)
+                time.sleep(0.1)
+        else:
+            wiz_send(ip, "setPilot", {"state": True, "temp": 4000, "dimming": 100})
+    finally:
+        IDENTIFYING.discard(ip)
 
 
 # --------------------------------------------------------------------------- discovery
@@ -630,7 +692,7 @@ class Engine(threading.Thread):
             self.status["running"] = False
 
     def drive(self, cfg, v):
-        bulbs = cfg["bulbs"]
+        bulbs = [ip for ip in target_bulbs(cfg) if ip not in IDENTIFYING]
         n = len(bulbs)
         base = hex_to_rgb(cfg["color"])
         boost = cfg["brightness_boost"]
@@ -776,11 +838,11 @@ class Handler(BaseHTTPRequestHandler):
                 cfg = update_cfg({k: data[k] for k in ("color", "brightness") if k in data})
                 if not engine_running():
                     p = color_params(cfg["color"], cfg["brightness"])
-                    for ip in cfg["bulbs"]:
+                    for ip in target_bulbs(cfg):
                         wiz_send(ip, "setPilot", p)
                 self._json({"ok": True})
             elif path == "/api/power":
-                for ip in get_cfg()["bulbs"]:
+                for ip in target_bulbs(get_cfg()):
                     wiz_send(ip, "setState", {"state": bool(data.get("on"))})
                 self._json({"ok": True})
             elif path == "/api/light":
@@ -790,6 +852,39 @@ class Handler(BaseHTTPRequestHandler):
                 if "color" in data:
                     wiz_send(ip, "setPilot", color_params(data["color"], data.get("brightness", 100)))
                 self._json({"ok": True})
+            elif path == "/api/group":
+                # body: {"group": "Kitchen", "on"?: bool, "color"?: "#rrggbb", "brightness"?: int}
+                ips = group_bulbs(get_cfg(), str(data.get("group", "")))
+                for ip in ips:
+                    if "on" in data:
+                        wiz_send(ip, "setState", {"state": bool(data["on"])})
+                    if "color" in data:
+                        wiz_send(ip, "setPilot", color_params(data["color"], data.get("brightness", 100)))
+                self._json({"ok": True, "bulbs": ips})
+            elif path == "/api/identify":
+                # body: {"ips": [...]} or {"group": "Kitchen"}
+                ips = data.get("ips") or group_bulbs(get_cfg(), str(data.get("group", "")))
+                for ip in ips:
+                    threading.Thread(target=identify, args=(check_ip(ip),), daemon=True).start()
+                self._json({"ok": True, "bulbs": ips})
+            elif path == "/api/bulbs/meta":
+                # body: {"ip", "name"?, "group"?}
+                cfg = get_cfg()
+                ip = check_ip(data["ip"])
+                meta = dict(cfg["bulb_meta"])
+                m = dict(meta.get(ip) or {})
+                for k in ("name", "group"):
+                    if k in data:
+                        m[k] = str(data[k]).strip()[:60]
+                meta[ip] = m
+                present = {(meta.get(b) or {}).get("group", "") for b in cfg["bulbs"]}
+                groups = {g for g in cfg["active_groups"] if g in present}   # drop rooms that no longer exist
+                self._json(update_cfg({"bulb_meta": meta, "active_groups": sorted(groups)}))
+            elif path == "/api/bulbs/remove":
+                cfg = get_cfg()
+                ip = data.get("ip")
+                meta = {k: v for k, v in cfg["bulb_meta"].items() if k != ip}
+                self._json(update_cfg({"bulbs": [b for b in cfg["bulbs"] if b != ip], "bulb_meta": meta}))
             elif path == "/api/engine/start":
                 start_engine(data.get("source") or get_cfg()["audio_source"])
                 time.sleep(0.2)
@@ -811,6 +906,7 @@ class Handler(BaseHTTPRequestHandler):
                 macs = cfg["bulb_macs"]
                 for d in result["found"]:
                     old = macs.get(d["mac"])
+                    d.update(cfg["bulb_meta"].get(d["ip"]) or cfg["bulb_meta"].get(old or "") or {})
                     if d["ip"] in cfg["bulbs"]:
                         d["status"] = "configured"
                         macs[d["mac"]] = d["ip"]
@@ -823,17 +919,25 @@ class Handler(BaseHTTPRequestHandler):
             elif path == "/api/bulbs/add":
                 # body: {"devices": [{"ip", "mac", "was"?}]} - adds new ones, swaps moved ones in place
                 cfg = get_cfg()
-                bulbs, macs = list(cfg["bulbs"]), dict(cfg["bulb_macs"])
+                bulbs, macs, meta = list(cfg["bulbs"]), dict(cfg["bulb_macs"]), dict(cfg["bulb_meta"])
                 for d in data.get("devices", []):
                     ip = check_ip(d["ip"])
                     was = d.get("was")
                     if was in bulbs:
                         bulbs[bulbs.index(was)] = ip
+                        if was in meta:
+                            meta[ip] = meta.pop(was)   # name and room follow the bulb to its new IP
                     elif ip not in bulbs:
                         bulbs.append(ip)
                     if d.get("mac"):
                         macs[str(d["mac"])] = ip
-                self._json(update_cfg({"bulbs": bulbs, "bulb_macs": macs}))
+                    m = dict(meta.get(ip) or {})
+                    for k in ("name", "group"):
+                        if str(d.get(k) or "").strip():
+                            m[k] = str(d[k]).strip()[:60]
+                    if m:
+                        meta[ip] = m
+                self._json(update_cfg({"bulbs": bulbs, "bulb_macs": macs, "bulb_meta": meta}))
             else:
                 self._json({"error": "not found"}, 404)
         except Exception as e:

@@ -5,7 +5,7 @@ A small local web UI for Philips WiZ bulbs. It covers the same features as
 
 | Tab | What it does |
 |---|---|
-| **Lights** | Colour picker and brightness for all bulbs, on/off for all bulbs, ping (shows on/off state and Wi-Fi RSSI), a colour and on/off control for each bulb, and **bulb discovery that works across subnets and VLANs** |
+| **Lights** | **Names and rooms** for each bulb, colour, on/off and **Identify** (blinks the bulb, then restores it) for each bulb or a whole room, ping (shows on/off state and Wi-Fi RSSI), and **bulb discovery that works across subnets and VLANs** |
 | **Live audio** | Drives the bulbs from **what the PC is playing** (WASAPI loopback), a **microphone**, or a built-in **test signal** |
 | **Music file** | Plays an MP3/WAV/FLAC/OGG in the page and syncs the bulbs to it |
 | **Video ambilight** | Plays a video in the page and colours the bulbs from it: dominant colour (k-means), edges (each bulb gets its own zone around the screen), average, or hybrid (colour from the video, brightness from its soundtrack) |
@@ -20,7 +20,18 @@ Audio effect modes: `frequency_bands` (bass=red, mid=green, treble=blue), `energ
 1. Install Python 3.10 or newer from python.org. Tick **Add python.exe to PATH** during setup.
 2. Double-click **`run.bat`**. The first run creates a `.venv` and installs `numpy` and `PyAudioWPatch`.
    After that, it starts the server and opens http://127.0.0.1:8765.
-3. On the **Lights** tab, paste your bulb IPs, one per line, and click **Save**. Or use **Find bulbs**, which is described below.
+3. On the **Lights** tab, click **Find bulbs**, which is described below. Or open **Add bulbs by IP** and paste IPs, one per line.
+
+## Names, rooms and identifying bulbs
+
+* **Identify** blinks a bulb (or every bulb in a room) between bright cold white and dim warm white for about 3 seconds.
+  Then it puts the bulb back exactly as it was: same colour, white temperature, scene, brightness, or off.
+  The button also appears in the **Find bulbs** results, so you can identify a bulb, type its name and room, and add it in one go.
+* Give each bulb a **name** and a **room**. The room box suggests rooms you already have. The bulb table is grouped
+  by room, and each room has its own colour, on/off and identify controls.
+* The **Target** chips at the top pick which rooms the main colour picker, On/Off and all effects (live audio,
+  music, video) drive. **All** means every bulb. You can select several rooms at once.
+* If a bulb gets a new IP from DHCP, discovery shows it as *moved*. When you add it, its name and room move with it.
 
 To set the bulbs from the command line instead, run `run.bat 192.168.1.50 192.168.1.51` or `python app.py <ips...>`.
 
@@ -68,3 +79,27 @@ broadcast address, which only helps if your router forwards directed broadcasts.
 * **Brightness method → Scale RGB** keeps `dimming` fixed and scales the colour values instead. Depending on the
   firmware this can react faster, or have no effect at all. It's there so you can compare.
 * The server only listens on `127.0.0.1` by default. Don't expose it beyond your LAN, because the bulbs have no auth.
+
+## HTTP API (for plugins and scripts)
+
+Everything the page does goes through a small JSON API on the same port. Send `POST` requests with a JSON body.
+Requests from another web page's origin are refused, but local programs and scripts can call it freely.
+
+| Method and path | Body | Does |
+|---|---|---|
+| `GET /api/config` | | Full config, including bulbs, `bulb_meta` (names and rooms) and `active_groups` |
+| `POST /api/config` | any config keys | Update settings, for example `{"mode":"strobe"}` or `{"active_groups":["Kitchen"]}` |
+| `POST /api/color` | `{"color":"#ff0000","brightness":80}` | Colour the target rooms, unless an effect is running |
+| `POST /api/power` | `{"on":true}` | Turn the target rooms on or off |
+| `POST /api/group` | `{"group":"Kitchen","on"?:bool,"color"?:"#rrggbb","brightness"?:n}` | Control one room |
+| `POST /api/light` | `{"ip":"…","on"?:bool,"color"?:"#rrggbb","brightness"?:n}` | Control one bulb |
+| `POST /api/identify` | `{"ips":["…"]}` or `{"group":"Kitchen"}` | Blink the bulbs, then restore them |
+| `POST /api/discover` | `{"scan_subnets"?:[…],"scan_local"?:bool}` | Find devices: IP, MAC, model, firmware, and whether each is new, configured or moved |
+| `POST /api/bulbs/add` | `{"devices":[{"ip","mac"?,"was"?,"name"?,"group"?}]}` | Add bulbs, or move a bulb's IP |
+| `POST /api/bulbs/meta` | `{"ip","name"?,"group"?}` | Rename a bulb or change its room |
+| `POST /api/bulbs/remove` | `{"ip"}` | Remove a bulb |
+| `POST /api/ping` | | `getPilot` reply from every configured bulb |
+| `POST /api/engine/start` | `{"source":"loopback"\|"mic"\|"test"\|"browser:<label>"}` | Start an effect source |
+| `POST /api/engine/stop` | | Stop the running effect |
+| `POST /api/frame` | `{"raw"?:{bass,mid,treble,level,dominant},"colors"?:[[r,g,b],…]}` | Feed the `browser` source. A plugin can stream its own audio analysis or colours this way |
+| `GET /api/status` | | Engine state, live band levels and beat |
