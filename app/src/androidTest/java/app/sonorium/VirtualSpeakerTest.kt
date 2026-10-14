@@ -70,6 +70,18 @@ class VirtualSpeakerTest {
             val intent = Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             ActivityScenario.launch<MainActivity>(intent).use {
                 assertTrue("The virtual speaker didn't play here", waitFor(30_000) { ListenController.state.value?.let { it.sessionId == speaker.id && it.playing } == true })
+                // The notification shows the channel's theme (not the speaker's name) and artwork
+                val theme = runBlocking { api.themes() }.first { it.id == channel.themeId }.name
+                val token = androidx.media3.session.SessionToken(context, android.content.ComponentName(context, app.sonorium.listen.ListenService::class.java))
+                val controller = androidx.media3.session.MediaController.Builder(context, token).buildAsync().get(10, java.util.concurrent.TimeUnit.SECONDS)
+                var title: String? = null
+                var art = false
+                val shown = waitFor(20_000) {
+                    instrumentation.runOnMainSync { title = controller.mediaMetadata.title?.toString(); art = controller.mediaMetadata.artworkData != null }
+                    title == theme && art
+                }
+                instrumentation.runOnMainSync { controller.release() }
+                assertTrue("The notification shows '$title' (artwork: $art), not the theme '$theme'", shown)
                 // Another client of the account claims it: it stops here
                 runBlocking { api.claimVirtualSpeaker("test-other-client") }
                 assertTrue("It kept playing here after another client took it", waitFor(15_000) { ListenController.state.value?.sessionId != speaker.id })

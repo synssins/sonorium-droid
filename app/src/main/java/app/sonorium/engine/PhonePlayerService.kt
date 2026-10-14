@@ -145,32 +145,12 @@ class PhonePlayerService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
-    /** The control's own buttons beside ⏮ ▶ ⏭: Next theme and Stop. */
-    private fun buttons(): List<androidx.media3.session.CommandButton> = listOf(
-        androidx.media3.session.CommandButton.Builder(androidx.media3.session.CommandButton.ICON_SKIP_FORWARD)
-            .setDisplayName("Next theme")
-            .setCustomIconResId(app.sonorium.R.drawable.ic_next_theme)
-            .setSessionCommand(androidx.media3.session.SessionCommand(COMMAND_NEXT_THEME, android.os.Bundle.EMPTY))
-            .setSlots(androidx.media3.session.CommandButton.SLOT_OVERFLOW)
-            .build(),
-        androidx.media3.session.CommandButton.Builder(androidx.media3.session.CommandButton.ICON_STOP)
-            .setDisplayName("Stop")
-            .setSessionCommand(androidx.media3.session.SessionCommand(COMMAND_STOP, android.os.Bundle.EMPTY))
-            .setSlots(androidx.media3.session.CommandButton.SLOT_OVERFLOW)
-            .build(),
-    )
+    /** The buttons beside ⏮ ▶ ⏭: Next theme and Stop (shared with a channel heard here). */
+    private fun buttons() = MediaControls.buttons()
 
     private val sessionCallback = object : MediaSession.Callback {
-        override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
-            val commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
-                .add(androidx.media3.session.SessionCommand(COMMAND_NEXT_THEME, android.os.Bundle.EMPTY))
-                .add(androidx.media3.session.SessionCommand(COMMAND_STOP, android.os.Bundle.EMPTY))
-                .build()
-            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
-                .setAvailableSessionCommands(commands)
-                .setMediaButtonPreferences(buttons())
-                .build()
-        }
+        override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult =
+            MediaControls.accept(session)
 
         override fun onCustomCommand(
             session: MediaSession,
@@ -179,8 +159,8 @@ class PhonePlayerService : MediaSessionService() {
             args: android.os.Bundle,
         ): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
             when (customCommand.customAction) {
-                COMMAND_NEXT_THEME -> PhonePlayer.nextTheme(this@PhonePlayerService)
-                COMMAND_STOP -> end()
+                MediaControls.COMMAND_NEXT_THEME -> PhonePlayer.nextTheme(this@PhonePlayerService)
+                MediaControls.COMMAND_STOP -> end()
             }
             return com.google.common.util.concurrent.Futures.immediateFuture(androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS))
         }
@@ -201,19 +181,7 @@ class PhonePlayerService : MediaSessionService() {
     private var subtitle = "On this phone"
 
     /** The app's icon on the Sonorium background, square, for the lock screen and notification. */
-    private val artwork: ByteArray? by lazy {
-        runCatching {
-            val icon = android.graphics.BitmapFactory.decodeResource(resources, app.sonorium.R.mipmap.ic_launcher)
-            val size = 512
-            val out = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
-            android.graphics.Canvas(out).apply {
-                drawColor(0xFF1A1A2E.toInt())
-                val inset = size / 6
-                drawBitmap(icon, null, android.graphics.Rect(inset, inset, size - inset, size - inset), android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
-            }
-            java.io.ByteArrayOutputStream().also { out.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
-        }.getOrNull()
-    }
+    private val artwork: ByteArray? get() = MediaControls.appArtwork(resources)
 
     private fun item(): MediaItem {
         val metadata = MediaMetadata.Builder()
@@ -275,8 +243,6 @@ class PhonePlayerService : MediaSessionService() {
         const val EXTRA_TITLE = "title"
 
         private const val OPEN_REQUEST = 1
-        private const val COMMAND_NEXT_THEME = "app.sonorium.NEXT_THEME"
-        private const val COMMAND_STOP = "app.sonorium.STOP"
         private const val FOCUS_RETRY_WINDOW_MS = 8_000L
         private const val FOCUS_RETRIES = 4
 

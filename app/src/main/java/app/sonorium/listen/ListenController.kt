@@ -27,6 +27,10 @@ object ListenController {
 
     fun bufferedAhead(): Double? = bufferProbe?.invoke()
 
+    /** A virtual speaker heard here was stopped from the notification or lock screen (its id): let go of it. */
+    @Volatile
+    var virtualStopped: ((String) -> Unit)? = null
+
     private val _state = MutableStateFlow<Listening?>(null)
     val state: StateFlow<Listening?> = _state.asStateFlow()
 
@@ -44,6 +48,8 @@ object ListenController {
         themeName: String,
         volume: Int,
         personal: Boolean = false,
+        channelId: String? = null,
+        virtualClient: String? = null,
     ) {
         // One My Channel playback at a time: this device's own player stops first (Chris)
         if (app.sonorium.engine.PhonePlayer.state.value.playing || app.sonorium.engine.PhonePlayerService.isRunning) {
@@ -57,7 +63,21 @@ object ListenController {
                 .putExtra(ListenService.EXTRA_NAME, name)
                 .putExtra(ListenService.EXTRA_THEME, themeName)
                 .putExtra(ListenService.EXTRA_VOLUME, volume)
-                .putExtra(ListenService.EXTRA_PERSONAL, personal),
+                .putExtra(ListenService.EXTRA_PERSONAL, personal)
+                .apply {
+                    channelId?.let { putExtra(ListenService.EXTRA_CHANNEL_ID, it) }
+                    virtualClient?.let { putExtra(ListenService.EXTRA_VIRTUAL_CLIENT, it) }
+                },
+        )
+    }
+
+    /** The channel heard through [sessionId] (a virtual speaker) is now [channelId]: the notification follows it. */
+    fun setChannel(context: Context, sessionId: String, channelId: String?) {
+        if (_state.value?.sessionId != sessionId) return
+        context.startService(
+            Intent(context, ListenService::class.java).setAction(ListenService.ACTION_CHANNEL)
+                .putExtra(ListenService.EXTRA_SESSION_ID, sessionId)
+                .putExtra(ListenService.EXTRA_CHANNEL_ID, channelId),
         )
     }
 

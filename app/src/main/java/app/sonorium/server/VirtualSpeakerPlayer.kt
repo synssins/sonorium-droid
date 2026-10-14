@@ -32,12 +32,16 @@ class VirtualSpeakerPlayer(private val context: Context, private val scope: Coro
     private var client = ""
     /** This device wants to hear the speaker (null: not decided yet, the first status decides). */
     @Volatile private var wanted: Boolean? = null
+    /** The channel last heard on the speaker (the notification shows and controls it). */
+    private var heardChannel: String? = null
 
     /** Starts polling [api] for the server [serverId]; [url] makes the stream's address from its path. */
     fun start(api: SonoriumApi, serverId: String, client: String, url: (String) -> String?) {
         stop()
         this.api = api
         this.client = client
+        // Stop from the notification or lock screen: as Stop here
+        ListenController.virtualStopped = { id -> if (_state.value?.speaker?.id == id) letGo() }
         job = scope.launch {
             while (isActive) {
                 var st = try {
@@ -66,8 +70,15 @@ class VirtualSpeakerPlayer(private val context: Context, private val scope: Coro
                     val now = ListenController.state.value
                     if (now?.sessionId != st.id) {
                         url(path)?.let { u ->
-                            ListenController.listen(context, serverId, st.id, u, st.name, st.channel?.name.orEmpty(), 100)
+                            heardChannel = st.channel?.id
+                            ListenController.listen(
+                                context, serverId, st.id, u, st.name, st.channel?.name.orEmpty(), 100,
+                                channelId = st.channel?.id, virtualClient = client,
+                            )
                         }
+                    } else if (st.channel?.id != heardChannel) {
+                        heardChannel = st.channel?.id
+                        ListenController.setChannel(context, st.id, st.channel?.id)
                     }
                 } else if (ListenController.state.value?.sessionId == st.id) {
                     ListenController.stop(context, st.id)
@@ -77,28 +88,36 @@ class VirtualSpeakerPlayer(private val context: Context, private val scope: Coro
         }
     }
 
+    /** Stop here: this device lets go of the speaker. */
+    private fun letGo() {
+        val api = api ?: return
+        val now = _state.value ?: return
+        wanted = false
+        _state.value = now.copy(here = false)
+        scope.launch {
+            ListenController.stop(context, now.speaker.id)
+            runCatching { api.releaseVirtualSpeaker(client) }.onFailure { Log.w(TAG, "Virtual speaker change failed", it) }
+        }
+    }
+
     /** Play here (claim it) or stop here (let it go). */
     fun toggle() {
         val api = api ?: return
         val now = _state.value
+        if (now?.here == true) return letGo()
         scope.launch {
             runCatching {
-                if (now?.here == true) {
-                    wanted = false
-                    ListenController.stop(context, now.speaker.id)
-                    api.releaseVirtualSpeaker(client)
-                    _state.value = now.copy(here = false)
-                } else {
-                    wanted = true
-                    val st = api.claimVirtualSpeaker(client)
-                    _state.value = State(st, st.thisClient)
-                }
+                wanted = true
+                val st = api.claimVirtualSpeaker(client)
+                _state.value = State(st, st.thisClient)
             }.onFailure { Log.w(TAG, "Virtual speaker change failed", it) }
         }
     }
 
     /** Stops polling (the server was left); the stream itself stops as the switch setting says. */
     fun stop() {
+        ListenController.virtualStopped = null
+        heardChannel = null
         job?.cancel()
         job = null
         api = null

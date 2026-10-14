@@ -47,6 +47,10 @@ class ListenService : MediaSessionService() {
         val volume: Int,
         /** The account's personal channel: re-listen and stop through /api/me/channel/listen. */
         val personal: Boolean = false,
+        /** The channel heard (shown and controlled): the session itself, or the one playing on a virtual speaker. */
+        val channelId: String? = sessionId,
+        /** A virtual speaker held by this client: stopping lets go of it. */
+        val virtualClient: String? = null,
     ) {
         /** `http://host:port`, for a new slot's stream path. */
         val streamBase: String get() = url.substringBefore("/stream/")
@@ -59,6 +63,15 @@ class ListenService : MediaSessionService() {
     private var pausedByUser = false
     private var reconnect: Job? = null
     private var failures = 0
+
+    /** What the notification shows; refreshed from the server while listening. */
+    private data class Shown(val title: String, val subtitle: String, val artwork: ByteArray?)
+    private var shown: Shown? = null
+    private var poll: Job? = null
+    private var themes: List<app.sonorium.net.ThemeSummary> = emptyList()
+    private var themesAt = 0L
+    private val presets = HashMap<String, List<app.sonorium.net.PresetInfo>>()
+    private var heard: app.sonorium.net.Session? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -93,17 +106,54 @@ class ListenService : MediaSessionService() {
             }
         })
         ListenController.bufferProbe = { exo.totalBufferedDuration / 1000.0 }
+        // The same controls as a theme played on this device: previous/next through presets or sequence steps,
+        // Next theme and Stop (MediaControls), acting on the channel through the server
         val player = object : ForwardingPlayer(exo) {
             override fun play() = resume()
             override fun pause() = stopByUser()
             override fun stop() = stopByUser()
             override fun setPlayWhenReady(playWhenReady: Boolean) = if (playWhenReady) resume() else stopByUser()
+            override fun getAvailableCommands(): Player.Commands = exo.availableCommands.buildUpon()
+                .removeAll(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, Player.COMMAND_SEEK_BACK, Player.COMMAND_SEEK_FORWARD, Player.COMMAND_SEEK_TO_DEFAULT_POSITION)
+                .addAll(Player.COMMAND_SEEK_TO_NEXT, Player.COMMAND_SEEK_TO_PREVIOUS, Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM, Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM)
+                .build()
+            override fun isCommandAvailable(command: Int): Boolean = availableCommands.contains(command)
+            override fun hasNextMediaItem(): Boolean = true
+            override fun hasPreviousMediaItem(): Boolean = true
+            override fun seekToNext() = skip(forward = true)
+            override fun seekToNextMediaItem() = skip(forward = true)
+            override fun seekToPrevious() = skip(forward = false)
+            override fun seekToPreviousMediaItem() = skip(forward = false)
         }
         val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        session = MediaSession.Builder(this, player).setSessionActivity(open).build().also {
+        session = MediaSession.Builder(this, player)
+            .setId("listen")
+            .setSessionActivity(open)
+            .setCallback(object : MediaSession.Callback {
+                override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo) =
+                    app.sonorium.engine.MediaControls.accept(session)
+
+                override fun onCustomCommand(
+                    session: MediaSession,
+                    controller: MediaSession.ControllerInfo,
+                    customCommand: androidx.media3.session.SessionCommand,
+                    args: android.os.Bundle,
+                ): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
+                    when (customCommand.customAction) {
+                        app.sonorium.engine.MediaControls.COMMAND_NEXT_THEME -> nextTheme()
+                        // As Stop for a theme on this device: playback here ends (the channel plays on where it plays)
+                        app.sonorium.engine.MediaControls.COMMAND_STOP -> end(tellServer = true)
+                    }
+                    return com.google.common.util.concurrent.Futures.immediateFuture(
+                        androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS),
+                    )
+                }
+            })
+            .setMediaButtonPreferences(app.sonorium.engine.MediaControls.buttons())
+            .build().also {
             // The app starts this service itself (no controller binds first), so the
             // session must be added for its notification and lock screen controls.
             addSession(it)
@@ -127,8 +177,19 @@ class ListenService : MediaSessionService() {
                     themeName = intent.getStringExtra(EXTRA_THEME).orEmpty(),
                     volume = intent.getIntExtra(EXTRA_VOLUME, 100),
                     personal = intent.getBooleanExtra(EXTRA_PERSONAL, false),
+                    channelId = intent.getStringExtra(EXTRA_CHANNEL_ID) ?: intent.getStringExtra(EXTRA_SESSION_ID),
+                    virtualClient = intent.getStringExtra(EXTRA_VIRTUAL_CLIENT),
                 )
                 start(next)
+            }
+            ACTION_CHANNEL -> if (intent.getStringExtra(EXTRA_SESSION_ID) == current?.sessionId) {
+                // Another channel plays on the virtual speaker heard here: show and control that one
+                val channel = intent.getStringExtra(EXTRA_CHANNEL_ID)
+                if (channel != current?.channelId) {
+                    current = current?.copy(channelId = channel)
+                    heard = null
+                    refreshSoon()
+                }
             }
             ACTION_STOP -> if (intent.getStringExtra(EXTRA_SESSION_ID) == current?.sessionId) {
                 // The page turned it off and told the server itself.
@@ -154,18 +215,19 @@ class ListenService : MediaSessionService() {
         reconnect?.cancel()
         pausedByUser = false
         failures = 0
+        val sameChannel = current?.channelId == next.channelId && current?.serverId == next.serverId
         current = next
+        if (!sameChannel) {
+            heard = null
+            shown = null
+        }
         play(next.url)
+        startPolling()
     }
 
     private fun play(url: String) {
         val c = current ?: return
-        val metadata = MediaMetadata.Builder()
-            .setTitle(c.name.ifEmpty { "Sonorium" })
-            .setArtist(c.themeName.ifEmpty { "Sonorium" })
-            .setIsPlayable(true)
-            .build()
-        val item = MediaItem.Builder().setUri(url).setMediaMetadata(metadata).build()
+        val item = MediaItem.Builder().setUri(url).setMediaMetadata(metadata()).build()
         // A stream at the server's HTTPS address: through a client pinned to that server's certificate
         val pinned = if (url.startsWith("https:")) pinnedClient(c.serverId) else null
         if (pinned != null) {
@@ -179,6 +241,126 @@ class ListenService : MediaSessionService() {
         exo.prepare()
         exo.play()
         publish()
+    }
+
+    /** The notification's title, subtitle and artwork, as for a theme played on this device. */
+    private fun metadata(): MediaMetadata {
+        val c = current
+        val now = shown ?: Shown(
+            title = c?.themeName?.ifBlank { null } ?: c?.name?.ifBlank { null } ?: "Sonorium",
+            subtitle = c?.name.orEmpty().ifBlank { "Sonorium" },
+            artwork = null,
+        )
+        return MediaMetadata.Builder()
+            .setTitle(now.title)
+            .setDisplayTitle(now.title)
+            .setArtist(now.subtitle)
+            .setSubtitle(now.subtitle)
+            .setAlbumTitle("Sonorium")
+            .setIsPlayable(true)
+            .setArtworkData(now.artwork ?: app.sonorium.engine.MediaControls.appArtwork(resources), MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+            .build()
+    }
+
+    /** Reads the channel heard every few seconds while listening: the notification follows its theme and preset. */
+    private fun startPolling() {
+        if (poll?.isActive == true) return
+        poll = scope.launch {
+            while (current != null) {
+                runCatching { refresh() }.onFailure { android.util.Log.w(TAG, "Couldn't read the channel heard", it) }
+                delay(POLL_MS)
+            }
+        }
+    }
+
+    private fun refreshSoon() {
+        scope.launch {
+            delay(600)
+            runCatching { refresh() }
+        }
+    }
+
+    /** The channel heard, as the server has it now. */
+    private suspend fun channelNow(api: SonoriumApi, c: Current): app.sonorium.net.Session? {
+        val channelId = c.channelId ?: return null
+        return if (c.personal) api.myChannel() else api.sessions().firstOrNull { it.id == channelId }
+    }
+
+    private suspend fun refresh() {
+        val c = current ?: return
+        val api = api(c.serverId) ?: return
+        val channel = channelNow(api, c) ?: return
+        if (current?.channelId != c.channelId) return
+        heard = channel
+        val now = System.currentTimeMillis()
+        if (themes.isEmpty() || themes.none { it.id == channel.themeId } || now - themesAt > THEMES_MS) {
+            themes = runCatching { api.themes() }.getOrDefault(themes)
+            themesAt = now
+        }
+        val themeId = channel.themeId
+        val themePresets = themeId?.let { id ->
+            presets[id] ?: runCatching { api.themePresets(id).presets }.getOrNull()?.also { presets[id] = it }
+        }.orEmpty()
+        val sonorium = application as SonoriumApp
+        val serverName = sonorium.servers.find(c.serverId)?.displayName
+        val channelName = if (c.personal) "My Channel" else channel.name.ifBlank { c.name }
+        val playlistTheme = channel.playlist?.takeIf { it.running }?.themeId?.let { id -> themes.firstOrNull { it.id == id } }
+        val iconTheme = playlistTheme ?: themes.firstOrNull { it.id == themeId }
+        val art = iconTheme?.let { app.sonorium.engine.MediaControls.iconArtwork(app.sonorium.server.ChannelRules.themeIcon(it.id, it)) }
+        val next = Shown(
+            title = NowHeard.title(channel, themes, channelName),
+            subtitle = NowHeard.subtitle(channel, themePresets, channelName, serverName),
+            artwork = art,
+        )
+        val before = shown
+        if (before != null && next.title == before.title && next.subtitle == before.subtitle && next.artwork === before.artwork) return
+        shown = next
+        if (exo.mediaItemCount > 0) {
+            // Same stream, new words and picture: the player keeps playing
+            exo.replaceMediaItem(0, exo.getMediaItemAt(0).buildUpon().setMediaMetadata(metadata()).build())
+        }
+        session?.let { s -> runCatching { onUpdateNotification(s, false) } }
+    }
+
+    /** Previous/next: the sequence's or playlist's next step (the server has no step back), else the previous or next preset. */
+    private fun skip(forward: Boolean) {
+        val c = current ?: return
+        scope.launch {
+            runCatching {
+                val api = api(c.serverId) ?: return@runCatching
+                val channel = heard ?: channelNow(api, c) ?: return@runCatching
+                if (channel.sequence?.running == true || channel.playlist?.running == true) {
+                    if (forward) api.next(channel.id)
+                    return@runCatching
+                }
+                val themeId = channel.themeId ?: return@runCatching
+                val list = presets[themeId] ?: api.themePresets(themeId).presets.also { presets[themeId] = it }
+                val preset = NowHeard.nextPreset(channel.presetId, list, forward) ?: return@runCatching
+                val body = kotlinx.serialization.json.buildJsonObject { put("preset_id", kotlinx.serialization.json.JsonPrimitive(preset)) }
+                if (c.personal) api.updateMyChannel(body) else api.updateSession(channel.id, body)
+            }.onFailure { android.util.Log.w(TAG, "Skip failed", it) }
+            runCatching { refresh() }
+        }
+    }
+
+    /** Next theme: the playlist's next entry while one plays, else the next theme on the server. */
+    private fun nextTheme() {
+        val c = current ?: return
+        scope.launch {
+            runCatching {
+                val api = api(c.serverId) ?: return@runCatching
+                val channel = heard ?: channelNow(api, c) ?: return@runCatching
+                if (channel.playlist?.running == true) {
+                    api.next(channel.id)
+                    return@runCatching
+                }
+                if (themes.isEmpty()) themes = api.themes()
+                val next = NowHeard.nextTheme(channel.themeId, themes) ?: return@runCatching
+                val body = kotlinx.serialization.json.buildJsonObject { put("theme_id", kotlinx.serialization.json.JsonPrimitive(next.id)) }
+                if (c.personal) api.updateMyChannel(body) else api.updateSession(channel.id, body)
+            }.onFailure { android.util.Log.w(TAG, "Next theme failed", it) }
+            runCatching { refresh() }
+        }
     }
 
     /** Lock screen or notification Play after a pause: ask the server for the channel again. */
@@ -204,6 +386,11 @@ class ListenService : MediaSessionService() {
     }
 
     private suspend fun unlisten(c: Current) {
+        if (c.virtualClient != null) {
+            // A virtual speaker: this device lets go of it (Stop here), so its poll doesn't start it again
+            ListenController.virtualStopped?.invoke(c.sessionId)
+            return
+        }
         val api = api(c.serverId) ?: return
         if (c.personal) api.stopListeningMyChannel() else api.stopListening(c.sessionId)
     }
@@ -239,7 +426,10 @@ class ListenService : MediaSessionService() {
     private fun end(tellServer: Boolean) {
         val c = current ?: return
         reconnect?.cancel()
+        poll?.cancel()
         current = null
+        shown = null
+        heard = null
         exo.stop()
         exo.clearMediaItems()
         ListenController.update(ListenController.Listening(c.serverId, c.sessionId, c.name, c.themeName, playing = false, personal = c.personal))
@@ -295,6 +485,12 @@ class ListenService : MediaSessionService() {
         const val EXTRA_THEME = "theme"
         const val EXTRA_VOLUME = "volume"
         const val EXTRA_PERSONAL = "personal"
+        const val EXTRA_CHANNEL_ID = "channel_id"
+        const val EXTRA_VIRTUAL_CLIENT = "virtual_client"
+        const val ACTION_CHANNEL = "app.sonorium.listen.CHANNEL"
         private const val MAX_FAILURES = 6
+        private const val TAG = "ListenService"
+        private const val POLL_MS = 5_000L
+        private const val THEMES_MS = 60_000L
     }
 }
