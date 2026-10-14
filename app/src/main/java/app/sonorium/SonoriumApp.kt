@@ -31,8 +31,17 @@ class SonoriumApp : Application() {
     val themeStore: app.sonorium.local.ThemeStore by lazy { app.sonorium.local.ThemeStore(this) }
     /** This device's own entry: the app's API answered in the app (its themes, playlists, playback). */
     val deviceApi: app.sonorium.local.DeviceApi by lazy { app.sonorium.local.DeviceApi(this) }
-    /** The paid features; test builds grant them locally. */
-    val entitlement: app.sonorium.local.ProEntitlement by lazy { app.sonorium.local.LocalProEntitlement(this) }
+    /** The paid features: Google Play in release builds; test builds grant them locally. */
+    val entitlement: app.sonorium.local.ProEntitlement by lazy {
+        app.sonorium.local.Entitlements.create(this, appScope) { shown?.get() }
+    }
+
+    /** Work that lives as long as the app. */
+    private val appScope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Main)
+
+    /** The activity showing now (the store's purchase screen opens over it). */
+    @Volatile private var shown: java.lang.ref.WeakReference<android.app.Activity>? = null
+    private var checkedAt = 0L
 
     companion object {
         /** The id of this device's own entry. */
@@ -44,6 +53,25 @@ class SonoriumApp : Application() {
     override fun onCreate() {
         super.onCreate()
         app.sonorium.ui.Txt.init(this)
+        // The purchases read again when the app comes back (a refund, a promo code, a payment that went through)
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: android.app.Activity) {
+                shown = java.lang.ref.WeakReference(activity)
+                val now = System.currentTimeMillis()
+                if (now - checkedAt > 60_000) {
+                    checkedAt = now
+                    appScope.launch { runCatching { entitlement.refresh() } }
+                }
+            }
+            override fun onActivityPaused(activity: android.app.Activity) {
+                if (shown?.get() === activity) shown = null
+            }
+            override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) {}
+            override fun onActivityStarted(activity: android.app.Activity) {}
+            override fun onActivityStopped(activity: android.app.Activity) {}
+            override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) {}
+            override fun onActivityDestroyed(activity: android.app.Activity) {}
+        })
         CrashLog.install(this)
         // "Stop My Channel when switching between server and device": watched here, not in a screen, because
         // choosing an entry in the Servers list opens a new main screen (the old one never sees the switch)

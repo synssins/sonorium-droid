@@ -239,4 +239,8 @@
     <string name="phonethemes_no_folder_picker">This device has no folder picker, so a themes folder can\'t be chosen</string>
     <string name="phonethemes_no_file_picker">This device has no file picker to choose a theme zip</string>
     <string name="phonethemes_remove_menu">Remove from device…</string>
+    <!-- Unlock: the store's answers -->
+    <string name="unlock_with_price">Unlock Pro · %1$s</string>
+    <string name="unlock_pending">The purchase is waiting for its payment. Pro unlocks once it goes through.</string>
+    <string name="unlock_store_unavailable">Google Play can\'t be reached. Try again in a moment.</string>
 </resources>

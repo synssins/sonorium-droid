@@ -396,7 +396,7 @@ private fun LocalThemeCard(t: LocalTheme, playing: Boolean, onPlay: () -> Unit, 
                 }
                 IconBox(
                     if (playing) SIcons.Stop else SIcons.Play,
-                    if (playing) "Stop ${t.name}" else "Play ${t.name} on this phone",
+                    if (playing) "Stop ${t.name}" else "Play ${t.name} on this device",
                     onPlay,
                     tint = if (playing) Palette.danger else Palette.accent,
                     size = UiSize.SMALL,
@@ -416,7 +416,10 @@ private fun LocalThemeCard(t: LocalTheme, playing: Boolean, onPlay: () -> Unit, 
 @Composable
 fun UnlockScreen(model: ServerViewModel, onClose: () -> Unit, onUnlocked: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val testBuild = app.sonorium.BuildConfig.DEBUG
+    val testBuild = model.entitlement.local
+    val price by model.entitlement.price.collectAsState()
+    val pending by model.entitlement.pending.collectAsState()
+    LaunchedEffect(Unit) { runCatching { model.entitlement.refresh() } }
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         EditorSurface {
             Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
@@ -435,19 +438,27 @@ fun UnlockScreen(model: ServerViewModel, onClose: () -> Unit, onUnlocked: () -> 
                         }
                     }
                     if (testBuild) Text("Test build: unlocking doesn't charge anything.", color = Palette.textMuted, fontSize = 12.sp)
+                    // A payment still to go through (e.g. cash at a shop): unlocked once it does
+                    if (pending) Text(Txt.get(R.string.unlock_pending), color = Palette.warning, fontSize = 13.sp)
                     Button(
                         onClick = {
                             scope.launch {
                                 if (model.entitlement.purchase()) {
                                     model.toast("Pro unlocked", error = false)
                                     onUnlocked()
+                                } else if (model.entitlement.pending.value) {
+                                    model.toast(Txt.get(R.string.unlock_pending), error = false)
+                                } else when ((model.entitlement as? app.sonorium.local.PlayProEntitlement)?.lastAnswer) {
+                                    app.sonorium.local.StoreAnswer.UNAVAILABLE, app.sonorium.local.StoreAnswer.ERROR ->
+                                        model.toast(Txt.get(R.string.unlock_store_unavailable), error = true)
+                                    else -> Unit
                                 }
                             }
                         },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Palette.accent, contentColor = Palette.bar),
                         modifier = Modifier.fillMaxWidth().heightIn(min = UiSize.STANDARD.dp),
-                    ) { Text("Unlock Pro", fontWeight = FontWeight.SemiBold) }
+                    ) { Text(price?.let { Txt.get(R.string.unlock_with_price, it) } ?: "Unlock Pro", fontWeight = FontWeight.SemiBold) }
                     Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         TextButton(
                             onClick = { scope.launch { if (model.entitlement.restore()) onUnlocked() else model.toast("No earlier purchase found", error = true) } },

@@ -6,15 +6,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Whether this install has the paid features. Test builds grant them locally when asked (no store, no
- * server); a store purchase can replace [purchase] / [restore] behind the same interface.
+ * Whether this install has the paid features: bought through Google Play in release builds
+ * ([PlayProEntitlement]), a local "yes" in test builds ([LocalProEntitlement]). Which one a build has is chosen
+ * by its build type (`Entitlements.create`, in src/debug, src/qa and src/release).
  */
 interface ProEntitlement {
     val isPro: StateFlow<Boolean>
+    /** The store's price for it, formatted for the user's country (null until known, or in test builds). */
+    val price: StateFlow<String?> get() = MutableStateFlow(null)
+    /** A purchase is waiting for its payment (e.g. cash at a shop): unlocked once it goes through. */
+    val pending: StateFlow<Boolean> get() = MutableStateFlow(false)
+    /** A test build's local unlock (it charges nothing). */
+    val local: Boolean get() = false
     /** Starts the purchase; true when it was granted. */
     suspend fun purchase(): Boolean
     /** Looks for an earlier purchase; true when found. */
     suspend fun restore(): Boolean
+    /** Reads the purchases again (app start and return): a refund takes the features away, a promo code adds them. */
+    suspend fun refresh() {}
 }
 
 /** Test builds: the purchase is a local "yes", kept on the device. */
@@ -22,6 +31,7 @@ class LocalProEntitlement(context: Context) : ProEntitlement {
     private val prefs = context.getSharedPreferences("sonorium", Context.MODE_PRIVATE)
     private val state = MutableStateFlow(prefs.getBoolean(KEY, false))
     override val isPro: StateFlow<Boolean> = state.asStateFlow()
+    override val local: Boolean get() = true
 
     override suspend fun purchase(): Boolean {
         prefs.edit().putBoolean(KEY, true).apply()

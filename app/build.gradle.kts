@@ -114,6 +114,8 @@ dependencies {
     implementation(libs.media3.okhttp)
     // Google Cast (CastContext, MediaRouter) for casting the phone's own mix
     implementation(libs.media3.cast)
+    // Google Play Billing: the Pro purchase in release builds (test builds unlock locally)
+    implementation(libs.play.billing)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
