@@ -97,6 +97,7 @@ class CoachState(private val context: Context) {
 
     /** Shows [guide] now (from help: whether seen or not); steps whose control isn't on screen are left out. */
     fun show(guide: CoachGuide) {
+        if (!ENABLED) return
         val steps = guide.steps.filter { it.target == null || rectOf(it.target) != null }
         if (steps.isEmpty()) return
         index = 0
@@ -129,8 +130,12 @@ class CoachState(private val context: Context) {
     internal fun rectOf(key: String?): Rect? = key?.let { targets[it]?.values?.filter { r -> r.width > 0 && r.height > 0 }?.minByOrNull { r -> r.top } }
 
     companion object {
-        /** Off in device tests that drive the screens (a guide would cover them). */
-        @Volatile var ENABLED = true
+        /**
+         * Every guide: the first-run guide, the first-visit guides and the help panels' "Show the guide". Off for
+         * now (Chris, 2026-10-14: the guide's buttons didn't react to touch on some devices); the code stays.
+         * Device tests of the guides turn it on themselves.
+         */
+        @Volatile var ENABLED = false
     }
 }
 

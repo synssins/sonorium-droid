@@ -446,7 +446,7 @@ fun HelpPanel(title: String, lines: List<HelpLine>, onGuide: (() -> Unit)? = nul
                         }
                     }
                     // The page's guide again (coach marks over the page)
-                    onGuide?.let { show ->
+                    onGuide?.takeIf { app.sonorium.ui.coach.CoachState.ENABLED }?.let { show ->
                         Spacer(Modifier.height(16.dp))
                         androidx.compose.material3.OutlinedButton(
                             onClick = show,
